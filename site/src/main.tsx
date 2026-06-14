@@ -141,8 +141,15 @@ function App() {
     };
     const url = shareUrlForState(state);
     window.history.replaceState(null, "", `?s=${encodeShareState(state)}`);
-    void navigator.clipboard?.writeText(url);
-    setShareState("Link copied");
+    const copyRequest = navigator.clipboard?.writeText(url);
+    if (!copyRequest) {
+      setShareState("Link ready in address bar");
+      return;
+    }
+
+    void copyRequest
+      .then(() => setShareState("Link copied"))
+      .catch(() => setShareState("Copy blocked; link is in address bar"));
   }
 
   return (

@@ -169,7 +169,7 @@ small {
 .secondary-action,
 .meal-targets button,
 .item-actions button {
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
@@ -605,7 +605,7 @@ fieldset {
 
 .item-actions input,
 .item-actions select {
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .plan-row:last-child {
@@ -671,7 +671,7 @@ fieldset {
 }
 
 .locked-notice button {
-  min-height: 40px;
+  min-height: 44px;
   justify-self: start;
   border: 1px solid rgba(210, 160, 87, 0.58);
   border-radius: 999px;
@@ -750,6 +750,19 @@ fieldset {
   .input-panel,
   .result-panel {
     animation: fade-up 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  button,
+  input,
+  select,
+  summary {
+    transition: none;
   }
 }
 
