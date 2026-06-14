@@ -139,25 +139,14 @@ function App() {
   }
 
   return (
-    <>
-      <a className="skip-link" href="#planner">Skip to planner</a>
-      <main className="app-shell">
-        <header className="mobile-header">
-          <p className="eyebrow">Indian macro planner</p>
-          <div className="hero-lockup">
-            <h1>Build a day that fits your target.</h1>
-            <p>
-              Generate practical meals with rounded servings, realistic vegetables, and protein held close to your goal.
-            </p>
-          </div>
-        </header>
+    <main className="app-shell">
+      <header className="mobile-header">
+        <h1>Plan</h1>
+      </header>
 
-      <form id="planner" className="planner" onSubmit={submit}>
+      <form className="planner" onSubmit={submit}>
         <section className="input-panel primary-panel" aria-labelledby="targets-title">
-          <div className="panel-kicker">
-            <span>01</span>
-            <h2 id="targets-title">Targets</h2>
-          </div>
+          <h2 id="targets-title" className="sr-only">Plan</h2>
 
           <div className="quick-fields">
             <label className="field calorie-field">
@@ -237,10 +226,7 @@ function App() {
       {plan && evaluation && (
         <section className="result-panel" aria-labelledby="result-title" aria-live="polite" tabIndex={-1} ref={resultRef}>
           <div className="section-heading result-head">
-            <div>
-              <p className="eyebrow">{evaluation.status === "pass" ? "ready to cook" : "needs tuning"}</p>
-              <h2 id="result-title">{evaluation.status === "pass" ? "Target fit" : "Adjust plan"}</h2>
-            </div>
+            <h2 id="result-title">{evaluation.status === "pass" ? "Meets target" : "Adjust"}</h2>
             <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds))}>Randomize</button>
             <button type="button" onClick={share}>Share</button>
           </div>
@@ -303,16 +289,7 @@ function App() {
           <button className="secondary-action" type="button" onClick={() => setPlan(addMeal(plan))}>Add meal</button>
         </section>
       )}
-      </main>
-      <footer className="site-footer">
-        <span>Meal Plan Calculator</span>
-        <a href="https://github.com/amitse/meal-plan-calculator">GitHub</a>
-        <a href="#privacy-note">Privacy</a>
-        <a href="#terms-note">Terms</a>
-        <small id="privacy-note">Planner data stays in your browser unless you copy a share link.</small>
-        <small id="terms-note">Nutrition output is an estimate; use professional advice for medical diets.</small>
-      </footer>
-    </>
+    </main>
   );
 }
 
