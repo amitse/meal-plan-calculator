@@ -613,28 +613,33 @@ function PlanItemRow({
   const label = item.kind === "food" ? getFoodItem(item.foodItemId).displayName : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
   const amount = item.kind === "food" ? item.quantity.amount : item.exchangeUnits ?? 1;
   const unit = item.kind === "food" ? item.quantity.unit : "serving";
+  const compactUnitLabel = compactUnit(unit);
   const nutrition = calculateDailyPlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, dietaryLevel, mealId);
   const servingDetail = item.kind === "exchange" ? exchangeServingDetail(item) : "";
 
   return (
     <div className="plan-row">
-      <div>
+      <div className="item-summary">
         <strong>{label}</strong>
-        <small>{Math.round(nutrition.calories ?? 0)} kcal · {Math.round(nutrition.protein ?? 0)}g{servingDetail ? ` · ${servingDetail}` : ""}</small>
+        <small className="item-metrics">
+          <span>{Math.round(nutrition.calories ?? 0)} kcal</span>
+          <span>{Math.round(nutrition.protein ?? 0)}g protein</span>
+          {servingDetail && <span>{servingDetail}</span>}
+        </small>
       </div>
       <div className={`item-actions ${item.kind === "exchange" ? "has-swap" : "no-swap"}`}>
-        <label>
+        <label className="amount-control">
           <span className="sr-only">Amount</span>
           <input inputMode="decimal" value={amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={amountStep(item, unit)} type="number" />
         </label>
-        <span>{unit}</span>
+        <span className="unit-label" title={unit}>{compactUnitLabel}</span>
+        <button className="lock-toggle" type="button" aria-pressed={locked} onClick={onLock}>{locked ? "Unlock" : "Lock"}</button>
         {item.kind === "exchange" && (
-          <select aria-label={`Swap ${label}`} value={item.exchangeOptionId} onChange={(event) => onSwap(event.target.value)}>
+          <select className="swap-select" aria-label={`Swap ${label}`} value={item.exchangeOptionId} onChange={(event) => onSwap(event.target.value)}>
             {exchangeOptions.map((option) => <option key={option.id} value={option.id}>{option.displayName}</option>)}
           </select>
         )}
-        <button type="button" onClick={onLock}>{locked ? "Unlock" : "Lock"}</button>
       </div>
     </div>
   );
@@ -651,6 +656,13 @@ function formatQuantity(amount: number, unit: string) {
   }
 
   return `${amount} ${unit}${amount === 1 ? "" : "s"}`;
+}
+
+function compactUnit(unit: string) {
+  if (unit === "serving") return "srv";
+  if (unit === "tablespoon") return "tbsp";
+  if (unit === "teaspoon") return "tsp";
+  return unit;
 }
 
 function loadStateFromUrl(): ShareablePlannerState | undefined {

@@ -77,8 +77,8 @@ export const initialFormState: EditableFormState = {
   fiber: { mode: "min", value: "10" },
   saturatedFat: { mode: "max", value: "20" },
   dietaryLevel: "vegetarian",
-  preferredGrains: ["roti", "raw-oats", "raw-poha"],
-  preferredProteins: ["paneer-50g"],
+  preferredGrains: grainOptions.map((option) => option.id),
+  preferredProteins: proteinOptions.map((option) => option.id),
   avoidPaneer: false,
   avoidWhey: false,
   avoidEggs: false,
@@ -464,7 +464,11 @@ export function encodeShareState(state: ShareablePlannerState): string {
 
 export function decodeShareState(encoded: string): ShareablePlannerState | undefined {
   try {
-    return JSON.parse(decodeURIComponent(atob(encoded))) as ShareablePlannerState;
+    const state = JSON.parse(decodeURIComponent(atob(encoded))) as ShareablePlannerState;
+    return {
+      ...state,
+      form: normalizeEditableFormState(state.form),
+    };
   } catch {
     return undefined;
   }
@@ -583,9 +587,8 @@ function proteinPreferencesForDiet(form: EditableFormState) {
 }
 
 function defaultProteinsForDiet(dietaryLevel: DietaryLevel) {
-  if (dietaryLevel === "vegetarian") return ["paneer-50g"];
-  if (dietaryLevel === "eggetarian") return ["two-whole-eggs"];
-  return ["chicken-fish-100g"];
+  const visibleProteinOptionIds = proteinOptions.map((option) => option.id);
+  return proteinOptionsForDiet(dietaryLevel).filter((option) => visibleProteinOptionIds.includes(option));
 }
 
 function normalizedPreferenceList(value: string[] | undefined, legacyValue: string | undefined, fallback: string[]) {

@@ -7,15 +7,22 @@ import {
   encodeShareState,
   failureRecoveryMessages,
   generateEditablePlan,
+  grainOptions,
   initialFormState,
   mealTargetStatus,
   planEvaluation,
+  proteinOptions,
   randomizePlan,
   swapExchangeOption,
   updateItemAmount,
 } from "../site/src/editable-planner.js";
 
 describe("editable planner workflows", () => {
+  it("selects every visible grain and protein preference by default", () => {
+    expect(initialFormState.preferredGrains).toEqual(grainOptions.map((option) => option.id));
+    expect(initialFormState.preferredProteins).toEqual(proteinOptions.map((option) => option.id));
+  });
+
   it("categorizes grains so breakfast varies and dinner excludes snack grains", () => {
     const template = buildDynamicTemplate(
       { ...initialFormState, preferredGrains: ["raw-oats", "raw-poha", "roti", "cooked-rice"] },
@@ -143,6 +150,8 @@ describe("editable planner workflows", () => {
     const decoded = decodeShareState(encoded);
 
     expect(statuses.length).toBeGreaterThan(0);
+    expect(decoded?.form.preferredGrains).toEqual(initialFormState.preferredGrains);
+    expect(decoded?.form.preferredProteins).toEqual(initialFormState.preferredProteins);
     expect(decoded?.lockedItemIds).toEqual(["lunch-carb"]);
     expect(decoded?.mealTargets).toEqual(mealTargets);
     expect(decoded?.plan?.meals.map((meal) => meal.id)).toEqual(plan.meals.map((meal) => meal.id));

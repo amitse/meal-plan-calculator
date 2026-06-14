@@ -889,53 +889,99 @@ fieldset {
 
 .plan-row {
   display: grid;
-  gap: var(--space-sm);
-  padding: var(--space-md) 0;
+  grid-template-columns: minmax(0, 1fr) minmax(136px, 42%);
+  gap: var(--space-xs);
+  align-items: start;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border-soft);
 }
 
 .item-actions {
   display: grid;
-  gap: var(--space-xs);
+  grid-template-columns: minmax(48px, 0.7fr) min-content min-content;
+  gap: 6px;
   align-items: center;
+  justify-content: end;
+  min-width: 0;
 }
 
 .item-actions.has-swap {
-  grid-template-columns: minmax(64px, 0.42fr) min-content minmax(128px, 1fr) auto;
+  grid-template-columns: minmax(48px, 0.7fr) min-content min-content;
 }
 
 .item-actions.no-swap {
-  grid-template-columns: minmax(64px, 0.5fr) min-content auto;
+  grid-template-columns: minmax(48px, 0.7fr) min-content min-content;
 }
 
 .item-actions input,
 .item-actions select {
-  min-height: 44px;
+  min-height: 40px;
 }
 
-.item-actions > span {
-  min-width: 42px;
-  color: var(--muted);
+.item-actions input {
+  padding-inline: 8px;
   text-align: center;
+}
+
+.amount-control {
+  min-width: 0;
+}
+
+.unit-label {
+  min-width: 28px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.swap-select {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  padding-inline: 9px 28px;
+  font-size: 0.86rem;
+}
+
+.item-actions .lock-toggle {
+  min-height: 40px;
+  min-width: 48px;
+  padding-inline: 8px;
+  font-size: 0.78rem;
+}
+
+.lock-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .plan-row:last-child {
   border-bottom: 0;
 }
 
-.plan-row > div:first-child {
+.item-summary {
   display: grid;
-  gap: var(--space-2xs);
+  gap: 3px;
+  min-width: 0;
 }
 
 .plan-row strong {
   color: var(--ink);
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.item-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 1px;
+  font-size: 0.78rem;
   line-height: 1.25;
 }
 
-.plan-row span,
+.item-metrics span,
 .plan-row small {
   color: var(--muted);
 }
@@ -1003,17 +1049,6 @@ fieldset {
 .secondary-action {
   width: 100%;
   margin-top: var(--space-lg);
-}
-
-@media (max-width: 420px) {
-  .item-actions {
-    grid-template-columns: minmax(64px, 0.42fr) min-content minmax(0, 1fr);
-  }
-
-  .item-actions button {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
 }
 
 @media (min-width: 760px) {
