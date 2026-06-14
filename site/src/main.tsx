@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   calculateDailyPlanItemNutrition,
@@ -161,9 +161,8 @@ const scenarioPresets: ScenarioPreset[] = [
 function App() {
   const [form, setForm] = useState<FormState>(initialState);
   const [result, setResult] = useState<GenerateMealPlanResult>(() => generateFromState(initialState));
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
 
-  const selectedPlan = result.selected?.plan;
   const evaluation = result.selected?.evaluation;
   const statusText = result.selected
     ? "Plan meets your active targets"
@@ -180,19 +179,9 @@ function App() {
 
   function applyPreset(preset: ScenarioPreset) {
     setForm(preset.state);
-    setAdvancedOpen(Boolean(preset.advancedOpen));
+    setOptionsOpen(Boolean(preset.advancedOpen));
     setResult(generateFromState(preset.state));
   }
-
-  const selectedOptions = useMemo(() => {
-    if (!selectedPlan) {
-      return [];
-    }
-
-    return selectedPlan.meals.flatMap((meal) =>
-      meal.items.filter((item) => item.kind === "exchange").map((item) => item.exchangeOptionId),
-    );
-  }, [selectedPlan]);
 
   return (
     <main className="app-shell">
@@ -213,27 +202,16 @@ function App() {
       </section>
 
       <form className="planner" onSubmit={submit}>
-        <section className="input-panel" aria-labelledby="targets-title">
+        <section className="input-panel primary-panel" aria-labelledby="targets-title">
           <div className="section-heading">
             <span className="step-num">01</span>
             <div>
-              <p className="eyebrow">Targets</p>
-              <h2 id="targets-title">Targets</h2>
+              <p className="eyebrow">Build</p>
+              <h2 id="targets-title">Plan</h2>
             </div>
           </div>
 
-          <details className="preset-drawer">
-            <summary>Presets</summary>
-            <div className="preset-strip" aria-label="Scenario presets">
-              {scenarioPresets.map((preset) => (
-                <button key={preset.id} type="button" onClick={() => applyPreset(preset)}>
-                  <span>{preset.label}</span>
-                </button>
-              ))}
-            </div>
-          </details>
-
-          <label className="field">
+          <label className="field calorie-field">
             <span>Calories</span>
             <input
               inputMode="numeric"
@@ -245,44 +223,6 @@ function App() {
               type="number"
             />
           </label>
-
-          <label className="field">
-            <span>Protein min</span>
-            <input
-              inputMode="numeric"
-              value={form.protein}
-              onChange={(event) => update("protein", event.target.value)}
-              min="0"
-              type="number"
-            />
-          </label>
-
-          <button className="text-toggle" type="button" onClick={() => setAdvancedOpen((open) => !open)}>
-            {advancedOpen ? "Hide optional macros" : "Add optional macro bounds"}
-          </button>
-
-          {advancedOpen && (
-            <div className="macro-grid">
-              <MacroInput label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
-              <MacroInput label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
-              <MacroInput label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
-              <MacroInput
-                label="Saturated fat"
-                value={form.saturatedFat}
-                onChange={(value) => update("saturatedFat", value)}
-              />
-            </div>
-          )}
-        </section>
-
-        <section className="input-panel" aria-labelledby="rules-title">
-          <div className="section-heading">
-            <span className="step-num">02</span>
-            <div>
-              <p className="eyebrow">Food rules</p>
-              <h2 id="rules-title">Food rules</h2>
-            </div>
-          </div>
 
           <fieldset className="segmented">
             <legend>Dietary level</legend>
@@ -298,30 +238,63 @@ function App() {
               </label>
             ))}
           </fieldset>
-          <ChoiceGroup
-            legend="Grain"
-            options={grainOptions}
-            value={form.preferredGrain}
-            onChange={(value) => update("preferredGrain", value)}
-          />
-          <ChoiceGroup
-            legend="Protein"
-            options={proteinOptions}
-            value={form.preferredProtein}
-            onChange={(value) => update("preferredProtein", value)}
-          />
 
-          <fieldset className="avoid-list">
-            <legend>Avoid</legend>
-            <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
-            <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
-            <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />
-            <CheckChip
-              label="Chicken / fish"
-              checked={form.avoidChickenFish}
-              onChange={(checked) => update("avoidChickenFish", checked)}
+          <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
+            <summary>More options</summary>
+            <label className="field">
+              <span>Protein min</span>
+              <input
+                inputMode="numeric"
+                value={form.protein}
+                onChange={(event) => update("protein", event.target.value)}
+                min="0"
+                type="number"
+              />
+            </label>
+            <div className="macro-grid">
+              <MacroInput label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
+              <MacroInput label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
+              <MacroInput label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
+              <MacroInput
+                label="Saturated fat"
+                value={form.saturatedFat}
+                onChange={(value) => update("saturatedFat", value)}
+              />
+            </div>
+            <ChoiceGroup
+              legend="Grain"
+              options={grainOptions}
+              value={form.preferredGrain}
+              onChange={(value) => update("preferredGrain", value)}
             />
-          </fieldset>
+            <ChoiceGroup
+              legend="Protein"
+              options={proteinOptions}
+              value={form.preferredProtein}
+              onChange={(value) => update("preferredProtein", value)}
+            />
+            <fieldset className="avoid-list">
+              <legend>Avoid</legend>
+              <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
+              <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
+              <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />
+              <CheckChip
+                label="Chicken / fish"
+                checked={form.avoidChickenFish}
+                onChange={(checked) => update("avoidChickenFish", checked)}
+              />
+            </fieldset>
+            <details className="preset-drawer">
+              <summary>Presets</summary>
+              <div className="preset-strip" aria-label="Scenario presets">
+                {scenarioPresets.map((preset) => (
+                  <button key={preset.id} type="button" onClick={() => applyPreset(preset)}>
+                    <span>{preset.label}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+          </details>
         </section>
 
         <div className="bottom-action">
@@ -345,12 +318,6 @@ function App() {
             <div className="summary-grid">
               <SummaryMetric label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
               <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="g" />
-              <SummaryMetric label="Carbs" value={Math.round(evaluation.totals.values.carbs)} suffix="g" />
-              <SummaryMetric label="Fat" value={Math.round(evaluation.totals.values.fat)} suffix="g" />
-            </div>
-            <div className="status-strip" role="status">
-              <strong>{statusText}</strong>
-              <span>{selectedOptions.length} exchange choices selected from your food rules.</span>
             </div>
             <div className="meal-list">
               {result.selected.plan.meals.map((meal) => (

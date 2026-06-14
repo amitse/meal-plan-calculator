@@ -61,7 +61,7 @@ summary:focus-visible {
 }
 
 .app-shell {
-  width: min(100%, 1180px);
+  width: min(100%, 760px);
   margin: 0 auto;
   padding: 16px 14px 92px;
 }
@@ -71,7 +71,7 @@ summary:focus-visible {
   display: grid;
   align-content: end;
   gap: 14px;
-  padding: 18px 0 14px;
+  padding: 12px 0;
 }
 
 .hero-copy {
@@ -98,7 +98,7 @@ h2 {
 
 h1 {
   max-width: 780px;
-  font-size: clamp(3.1rem, 17vw, 7rem);
+  font-size: clamp(2.7rem, 16vw, 5.8rem);
   line-height: 0.88;
 }
 
@@ -123,8 +123,10 @@ h2 {
 }
 
 .hero-panel {
-  padding: 14px;
+  padding: 12px 0;
   box-shadow: var(--shadow);
+  border-width: 1px 0;
+  background: transparent;
 }
 
 .panel-kicker,
@@ -149,12 +151,16 @@ small {
 
 .planner {
   display: grid;
-  gap: 18px;
+  gap: 10px;
 }
 
 .input-panel,
 .result-panel {
-  padding: 16px;
+  padding: 14px;
+}
+
+.primary-panel {
+  position: relative;
 }
 
 .section-heading {
@@ -178,18 +184,24 @@ small {
   margin-top: 12px;
 }
 
-.preset-drawer {
+.preset-drawer,
+.options-drawer {
   margin: 12px 0 2px;
   border-top: 1px solid var(--border-soft);
   border-bottom: 1px solid var(--border-soft);
 }
 
-.preset-drawer > summary {
+.preset-drawer > summary,
+.options-drawer > summary {
   min-height: 44px;
   display: flex;
   align-items: center;
   color: var(--ink);
   cursor: pointer;
+}
+
+.options-drawer {
+  margin-top: 14px;
 }
 
 .preset-strip {
@@ -357,7 +369,7 @@ fieldset {
 }
 
 .result-panel {
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .summary-grid {
@@ -399,15 +411,6 @@ fieldset {
   padding: 12px;
   border: 1px solid var(--border);
   background: var(--surface-strong);
-}
-
-.status-strip {
-  display: grid;
-  gap: 6px;
-}
-
-.status-strip strong {
-  color: var(--success);
 }
 
 .meal-list {
@@ -475,19 +478,14 @@ fieldset {
 
 @media (min-width: 760px) {
   .app-shell {
-    padding: 34px 32px 80px;
+    padding: 28px 32px 80px;
   }
 
   .hero {
-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.65fr);
     align-items: end;
     gap: 36px;
     padding: 64px 0 34px;
-  }
-
-  .planner {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
   }
 
   .result-panel {
@@ -495,7 +493,6 @@ fieldset {
   }
 
   .bottom-action {
-    grid-column: 1 / -1;
     position: static;
     margin: 0;
     padding: 0;
