@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  calculateDailyPlanItemNutrition,
   generateMealPlan,
   getExchangeGroup,
   getExchangeOption,
@@ -160,13 +159,17 @@ const scenarioPresets: ScenarioPreset[] = [
 
 function App() {
   const [form, setForm] = useState<FormState>(initialState);
-  const [result, setResult] = useState<GenerateMealPlanResult>(() => generateFromState(initialState));
+  const [result, setResult] = useState<GenerateMealPlanResult>();
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const resultRef = useRef<HTMLElement>(null);
 
-  const evaluation = result.selected?.evaluation;
-  const statusText = result.selected
-    ? "Plan meets your active targets"
-    : "No plan satisfies every active target yet";
+  const evaluation = result?.selected?.evaluation;
+
+  useEffect(() => {
+    if (result) {
+      resultRef.current?.focus();
+    }
+  }, [result]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -175,6 +178,17 @@ function App() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setResult(generateFromState(form));
+  }
+
+  function updateDietaryLevel(level: DietaryLevel) {
+    setForm((current) => ({
+      ...current,
+      dietaryLevel: level,
+      preferredProtein:
+        level === "vegetarian" ? "paneer-50g" : level === "eggetarian" ? "two-whole-eggs" : "chicken-fish-100g",
+      avoidEggs: level === "vegetarian",
+      avoidChickenFish: level !== "nonVegetarian",
+    }));
   }
 
   function applyPreset(preset: ScenarioPreset) {
@@ -192,12 +206,6 @@ function App() {
             Build your day.
           </h1>
           <p>Calories, macros, food rules.</p>
-        </div>
-        <div className="hero-panel" aria-label="Generated plan preview">
-          <span className="panel-kicker">Preview</span>
-          <strong>{Math.round(evaluation?.totals.values.calories ?? 0)} kcal</strong>
-          <span>{Math.round(evaluation?.totals.values.protein ?? 0)}g protein</span>
-          <p>{statusText}</p>
         </div>
       </section>
 
@@ -232,7 +240,7 @@ function App() {
                   type="radio"
                   name="dietary"
                   checked={form.dietaryLevel === level}
-                  onChange={() => update("dietaryLevel", level)}
+                  onChange={() => updateDietaryLevel(level)}
                 />
                 <span>{dietLabel(level)}</span>
               </label>
@@ -241,6 +249,8 @@ function App() {
 
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>More options</summary>
+            <details className="nested-drawer">
+              <summary>Protein</summary>
             <label className="field">
               <span>Protein min</span>
               <input
@@ -251,6 +261,16 @@ function App() {
                 type="number"
               />
             </label>
+            <ChoiceGroup
+              legend="Protein"
+              options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))}
+              value={form.preferredProtein}
+              onChange={(value) => update("preferredProtein", value)}
+            />
+            </details>
+
+            <details className="nested-drawer">
+              <summary>Macros</summary>
             <div className="macro-grid">
               <MacroInput label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
               <MacroInput label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
@@ -261,29 +281,32 @@ function App() {
                 onChange={(value) => update("saturatedFat", value)}
               />
             </div>
+            </details>
+
+            <details className="nested-drawer">
+              <summary>Foods</summary>
             <ChoiceGroup
               legend="Grain"
               options={grainOptions}
               value={form.preferredGrain}
               onChange={(value) => update("preferredGrain", value)}
             />
-            <ChoiceGroup
-              legend="Protein"
-              options={proteinOptions}
-              value={form.preferredProtein}
-              onChange={(value) => update("preferredProtein", value)}
-            />
             <fieldset className="avoid-list">
               <legend>Avoid</legend>
               <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
               <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
-              <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />
-              <CheckChip
-                label="Chicken / fish"
-                checked={form.avoidChickenFish}
-                onChange={(checked) => update("avoidChickenFish", checked)}
-              />
+              {form.dietaryLevel !== "vegetarian" && (
+                <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />
+              )}
+              {form.dietaryLevel === "nonVegetarian" && (
+                <CheckChip
+                  label="Chicken / fish"
+                  checked={form.avoidChickenFish}
+                  onChange={(checked) => update("avoidChickenFish", checked)}
+                />
+              )}
             </fieldset>
+            </details>
             <details className="preset-drawer">
               <summary>Presets</summary>
               <div className="preset-strip" aria-label="Scenario presets">
@@ -304,12 +327,12 @@ function App() {
         </div>
       </form>
 
-      <section className="result-panel" aria-labelledby="result-title">
+      {result && (
+      <section className="result-panel" aria-labelledby="result-title" aria-live="polite" tabIndex={-1} ref={resultRef}>
         <div className="section-heading">
-          <span className="step-num">03</span>
           <div>
             <p className="eyebrow">Result</p>
-            <h2 id="result-title">{result.selected ? "Your generated day" : "Plan needs a small adjustment"}</h2>
+            <h2 id="result-title">{result.selected ? "Day" : "Adjust"}</h2>
           </div>
         </div>
 
@@ -324,7 +347,7 @@ function App() {
                 <details className="meal-card" key={meal.id} open={meal.id === "lunch"}>
                   <summary>
                     <span>{meal.displayName}</span>
-                    <small>{meal.patternId === "cooked-plate" ? "cooking fat · carb · protein · vegetables" : "snack"}</small>
+                    <small>{meal.items.length} items</small>
                   </summary>
                   <div className="meal-items">
                     {meal.items.map((item, index) => (
@@ -347,6 +370,7 @@ function App() {
           </div>
         )}
       </section>
+      )}
     </main>
   );
 }
@@ -449,19 +473,14 @@ function PlanItemRow({ item }: { item: NonNullable<GenerateMealPlanResult["selec
     item.kind === "food"
       ? `${item.quantity.amount} ${item.quantity.unit}`
       : `${item.exchangeUnits ?? 1} × ${getExchangeGroup(item.exchangeGroupId).exchangeUnit.displayName}`;
-  const nutrition = calculateDailyPlanItemNutrition(item);
 
   return (
     <div className="plan-row">
       <div>
         <strong>{label}</strong>
-        <span>{item.roles?.join(" · ") ?? "food"}</span>
       </div>
       <div>
         <span>{quantity}</span>
-        <small>
-          {Math.round(nutrition.calories ?? 0)} kcal · {Math.round(nutrition.protein ?? 0)}g protein
-        </small>
       </div>
     </div>
   );
@@ -524,6 +543,18 @@ function dietLabel(level: DietaryLevel) {
   }
 
   return level[0]!.toUpperCase() + level.slice(1);
+}
+
+function isProteinVisible(optionId: string, dietaryLevel: DietaryLevel) {
+  if (dietaryLevel === "vegetarian") {
+    return optionId !== "two-whole-eggs" && optionId !== "chicken-fish-100g";
+  }
+
+  if (dietaryLevel === "eggetarian") {
+    return optionId !== "chicken-fish-100g";
+  }
+
+  return true;
 }
 
 createRoot(document.getElementById("root")!).render(

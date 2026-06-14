@@ -204,6 +204,24 @@ small {
   margin-top: 14px;
 }
 
+.nested-drawer {
+  border-top: 1px solid var(--border-soft);
+}
+
+.nested-drawer > summary {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  color: var(--body);
+  cursor: pointer;
+}
+
+.nested-drawer > .field:first-of-type,
+.nested-drawer > .macro-grid:first-of-type,
+.nested-drawer > .choice-group:first-of-type {
+  margin-top: 4px;
+}
+
 .preset-strip {
   display: grid;
   grid-auto-flow: column;
@@ -328,6 +346,13 @@ fieldset {
   opacity: 0;
 }
 
+.segmented input:focus-visible + span,
+.choice-group input:focus-visible + span,
+.avoid-list input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
 .segmented span,
 .choice-group span,
 .avoid-list span {
@@ -370,6 +395,10 @@ fieldset {
 
 .result-panel {
   margin-top: 10px;
+}
+
+.result-panel:focus {
+  outline: none;
 }
 
 .summary-grid {
