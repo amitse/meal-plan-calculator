@@ -17,6 +17,13 @@ describe("plan export formatting", () => {
             foodItemId: "nuts",
             quantity: { amount: 15, unit: "g" },
           },
+          {
+            kind: "exchange",
+            id: "breakfast-carb",
+            exchangeGroupId: "grain",
+            exchangeOptionId: "cooked-rice",
+            exchangeUnits: 2,
+          },
         ],
       },
     ],
@@ -25,7 +32,7 @@ describe("plan export formatting", () => {
   it("exports CSV with item rows, meal totals, daily totals, and escaped cells", () => {
     const csv = planExportCsv(plan);
 
-    expect(csv).toContain("Meal,Item,Amount,Unit,Calories,Protein (g),Carbs (g),Fat (g),Fiber (g),Saturated fat (g)");
+    expect(csv).toContain("Meal,Item,Amount,Unit,Calories,Protein (gm),Carbs (gm),Fat (gm),Fiber (gm),Saturated fat (gm)");
     expect(csv).toContain("\"Breakfast, hot\"");
     expect(csv).toContain("Meal total");
     expect(csv).toContain("Daily total,\"A \"\"quoted\"\" plan\"");
@@ -35,7 +42,8 @@ describe("plan export formatting", () => {
     const tsv = planExportTsv(plan);
 
     expect(tsv).toContain("Meal\tItem\tAmount\tUnit");
-    expect(tsv).toContain("Breakfast, hot\tNuts\t15\tg");
+    expect(tsv).toContain("Breakfast, hot\tNuts\t15\tgm");
+    expect(tsv).toContain("Breakfast, hot\tCooked rice\t300\tgm");
   });
 
   it("exports an Excel-compatible HTML workbook", () => {

@@ -4,6 +4,7 @@ import {
   evaluateDailyPlan,
   generateDailyPlans,
   getExchangeGroup,
+  getExchangeOption,
   type DailyPlan,
   type DailyPlanItem,
   type DailyPlanTemplate,
@@ -49,6 +50,11 @@ export interface ShareablePlannerState {
   plan?: DailyPlan;
   lockedItemIds: string[];
   mealTargets: Record<string, MealMacroTarget>;
+}
+
+export interface DisplayQuantity {
+  amount: number;
+  unit: "g";
 }
 
 export const grainOptions = [
@@ -370,7 +376,18 @@ function scorePlanEvaluation(evaluation: PlanEvaluation) {
 }
 
 export function swapExchangeOption(plan: DailyPlan, itemId: string, optionId: string): DailyPlan {
-  return updatePlanItem(plan, itemId, (item) => (item.kind === "exchange" ? { ...item, exchangeOptionId: optionId } : item));
+  return updatePlanItem(plan, itemId, (item) => {
+    if (item.kind !== "exchange") {
+      return item;
+    }
+
+    const grams = exchangeItemGramAmount(item);
+    return {
+      ...item,
+      exchangeOptionId: optionId,
+      exchangeUnits: exchangeUnitsForGramAmount(item.exchangeGroupId, optionId, grams),
+    };
+  });
 }
 
 export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number): DailyPlan {
@@ -379,7 +396,7 @@ export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number
       return { ...item, quantity: { ...item.quantity, amount: roundFoodAmount(item, amount) } };
     }
 
-    return { ...item, exchangeUnits: roundServingUnits(amount) };
+    return { ...item, exchangeUnits: exchangeUnitsForGramAmount(item.exchangeGroupId, item.exchangeOptionId, roundGramAmount(amount)) };
   });
 }
 
@@ -439,6 +456,14 @@ export function addItemToMeal(plan: DailyPlan, mealId: string, groupId: "grain" 
     ...plan,
     meals: plan.meals.map((meal) => (meal.id === mealId ? { ...meal, items: [...meal.items, item] } : meal)),
   };
+}
+
+export function planItemDisplayQuantity(item: DailyPlanItem): DisplayQuantity {
+  if (item.kind === "food") {
+    return { amount: roundGramAmount(item.quantity.amount), unit: "g" };
+  }
+
+  return { amount: exchangeItemGramAmount(item), unit: "g" };
 }
 
 export function mealTargetStatus(plan: DailyPlan, mealId: string, target: MealMacroTarget) {
@@ -556,6 +581,41 @@ function updatePlanItem(plan: DailyPlan, itemId: string, update: (item: DailyPla
   };
 }
 
+function exchangeItemGramAmount(item: Extract<DailyPlanItem, { kind: "exchange" }>) {
+  const units = item.exchangeUnits ?? getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).exchangeUnits ?? 1;
+  return roundGramAmount(exchangeOptionGramAmount(item.exchangeGroupId, item.exchangeOptionId) * units);
+}
+
+function exchangeUnitsForGramAmount(groupId: string, optionId: string, amount: number) {
+  const gramsPerUnit = exchangeOptionGramAmount(groupId, optionId);
+  return gramsPerUnit > 0 ? Math.max(0, roundGramAmount(amount) / gramsPerUnit) : 0;
+}
+
+export function exchangeOptionGramAmount(groupId: string, optionId: string) {
+  const option = getExchangeOption(groupId, optionId);
+  const optionUnits = option.exchangeUnits ?? 1;
+
+  if (option.quantity.unit === "g") {
+    return option.quantity.amount / optionUnits;
+  }
+
+  const groupReference = getExchangeGroup(groupId).reference?.quantity;
+  if (groupReference?.unit === "g") {
+    return groupReference.amount;
+  }
+
+  const estimatedGrams = estimatedGramAmounts[optionId];
+  if (estimatedGrams) {
+    return estimatedGrams;
+  }
+
+  return option.quantity.amount;
+}
+
+const estimatedGramAmounts: Record<string, number> = {
+  "two-whole-eggs": 100,
+};
+
 function pickAllowedGrain(mealId: string, form: EditableFormState, seed: number) {
   const options = grainOptionsForMeal(mealId);
   const preferred = grainPreferences(form).filter((option) => options.includes(option));
@@ -658,11 +718,11 @@ const metricWeights: Record<NutritionMetric, number> = {
 };
 
 function formatAmount(value: number, metric: NutritionMetric) {
-  return `${Math.ceil(value)}${metric === "calories" ? " kcal" : "g"}`;
+  return `${Math.ceil(value)}${metric === "calories" ? " kcal" : "gm"}`;
 }
 
-function roundServingUnits(value: number) {
-  return Math.max(0, Math.round(value * 2) / 2);
+function roundGramAmount(value: number) {
+  return Math.max(0, Math.round(value));
 }
 
 function roundFoodAmount(item: DailyPlanItem, value: number) {

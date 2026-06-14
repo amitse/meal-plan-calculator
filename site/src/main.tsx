@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import {
   calculateDailyPlanItemNutrition,
   calculateMealTotals,
-  getExchangeGroup,
   getExchangeOption,
   getFoodItem,
   type DailyPlan,
@@ -16,6 +15,7 @@ import {
   buildNutritionInput,
   decodeShareState,
   encodeShareState,
+  exchangeOptionGramAmount,
   exchangeOptionsForItem,
   failureRecoveryMessages,
   generateEditablePlan,
@@ -23,6 +23,7 @@ import {
   initialFormState,
   mealTargetStatus,
   normalizeEditableFormState,
+  planItemDisplayQuantity,
   planEvaluation,
   proteinOptions,
   randomizePlan,
@@ -270,7 +271,7 @@ function App() {
               <input inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="25" type="number" />
             </label>
             <label className="field">
-              <span>Protein (g)</span>
+              <span>Protein (gm)</span>
               <input inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" step="5" type="number" />
             </label>
           </div>
@@ -374,7 +375,7 @@ function App() {
           )}
           <div className="summary-grid">
             <SummaryMetric label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
-            <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="g" />
+            <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
           </div>
           {recoveryMessages.length > 0 && (
             <div className="failure" role="alert" aria-label="Target recovery actions">
@@ -394,7 +395,7 @@ function App() {
                   <span className="meal-title">{meal.displayName}</span>
                   <span className="meal-summary">
                     <strong>{Math.round(mealTotals.values.calories)} kcal</strong>
-                    <small>{Math.round(mealTotals.values.protein)}g protein · {meal.items.length} items</small>
+                    <small>{Math.round(mealTotals.values.protein)}gm protein · {meal.items.length} items</small>
                   </span>
                 </summary>
                 <div className="meal-items">
@@ -558,8 +559,8 @@ function downloadTextFile(filename: string, type: string, contents: string) {
 }
 
 function amountStep(item: DailyPlanItem, unit: string) {
-  if (unit === "serving") {
-    return "0.5";
+  if (item.kind === "exchange") {
+    return "5";
   }
 
   if (item.kind === "food" && item.foodItemId === "veggies-excl-potato" && unit === "g") {
@@ -598,12 +599,9 @@ function PlanItemRow({
   onSwap: (optionId: string) => void;
 }) {
   const label = item.kind === "food" ? getFoodItem(item.foodItemId).displayName : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
-  const amount = item.kind === "food" ? item.quantity.amount : item.exchangeUnits ?? 1;
-  const unit = item.kind === "food" ? item.quantity.unit : "serving";
-  const compactUnitLabel = compactUnit(unit);
+  const quantity = planItemDisplayQuantity(item);
   const nutrition = calculateDailyPlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, dietaryLevel, mealId);
-  const servingDetail = item.kind === "exchange" ? exchangeServingDetail(item) : "";
 
   return (
     <div className="plan-row">
@@ -611,23 +609,22 @@ function PlanItemRow({
         <strong>{label}</strong>
         <small className="item-metrics">
           <span>{Math.round(nutrition.calories ?? 0)} kcal</span>
-          <span>{Math.round(nutrition.protein ?? 0)}g protein</span>
-          {servingDetail && <span>{servingDetail}</span>}
+          <span>{Math.round(nutrition.protein ?? 0)}gm protein</span>
         </small>
       </div>
       <div className={`item-actions ${item.kind === "exchange" ? "has-swap" : "no-swap"}`}>
         <label className="amount-control">
-          <span className="sr-only">Amount</span>
-          <input inputMode="decimal" value={amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={amountStep(item, unit)} type="number" />
+          <span className="sr-only">Amount in grams</span>
+          <input inputMode="numeric" value={quantity.amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={amountStep(item, quantity.unit)} type="number" />
         </label>
-        <span className="unit-label" title={unit}>{compactUnitLabel}</span>
+        <span className="unit-label" title="grams">gm</span>
         <button className="lock-toggle" type="button" aria-pressed={locked} onClick={onLock}>{locked ? "Unlock" : "Lock"}</button>
         <button className="delete-toggle" type="button" aria-label={`Delete ${label}`} onClick={onDelete}>Del</button>
         {item.kind === "exchange" && (
           <label className="swap-control">
             <span>Swap</span>
             <select className="swap-select" aria-label={`Swap ${label}`} value={item.exchangeOptionId} onChange={(event) => onSwap(event.target.value)}>
-              {exchangeOptions.map((option) => <option key={option.id} value={option.id}>{option.displayName}</option>)}
+              {exchangeOptions.map((option) => <option key={option.id} value={option.id}>{swapOptionLabel(item.exchangeGroupId, option.id, option.displayName)}</option>)}
             </select>
           </label>
         )}
@@ -636,24 +633,9 @@ function PlanItemRow({
   );
 }
 
-function exchangeServingDetail(item: Extract<DailyPlanItem, { kind: "exchange" }>) {
-  const option = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
-  return `1 serving = ${formatQuantity(option.quantity.amount, option.quantity.unit)}`;
-}
-
-function formatQuantity(amount: number, unit: string) {
-  if (unit === "g" || unit === "ml") {
-    return `${amount}${unit}`;
-  }
-
-  return `${amount} ${unit}${amount === 1 ? "" : "s"}`;
-}
-
-function compactUnit(unit: string) {
-  if (unit === "serving") return "srv";
-  if (unit === "tablespoon") return "tbsp";
-  if (unit === "teaspoon") return "tsp";
-  return unit;
+function swapOptionLabel(groupId: string, optionId: string, label: string) {
+  const grams = exchangeOptionGramAmount(groupId, optionId);
+  return /\d+\s*g(?:m)?\b/i.test(label) ? label.replace(/\bg\b/i, "gm") : `${label} (${grams}gm)`;
 }
 
 function loadStateFromUrl(): ShareablePlannerState | undefined {

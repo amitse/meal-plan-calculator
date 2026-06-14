@@ -10,6 +10,7 @@ import {
   grainOptions,
   initialFormState,
   mealTargetStatus,
+  planItemDisplayQuantity,
   planEvaluation,
   proteinOptions,
   randomizePlan,
@@ -42,7 +43,7 @@ describe("editable planner workflows", () => {
     expect(dinnerCarb && "allowedOptionIds" in dinnerCarb ? dinnerCarb.allowedOptionIds : []).not.toContain("raw-poha");
   });
 
-  it("always includes a dedicated fruit snack meal with one fruit serving", () => {
+  it("always includes a dedicated fruit snack meal with 100g fruit", () => {
     const template = buildDynamicTemplate(initialFormState, undefined, new Set(), 1);
     const fruitSnack = template.meals.find((meal) => meal.id === "fruit-snack");
 
@@ -84,40 +85,45 @@ describe("editable planner workflows", () => {
   it("supports swapping, deleting, quantity edits, adding meals, and adding items", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
     const swapped = swapExchangeOption(plan, "lunch-carb", "cooked-rice");
-    const edited = updateItemAmount(swapped, "lunch-carb", 2);
+    const edited = updateItemAmount(swapped, "lunch-carb", 300);
     const deleted = removePlanItem(edited, "lunch-carb");
     const withMeal = addMeal(edited);
     const withItem = addItemToMeal(withMeal, "meal-6", "fruit");
+    const lunchCarb = withItem.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb");
 
     expect(deleted.meals.find((meal) => meal.id === "lunch")?.items.some((item) => item.id === "lunch-carb")).toBe(false);
     expect(withItem.meals).toHaveLength(6);
-    expect(withItem.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb")).toMatchObject({
+    expect(lunchCarb).toMatchObject({
       kind: "exchange",
       exchangeOptionId: "cooked-rice",
       exchangeUnits: 2,
     });
+    expect(lunchCarb ? planItemDisplayQuantity(lunchCarb).amount : 0).toBe(300);
     expect(withItem.meals.find((meal) => meal.id === "meal-6")?.items.some((item) => item.kind === "exchange" && item.exchangeGroupId === "fruit")).toBe(true);
   });
 
-  it("rounds exchange serving edits to half servings", () => {
+  it("edits exchange items in grams", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
-    const edited = updateItemAmount(plan, "lunch-carb", 2.08);
+    const swapped = swapExchangeOption(plan, "lunch-carb", "raw-oats");
+    const edited = updateItemAmount(swapped, "lunch-carb", 125);
+    const lunchCarb = edited.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb");
 
-    expect(edited.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb")).toMatchObject({
+    expect(lunchCarb).toMatchObject({
       kind: "exchange",
-      exchangeUnits: 2,
+      exchangeUnits: 2.5,
     });
+    expect(lunchCarb ? planItemDisplayQuantity(lunchCarb).amount : 0).toBe(125);
   });
 
-  it("generates exchange servings in practical half-serving increments", () => {
+  it("generates exchange quantities as whole grams", () => {
     const plan = generateEditablePlan({ ...initialFormState, calories: "2450" }, undefined, new Set(), 4)!;
-    const exchangeUnits = plan.meals
+    const exchangeGrams = plan.meals
       .flatMap((meal) => meal.items)
       .filter((item) => item.kind === "exchange")
-      .map((item) => item.kind === "exchange" ? item.exchangeUnits ?? 1 : 1);
+      .map((item) => planItemDisplayQuantity(item).amount);
 
-    expect(exchangeUnits.length).toBeGreaterThan(0);
-    expect(exchangeUnits.every((units) => Number.isInteger(units * 2))).toBe(true);
+    expect(exchangeGrams.length).toBeGreaterThan(0);
+    expect(exchangeGrams.every((grams) => Number.isInteger(grams))).toBe(true);
   });
 
   it("rounds vegetable gram edits to 50g steps", () => {

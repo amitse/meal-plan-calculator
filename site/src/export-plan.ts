@@ -8,6 +8,7 @@ import {
   type DailyPlanItem,
   type NutritionFacts,
 } from "../../src/index.js";
+import { planItemDisplayQuantity } from "./editable-planner.js";
 
 const exportHeaders = [
   "Meal",
@@ -15,11 +16,11 @@ const exportHeaders = [
   "Amount",
   "Unit",
   "Calories",
-  "Protein (g)",
-  "Carbs (g)",
-  "Fat (g)",
-  "Fiber (g)",
-  "Saturated fat (g)",
+  "Protein (gm)",
+  "Carbs (gm)",
+  "Fat (gm)",
+  "Fiber (gm)",
+  "Saturated fat (gm)",
 ] as const;
 
 type ExportMetric = keyof NutritionFacts;
@@ -117,11 +118,8 @@ function planItemLabel(item: DailyPlanItem) {
 }
 
 function planItemAmount(item: DailyPlanItem) {
-  if (item.kind === "food") {
-    return { amount: item.quantity.amount, unit: item.quantity.unit };
-  }
-
-  return { amount: item.exchangeUnits ?? 1, unit: "serving" };
+  const quantity = planItemDisplayQuantity(item);
+  return { ...quantity, unit: "gm" };
 }
 
 function formatNumber(value: number | null | undefined) {
