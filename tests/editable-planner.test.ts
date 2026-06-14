@@ -99,6 +99,17 @@ describe("editable planner workflows", () => {
     });
   });
 
+  it("generates exchange servings in practical half-serving increments", () => {
+    const plan = generateEditablePlan({ ...initialFormState, calories: "2450" }, undefined, new Set(), 4)!;
+    const exchangeUnits = plan.meals
+      .flatMap((meal) => meal.items)
+      .filter((item) => item.kind === "exchange")
+      .map((item) => item.kind === "exchange" ? item.exchangeUnits ?? 1 : 1);
+
+    expect(exchangeUnits.length).toBeGreaterThan(0);
+    expect(exchangeUnits.every((units) => Number.isInteger(units * 2))).toBe(true);
+  });
+
   it("rounds vegetable gram edits to 50g steps", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
     const vegetable = plan.meals

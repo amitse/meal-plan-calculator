@@ -1103,12 +1103,11 @@ function adjustDailyPlanItem(item: DailyPlanItem, factor: number, data: MasterDa
   if (item.kind === "exchange") {
     const option = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId, data);
     const currentExchangeUnits = item.exchangeUnits ?? option.exchangeUnits ?? 1;
-    const currentAmount = option.quantity.amount * currentExchangeUnits;
-    const adjustedAmount = normalizeAmountByUnit(currentAmount, option.quantity.unit, factor);
+    const adjustedExchangeUnits = normalizeExchangeUnits(currentExchangeUnits, factor);
 
     return {
       ...item,
-      exchangeUnits: option.quantity.amount === 0 ? currentExchangeUnits : adjustedAmount / option.quantity.amount,
+      exchangeUnits: adjustedExchangeUnits,
     };
   }
 
@@ -1145,4 +1144,8 @@ function normalizeAmountByUnit(amount: number, unit: Quantity["unit"], factor: n
     case "ml":
       return Math.round(scaled);
   }
+}
+
+function normalizeExchangeUnits(exchangeUnits: number, factor: number): number {
+  return Math.max(0, Math.round(exchangeUnits * factor * 2) / 2);
 }

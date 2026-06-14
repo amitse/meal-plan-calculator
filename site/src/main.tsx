@@ -615,12 +615,13 @@ function PlanItemRow({
   const unit = item.kind === "food" ? item.quantity.unit : "serving";
   const nutrition = calculateDailyPlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, dietaryLevel, mealId);
+  const servingDetail = item.kind === "exchange" ? exchangeServingDetail(item) : "";
 
   return (
     <div className="plan-row">
       <div>
         <strong>{label}</strong>
-        <small>{Math.round(nutrition.calories ?? 0)} kcal · {Math.round(nutrition.protein ?? 0)}g</small>
+        <small>{Math.round(nutrition.calories ?? 0)} kcal · {Math.round(nutrition.protein ?? 0)}g{servingDetail ? ` · ${servingDetail}` : ""}</small>
       </div>
       <div className={`item-actions ${item.kind === "exchange" ? "has-swap" : "no-swap"}`}>
         <label>
@@ -637,6 +638,19 @@ function PlanItemRow({
       </div>
     </div>
   );
+}
+
+function exchangeServingDetail(item: Extract<DailyPlanItem, { kind: "exchange" }>) {
+  const option = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
+  return `1 serving = ${formatQuantity(option.quantity.amount, option.quantity.unit)}`;
+}
+
+function formatQuantity(amount: number, unit: string) {
+  if (unit === "g" || unit === "ml") {
+    return `${amount}${unit}`;
+  }
+
+  return `${amount} ${unit}${amount === 1 ? "" : "s"}`;
 }
 
 function loadStateFromUrl(): ShareablePlannerState | undefined {
