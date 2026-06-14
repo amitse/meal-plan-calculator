@@ -1,0 +1,1732 @@
+{
+  "version": "0.1.0",
+  "foods": [
+    {
+      "id": "soy-chunks",
+      "displayName": "Soy chunks",
+      "aliases": [
+        "soya chunks"
+      ],
+      "referenceQuantity": {
+        "amount": 35,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 18.2,
+        "carbs": 11.6,
+        "fat": 0.2,
+        "calories": 120.6,
+        "fiber": 4.55,
+        "saturatedFat": 0.0175
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 45,
+        "forQuantity": {
+          "amount": 220,
+          "unit": "g"
+        },
+        "proteinPer100": 52,
+        "totalProtein": 114.4,
+        "proteinPerCurrencyUnit": 2.54,
+        "proteinPer10CurrencyUnits": 25.42
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "milk",
+      "displayName": "Milk",
+      "referenceQuantity": {
+        "amount": 150,
+        "unit": "ml"
+      },
+      "nutrition": {
+        "protein": 4.8,
+        "carbs": 6.6,
+        "fat": 4.95,
+        "calories": 90.2,
+        "fiber": 0,
+        "saturatedFat": 2.97
+      },
+      "proteinQuality": "complete",
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "egg-whole",
+      "displayName": "Whole egg",
+      "aliases": [
+        "egg"
+      ],
+      "referenceQuantity": {
+        "amount": 2,
+        "unit": "count"
+      },
+      "nutrition": {
+        "protein": 12,
+        "carbs": 0,
+        "fat": 11,
+        "calories": 147,
+        "fiber": 0,
+        "saturatedFat": 3.3
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 130,
+        "forQuantity": {
+          "amount": 1500,
+          "unit": "g"
+        },
+        "proteinPer100": 12,
+        "totalProtein": 180,
+        "proteinPerCurrencyUnit": 1.38,
+        "proteinPer10CurrencyUnits": 13.85
+      },
+      "dietaryLevel": "eggetarian"
+    },
+    {
+      "id": "bread-slice",
+      "displayName": "Bread slice",
+      "referenceQuantity": {
+        "amount": 1,
+        "unit": "slice"
+      },
+      "nutrition": {
+        "protein": 2.4,
+        "carbs": 15,
+        "fat": 0.8,
+        "calories": 76.8,
+        "fiber": 2,
+        "saturatedFat": 0.24
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "curd",
+      "displayName": "Curd",
+      "aliases": [
+        "dahi"
+      ],
+      "referenceQuantity": {
+        "amount": 150,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 4.5,
+        "carbs": 6,
+        "fat": 5.3,
+        "calories": 89.3,
+        "fiber": 0,
+        "saturatedFat": 3.15
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 28,
+        "forQuantity": {
+          "amount": 400,
+          "unit": "g"
+        },
+        "proteinPer100": 3.7,
+        "totalProtein": 14.8,
+        "proteinPerCurrencyUnit": 0.53,
+        "proteinPer10CurrencyUnits": 5.29
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "oil-ghee",
+      "displayName": "Oil or ghee",
+      "aliases": [
+        "oil",
+        "ghee"
+      ],
+      "referenceQuantity": {
+        "amount": 10,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 0,
+        "carbs": 0,
+        "fat": 10,
+        "calories": 90,
+        "fiber": 0,
+        "saturatedFat": null
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "sugar",
+      "displayName": "Sugar",
+      "referenceQuantity": {
+        "amount": 10,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 0,
+        "carbs": 9.5,
+        "fat": 0,
+        "calories": 38,
+        "fiber": 0,
+        "saturatedFat": null
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "whey",
+      "displayName": "Whey protein",
+      "aliases": [
+        "whey"
+      ],
+      "referenceQuantity": {
+        "amount": 33,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 24.8,
+        "carbs": 2.3,
+        "fat": 1,
+        "calories": 117.2,
+        "fiber": 0,
+        "saturatedFat": 0.0693
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 1500,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 90,
+        "totalProtein": 900,
+        "proteinPerCurrencyUnit": 0.6,
+        "proteinPer10CurrencyUnits": 6
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "nuts",
+      "displayName": "Nuts",
+      "referenceQuantity": {
+        "amount": 15,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 3,
+        "carbs": 3.8,
+        "fat": 7.4,
+        "calories": 93.2,
+        "fiber": 1.35,
+        "saturatedFat": 0.5145
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "chia",
+      "displayName": "Chia",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 17,
+        "carbs": 42,
+        "fat": 35,
+        "calories": 551,
+        "fiber": 34,
+        "saturatedFat": 3.5
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "dried-fruit",
+      "displayName": "Dried fruit",
+      "referenceQuantity": {
+        "amount": 15,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 0.2,
+        "carbs": 10.1,
+        "fat": 0.3,
+        "calories": 43.5,
+        "fiber": 0.75,
+        "saturatedFat": 0.021
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "seeds",
+      "displayName": "Seeds",
+      "referenceQuantity": {
+        "amount": 15,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 2.7,
+        "carbs": 3.8,
+        "fat": 6.9,
+        "calories": 87.9,
+        "fiber": 1.5,
+        "saturatedFat": 0.483
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "paneer",
+      "displayName": "Paneer",
+      "referenceQuantity": {
+        "amount": 50,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 9,
+        "carbs": 0,
+        "fat": 11,
+        "calories": 135,
+        "fiber": 0,
+        "saturatedFat": 6.6
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 75,
+        "forQuantity": {
+          "amount": 200,
+          "unit": "g"
+        },
+        "proteinPer100": 19,
+        "totalProtein": 38,
+        "proteinPerCurrencyUnit": 0.51,
+        "proteinPer10CurrencyUnits": 5.07
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "sprout",
+      "displayName": "Sprout",
+      "aliases": [
+        "moong sprout"
+      ],
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 3,
+        "carbs": 18,
+        "fat": 0.5,
+        "calories": 88.5,
+        "fiber": 1.8,
+        "saturatedFat": 0.035
+      },
+      "cost": {
+        "currency": "INR",
+        "amount": 30,
+        "forQuantity": {
+          "amount": 120,
+          "unit": "g"
+        },
+        "proteinPer100": 3,
+        "totalProtein": 3.6,
+        "proteinPerCurrencyUnit": 0.12,
+        "proteinPer10CurrencyUnits": 1.2
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "khakhra",
+      "displayName": "Khakhra",
+      "referenceQuantity": {
+        "amount": 18,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 2.2,
+        "carbs": 13,
+        "fat": 2.3,
+        "calories": 81.5,
+        "fiber": 1.8,
+        "saturatedFat": 0.234
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "makhana",
+      "displayName": "Makhana",
+      "referenceQuantity": {
+        "amount": 30,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 4.2,
+        "carbs": 21.9,
+        "fat": 0.6,
+        "calories": 109.8,
+        "fiber": 3.9,
+        "saturatedFat": 0.06
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "biscuit-namkeen",
+      "displayName": "Biscuit or namkeen",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 7,
+        "carbs": 50,
+        "fat": 35,
+        "calories": 543,
+        "fiber": 2,
+        "saturatedFat": 14
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "peanut-butter",
+      "displayName": "Peanut butter",
+      "referenceQuantity": {
+        "amount": 20,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 4.4,
+        "carbs": 4.8,
+        "fat": 9.9,
+        "calories": 117.6,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 378,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 30,
+        "totalProtein": 300,
+        "proteinPerCurrencyUnit": 0.79,
+        "proteinPer10CurrencyUnits": 7.94
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "almond-milk",
+      "displayName": "Almond milk",
+      "referenceQuantity": {
+        "amount": 200,
+        "unit": "ml"
+      },
+      "nutrition": {
+        "protein": 0.8,
+        "carbs": 0.8,
+        "fat": 2,
+        "calories": 24.5,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "tofu",
+      "displayName": "Tofu",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 14.2,
+        "carbs": null,
+        "fat": null,
+        "calories": 130,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 70,
+        "forQuantity": {
+          "amount": 200,
+          "unit": "g"
+        },
+        "proteinPer100": 14.2,
+        "totalProtein": 28.4,
+        "proteinPerCurrencyUnit": 0.41,
+        "proteinPer10CurrencyUnits": 4.06
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "chicken-breast",
+      "displayName": "Chicken breast",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 22,
+        "carbs": 0,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 320,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 22,
+        "totalProtein": 220,
+        "proteinPerCurrencyUnit": 0.69,
+        "proteinPer10CurrencyUnits": 6.88
+      },
+      "dietaryLevel": "nonVegetarian"
+    },
+    {
+      "id": "rohu-fish",
+      "displayName": "Rohu fish",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 22,
+        "carbs": 0,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 300,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 22,
+        "totalProtein": 220,
+        "proteinPerCurrencyUnit": 0.73,
+        "proteinPer10CurrencyUnits": 7.33
+      },
+      "dietaryLevel": "nonVegetarian"
+    },
+    {
+      "id": "oats",
+      "displayName": "Oats",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 12.6,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 128,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 12.6,
+        "totalProtein": 126,
+        "proteinPerCurrencyUnit": 0.98,
+        "proteinPer10CurrencyUnits": 9.84
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "besan",
+      "displayName": "Besan",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 21,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 97,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 21,
+        "totalProtein": 210,
+        "proteinPerCurrencyUnit": 2.2,
+        "proteinPer10CurrencyUnits": 22
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "black-chana",
+      "displayName": "Black chana",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 18,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 110,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 18,
+        "totalProtein": 180,
+        "proteinPerCurrencyUnit": 1.64,
+        "proteinPer10CurrencyUnits": 16.36
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "rajma",
+      "displayName": "Rajma",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 24,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 150,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 24,
+        "totalProtein": 240,
+        "proteinPerCurrencyUnit": 1.6,
+        "proteinPer10CurrencyUnits": 16
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "toned-milk",
+      "displayName": "Toned milk",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "ml"
+      },
+      "nutrition": {
+        "protein": 3,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 23,
+        "forQuantity": {
+          "amount": 500,
+          "unit": "ml"
+        },
+        "proteinPer100": 3,
+        "totalProtein": 15,
+        "proteinPerCurrencyUnit": 0.65,
+        "proteinPer10CurrencyUnits": 6.52
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "green-moong-lentil",
+      "displayName": "Green moong lentil",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 24,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 130,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 24,
+        "totalProtein": 240,
+        "proteinPerCurrencyUnit": 1.85,
+        "proteinPer10CurrencyUnits": 18.46
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "lobia",
+      "displayName": "Lobia",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 24,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 150,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 24,
+        "totalProtein": 240,
+        "proteinPerCurrencyUnit": 1.6,
+        "proteinPer10CurrencyUnits": 16
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "peanuts",
+      "displayName": "Peanuts",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 25,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 165,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 25,
+        "totalProtein": 250,
+        "proteinPerCurrencyUnit": 1.52,
+        "proteinPer10CurrencyUnits": 15.15
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "dalia",
+      "displayName": "Dalia",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 9,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 60,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 9,
+        "totalProtein": 90,
+        "proteinPerCurrencyUnit": 1.5,
+        "proteinPer10CurrencyUnits": 15
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "kabuli-chana",
+      "displayName": "Kabuli chana",
+      "aliases": [
+        "chickpea"
+      ],
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 19,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 130,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 19,
+        "totalProtein": 190,
+        "proteinPerCurrencyUnit": 1.46,
+        "proteinPer10CurrencyUnits": 14.62
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "split-moong",
+      "displayName": "Split moong",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 22,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 159,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 22,
+        "totalProtein": 220,
+        "proteinPerCurrencyUnit": 1.38,
+        "proteinPer10CurrencyUnits": 13.84
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "roasted-chana",
+      "displayName": "Roasted chana",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 18,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 178,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 18,
+        "totalProtein": 180,
+        "proteinPerCurrencyUnit": 1.01,
+        "proteinPer10CurrencyUnits": 10.11
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "sattu",
+      "displayName": "Sattu",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 20,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 199,
+        "forQuantity": {
+          "amount": 1000,
+          "unit": "g"
+        },
+        "proteinPer100": 20,
+        "totalProtein": 200,
+        "proteinPerCurrencyUnit": 1.01,
+        "proteinPer10CurrencyUnits": 10.05
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "flax-seeds",
+      "displayName": "Flax seeds",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 20,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "incomplete",
+      "cost": {
+        "currency": "INR",
+        "amount": 28,
+        "forQuantity": {
+          "amount": 100,
+          "unit": "g"
+        },
+        "proteinPer100": 20,
+        "totalProtein": 20,
+        "proteinPerCurrencyUnit": 0.71,
+        "proteinPer10CurrencyUnits": 7.14
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "high-protein-peanut-butter",
+      "displayName": "High protein peanut butter",
+      "referenceQuantity": {
+        "amount": 100,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 35,
+        "carbs": null,
+        "fat": null,
+        "calories": null,
+        "fiber": null,
+        "saturatedFat": null
+      },
+      "proteinQuality": "complete",
+      "cost": {
+        "currency": "INR",
+        "amount": 275,
+        "forQuantity": {
+          "amount": 510,
+          "unit": "g"
+        },
+        "proteinPer100": 35,
+        "totalProtein": 178.5,
+        "proteinPerCurrencyUnit": 0.65,
+        "proteinPer10CurrencyUnits": 6.49
+      },
+      "dietaryLevel": "vegetarian"
+    },
+    {
+      "id": "veggies-excl-potato",
+      "displayName": "Veggies excluding potato",
+      "aliases": [
+        "veggies",
+        "vegetables"
+      ],
+      "referenceQuantity": {
+        "amount": 120,
+        "unit": "g"
+      },
+      "nutrition": {
+        "protein": 1.2,
+        "carbs": 14.4,
+        "fat": 0.4,
+        "calories": 65.6,
+        "fiber": 2.4,
+        "saturatedFat": null
+      },
+      "dietaryLevel": "vegetarian"
+    }
+  ],
+  "exchangeGroups": [
+    {
+      "id": "grain",
+      "displayName": "Any grain",
+      "aliases": [
+        "rice",
+        "wheat",
+        "oats",
+        "ragi",
+        "poha",
+        "rawa",
+        "pasta"
+      ],
+      "exchangeUnit": {
+        "id": "grain-serving",
+        "displayName": "1 grain serving",
+        "note": "Based on the provided 50g raw grain equivalence."
+      },
+      "reference": {
+        "quantity": {
+          "amount": 50,
+          "unit": "g",
+          "note": "Raw grain reference serving"
+        },
+        "nutrition": {
+          "protein": 6,
+          "carbs": 35,
+          "fat": 1,
+          "calories": 173,
+          "fiber": 6.5,
+          "saturatedFat": 0.1
+        }
+      },
+      "options": [
+        {
+          "id": "raw-rice",
+          "displayName": "Rice",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "raw-wheat",
+          "displayName": "Wheat",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "raw-oats",
+          "displayName": "Oats",
+          "foodItemId": "oats",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw"
+        },
+        {
+          "id": "raw-ragi",
+          "displayName": "Ragi",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "raw-poha",
+          "displayName": "Poha",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "raw-rawa",
+          "displayName": "Rawa",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "raw-pasta",
+          "displayName": "Pasta",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "dosa",
+          "displayName": "Dosa",
+          "quantity": {
+            "amount": 2,
+            "unit": "count"
+          },
+          "foodForm": "prepared",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "bread",
+          "displayName": "Bread",
+          "foodItemId": "bread-slice",
+          "quantity": {
+            "amount": 60,
+            "unit": "g"
+          },
+          "foodForm": "packaged"
+        },
+        {
+          "id": "cooked-rice",
+          "displayName": "Cooked rice",
+          "quantity": {
+            "amount": 150,
+            "maxAmount": 180,
+            "unit": "g"
+          },
+          "foodForm": "cooked",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "roti",
+          "displayName": "Roti",
+          "quantity": {
+            "amount": 2,
+            "unit": "count",
+            "note": "Medium rotis"
+          },
+          "foodForm": "prepared",
+          "dietaryLevel": "vegetarian"
+        }
+      ]
+    },
+    {
+      "id": "fruit",
+      "displayName": "Fruit",
+      "exchangeUnit": {
+        "id": "banana-equivalent",
+        "displayName": "100g banana equivalent"
+      },
+      "reference": {
+        "quantity": {
+          "amount": 100,
+          "unit": "g",
+          "note": "Banana-equivalent fruit reference"
+        },
+        "nutrition": {
+          "protein": 1,
+          "carbs": 22,
+          "fat": 0.1,
+          "calories": 92.9,
+          "fiber": 2,
+          "saturatedFat": 0
+        }
+      },
+      "options": [
+        {
+          "id": "banana",
+          "displayName": "Banana",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "strawberries",
+          "displayName": "Strawberries",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "pomegranate",
+          "displayName": "Pomegranate",
+          "quantity": {
+            "amount": 120,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "blueberries",
+          "displayName": "Blueberries",
+          "quantity": {
+            "amount": 150,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "mango",
+          "displayName": "Mango",
+          "quantity": {
+            "amount": 150,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "pears",
+          "displayName": "Pears",
+          "quantity": {
+            "amount": 170,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "apple",
+          "displayName": "Apple",
+          "quantity": {
+            "amount": 180,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "guava",
+          "displayName": "Guava",
+          "quantity": {
+            "amount": 200,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "pineapple",
+          "displayName": "Pineapple",
+          "quantity": {
+            "amount": 200,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "oranges",
+          "displayName": "Oranges",
+          "quantity": {
+            "amount": 220,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "kiwi",
+          "displayName": "Kiwi",
+          "quantity": {
+            "amount": 250,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "watermelon",
+          "displayName": "Watermelon",
+          "quantity": {
+            "amount": 300,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "papaya",
+          "displayName": "Papaya",
+          "quantity": {
+            "amount": 300,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "muskmelon",
+          "displayName": "Muskmelon",
+          "quantity": {
+            "amount": 350,
+            "unit": "g"
+          },
+          "exchangeUnits": 1,
+          "dietaryLevel": "vegetarian"
+        }
+      ]
+    },
+    {
+      "id": "legume",
+      "displayName": "Legume",
+      "exchangeUnit": {
+        "id": "raw-legume-serving",
+        "displayName": "50g raw legume equivalent"
+      },
+      "reference": {
+        "quantity": {
+          "amount": 50,
+          "unit": "g",
+          "note": "Raw legume reference serving"
+        },
+        "nutrition": {
+          "protein": 10,
+          "carbs": 32.5,
+          "fat": 2.5,
+          "calories": 192.5,
+          "fiber": 5,
+          "saturatedFat": 0.25
+        }
+      },
+      "options": [
+        {
+          "id": "raw-legume",
+          "displayName": "Raw legume",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "foodForm": "raw",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "cooked-yellow-dhal",
+          "displayName": "Cooked yellow dhal",
+          "quantity": {
+            "amount": 150,
+            "unit": "g"
+          },
+          "foodForm": "cooked",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "cooked-green-dhal",
+          "displayName": "Cooked green dhal",
+          "quantity": {
+            "amount": 150,
+            "unit": "g"
+          },
+          "foodForm": "cooked",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "cooked-black-channa",
+          "displayName": "Cooked black channa",
+          "foodItemId": "black-chana",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "foodForm": "cooked"
+        },
+        {
+          "id": "cooked-white-channa",
+          "displayName": "Cooked white channa",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "foodForm": "cooked",
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "cooked-rajma",
+          "displayName": "Cooked rajma",
+          "foodItemId": "rajma",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "foodForm": "cooked"
+        }
+      ]
+    },
+    {
+      "id": "dairy-nut",
+      "displayName": "Almond, milk, and curd equivalent",
+      "exchangeUnit": {
+        "id": "almond-equivalent",
+        "displayName": "10g almond equivalent"
+      },
+      "options": [
+        {
+          "id": "almonds",
+          "displayName": "Almonds",
+          "quantity": {
+            "amount": 10,
+            "unit": "g"
+          },
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "milk",
+          "displayName": "Milk",
+          "foodItemId": "milk",
+          "quantity": {
+            "amount": 100,
+            "unit": "ml"
+          }
+        },
+        {
+          "id": "curd",
+          "displayName": "Curd",
+          "foodItemId": "curd",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          }
+        }
+      ]
+    },
+    {
+      "id": "milk-alternative",
+      "displayName": "Milk alternative",
+      "exchangeUnit": {
+        "id": "cow-milk-100ml-equivalent",
+        "displayName": "100ml cow milk equivalent"
+      },
+      "options": [
+        {
+          "id": "cow-milk",
+          "displayName": "Cow milk",
+          "foodItemId": "milk",
+          "quantity": {
+            "amount": 100,
+            "unit": "ml"
+          }
+        },
+        {
+          "id": "soya-milk",
+          "displayName": "Soya milk",
+          "quantity": {
+            "amount": 200,
+            "unit": "ml"
+          },
+          "dietaryLevel": "vegetarian"
+        },
+        {
+          "id": "almond-milk",
+          "displayName": "Almond milk",
+          "foodItemId": "almond-milk",
+          "quantity": {
+            "amount": 200,
+            "unit": "ml"
+          }
+        }
+      ]
+    },
+    {
+      "id": "protein-serving",
+      "displayName": "Protein replacement options",
+      "exchangeUnit": {
+        "id": "protein-serving",
+        "displayName": "Dietitian protein serving"
+      },
+      "options": [
+        {
+          "id": "whey-30g",
+          "displayName": "30g whey",
+          "foodItemId": "whey",
+          "quantity": {
+            "amount": 30,
+            "unit": "g"
+          },
+          "nutritionOverride": {
+            "protein": 21,
+            "carbs": null,
+            "fat": null,
+            "calories": 120,
+            "fiber": null,
+            "saturatedFat": null
+          }
+        },
+        {
+          "id": "tofu-100g",
+          "displayName": "100g tofu",
+          "foodItemId": "tofu",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "nutritionOverride": {
+            "protein": 14,
+            "carbs": null,
+            "fat": null,
+            "calories": 130,
+            "fiber": null,
+            "saturatedFat": null
+          }
+        },
+        {
+          "id": "paneer-50g",
+          "displayName": "50g paneer",
+          "foodItemId": "paneer",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          },
+          "nutritionOverride": {
+            "protein": 11,
+            "carbs": null,
+            "fat": null,
+            "calories": 130,
+            "fiber": null,
+            "saturatedFat": null
+          }
+        },
+        {
+          "id": "soy-chunks-dal-40g",
+          "displayName": "40g soy chunks/dal",
+          "foodItemId": "soy-chunks",
+          "quantity": {
+            "amount": 40,
+            "unit": "g"
+          },
+          "nutritionOverride": {
+            "protein": 17,
+            "carbs": null,
+            "fat": null,
+            "calories": 130,
+            "fiber": null,
+            "saturatedFat": null
+          }
+        },
+        {
+          "id": "chicken-fish-100g",
+          "displayName": "100g chicken/fish",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "nutritionOverride": {
+            "protein": 25,
+            "carbs": null,
+            "fat": null,
+            "calories": 150,
+            "fiber": null,
+            "saturatedFat": null
+          },
+          "dietaryLevel": "nonVegetarian"
+        },
+        {
+          "id": "two-whole-eggs",
+          "displayName": "2 whole eggs",
+          "foodItemId": "egg-whole",
+          "quantity": {
+            "amount": 2,
+            "unit": "count"
+          },
+          "nutritionOverride": {
+            "protein": 12,
+            "carbs": null,
+            "fat": null,
+            "calories": 150,
+            "fiber": null,
+            "saturatedFat": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "egg-paneer-cheese",
+      "displayName": "Egg, paneer, and cheese equivalent",
+      "exchangeUnit": {
+        "id": "one-egg-equivalent",
+        "displayName": "1 egg equivalent"
+      },
+      "options": [
+        {
+          "id": "one-egg",
+          "displayName": "1 egg",
+          "foodItemId": "egg-whole",
+          "quantity": {
+            "amount": 1,
+            "unit": "count"
+          }
+        },
+        {
+          "id": "paneer-25g",
+          "displayName": "25g paneer",
+          "foodItemId": "paneer",
+          "quantity": {
+            "amount": 25,
+            "unit": "g"
+          }
+        },
+        {
+          "id": "cheese-20g",
+          "displayName": "20g cheese",
+          "quantity": {
+            "amount": 20,
+            "unit": "g"
+          },
+          "dietaryLevel": "vegetarian"
+        }
+      ]
+    },
+    {
+      "id": "lean-protein",
+      "displayName": "Soya, chicken, and fish equivalent",
+      "exchangeUnit": {
+        "id": "lean-protein-equivalent",
+        "displayName": "50g soya chunks equivalent"
+      },
+      "options": [
+        {
+          "id": "soy-chunks-50g",
+          "displayName": "50g soya chunks",
+          "foodItemId": "soy-chunks",
+          "quantity": {
+            "amount": 50,
+            "unit": "g"
+          }
+        },
+        {
+          "id": "chicken-100g",
+          "displayName": "100g chicken",
+          "foodItemId": "chicken-breast",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          }
+        },
+        {
+          "id": "fish-120g",
+          "displayName": "120g fish",
+          "foodItemId": "rohu-fish",
+          "quantity": {
+            "amount": 120,
+            "unit": "g"
+          }
+        }
+      ]
+    }
+  ],
+  "referenceFormulas": [
+    {
+      "id": "protein-intake-multipliers",
+      "displayName": "Protein intake multipliers",
+      "kind": "protein-intake",
+      "sourceUrl": "https://www.ajmc.com/view/chapter-2-clinical-nutrition-guideline-for-overweight-and-obese-adults-with-type-2-diabetes-t2d-or-prediabetes-or-those-at-high-risk-for-developing-t2d",
+      "values": [
+        {
+          "id": "protein-1-0",
+          "label": "1.0 multiplier",
+          "multiplier": 1,
+          "rangeGrams": 20,
+          "perMealApproxGrams": 5
+        },
+        {
+          "id": "protein-1-2",
+          "label": "1.2 multiplier",
+          "multiplier": 1.2,
+          "rangeGrams": 24,
+          "perMealApproxGrams": 6
+        },
+        {
+          "id": "protein-1-5",
+          "label": "1.5 multiplier",
+          "multiplier": 1.5,
+          "rangeGrams": 31,
+          "perMealApproxGrams": 8
+        },
+        {
+          "id": "protein-1-8",
+          "label": "1.8 multiplier",
+          "multiplier": 1.8,
+          "rangeGrams": 37,
+          "perMealApproxGrams": 9
+        }
+      ],
+      "note": "Provided reference included body weight 81.4 and adjusted weight 20.35; formulas are optional target-suggestion data."
+    },
+    {
+      "id": "physical-activity-multipliers",
+      "displayName": "Physical activity multipliers",
+      "kind": "activity-multiplier",
+      "values": [
+        {
+          "id": "no-activity",
+          "label": "No activity",
+          "multiplier": 1.1
+        },
+        {
+          "id": "sedentary",
+          "label": "Sedentary",
+          "multiplier": 1.2
+        },
+        {
+          "id": "light-activity",
+          "label": "Light activity, 1-3 days",
+          "multiplier": 1.375
+        },
+        {
+          "id": "moderate-activity",
+          "label": "Moderate activity, 3-5 days",
+          "multiplier": 1.55
+        },
+        {
+          "id": "very-active",
+          "label": "Very active, 6-7 days",
+          "multiplier": 1.725
+        }
+      ]
+    }
+  ]
+}

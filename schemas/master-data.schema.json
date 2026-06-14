@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/meal-plan-calculator/master-data.schema.json",
+  "title": "Meal Plan Calculator MasterData",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "foods", "exchangeGroups", "referenceFormulas"],
+  "properties": {
+    "version": { "type": "string" },
+    "foods": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/foodItem" }
+    },
+    "exchangeGroups": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/exchangeGroup" }
+    },
+    "referenceFormulas": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/referenceFormula" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "unit"],
+      "properties": {
+        "amount": { "type": "number" },
+        "maxAmount": { "type": "number" },
+        "unit": {
+          "type": "string",
+          "enum": ["g", "ml", "count", "slice", "scoop", "serving"]
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "nutritionFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protein", "carbs", "fat", "calories", "fiber", "saturatedFat"],
+      "properties": {
+        "protein": { "$ref": "#/$defs/nutritionValue" },
+        "carbs": { "$ref": "#/$defs/nutritionValue" },
+        "fat": { "$ref": "#/$defs/nutritionValue" },
+        "calories": { "$ref": "#/$defs/nutritionValue" },
+        "fiber": { "$ref": "#/$defs/nutritionValue" },
+        "saturatedFat": { "$ref": "#/$defs/nutritionValue" }
+      }
+    },
+    "nutritionValue": {
+      "type": ["number", "null"]
+    },
+    "dietaryLevel": {
+      "type": "string",
+      "enum": ["vegetarian", "eggetarian", "nonVegetarian"]
+    },
+    "foodCost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "amount", "forQuantity"],
+      "properties": {
+        "currency": { "type": "string", "enum": ["INR"] },
+        "amount": { "type": "number" },
+        "forQuantity": { "$ref": "#/$defs/quantity" },
+        "proteinPer100": { "type": ["number", "null"] },
+        "totalProtein": { "type": ["number", "null"] },
+        "proteinPerCurrencyUnit": { "type": ["number", "null"] },
+        "proteinPer10CurrencyUnits": { "type": ["number", "null"] }
+      }
+    },
+    "foodItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "referenceQuantity", "nutrition", "dietaryLevel"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "displayName": { "type": "string" },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "referenceQuantity": { "$ref": "#/$defs/quantity" },
+        "nutrition": { "$ref": "#/$defs/nutritionFacts" },
+        "dietaryLevel": { "$ref": "#/$defs/dietaryLevel" },
+        "proteinQuality": {
+          "type": "string",
+          "enum": ["complete", "incomplete"]
+        },
+        "cost": { "$ref": "#/$defs/foodCost" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "exchangeReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quantity": { "$ref": "#/$defs/quantity" },
+        "nutrition": { "$ref": "#/$defs/nutritionFacts" },
+        "foodItemId": { "$ref": "#/$defs/id" },
+        "note": { "type": "string" }
+      }
+    },
+    "exchangeGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "exchangeUnit", "options"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "displayName": { "type": "string" },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "exchangeUnit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "displayName"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "displayName": { "type": "string" },
+            "note": { "type": "string" }
+          }
+        },
+        "reference": { "$ref": "#/$defs/exchangeReference" },
+        "options": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/exchangeOption" }
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "exchangeOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "quantity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "displayName": { "type": "string" },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "foodItemId": { "$ref": "#/$defs/id" },
+        "dietaryLevel": { "$ref": "#/$defs/dietaryLevel" },
+        "quantity": { "$ref": "#/$defs/quantity" },
+        "exchangeUnits": { "type": "number" },
+        "foodForm": {
+          "type": "string",
+          "enum": ["raw", "cooked", "prepared", "packaged"]
+        },
+        "nutritionOverride": { "$ref": "#/$defs/nutritionFacts" },
+        "note": { "type": "string" }
+      }
+    },
+    "referenceFormula": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "kind", "values"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "displayName": { "type": "string" },
+        "kind": { "type": "string" },
+        "sourceUrl": { "type": "string" },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "type": "string" }
+            }
+          }
+        },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

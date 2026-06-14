@@ -1,0 +1,3 @@
+# Three-layer planner architecture
+
+The nutrition planning calculator will use three layers: schema-defined **MasterData**, a UI-free library that performs calculation/evaluation and **PlanGenerator** logic, and a later static website UI that consumes the library. We are not creating a separate calculator-core layer because the calculation and generation behavior should evolve together over the same domain model before the UI exists. **PlanGenerator** will generate candidate **DailyPlans** by resolving **DailyPlanTemplates** and adjusting quantities against constraints such as calories and minimum protein; it will not invent arbitrary meals from scratch, and quantity adjustment will respect unit discreteness rather than per-item min/max rules initially.
