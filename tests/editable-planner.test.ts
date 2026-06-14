@@ -78,6 +78,31 @@ describe("editable planner workflows", () => {
     });
   });
 
+  it("rounds vegetable gram edits to 50g steps", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const vegetable = plan.meals
+      .flatMap((meal) => meal.items)
+      .find((item) => item.kind === "food" && item.foodItemId === "veggies-excl-potato");
+    const edited = updateItemAmount(plan, vegetable?.id ?? "", 312);
+
+    expect(edited.meals.flatMap((meal) => meal.items).find((item) => item.id === vegetable?.id)).toMatchObject({
+      kind: "food",
+      foodItemId: "veggies-excl-potato",
+      quantity: { amount: 300, unit: "g" },
+    });
+  });
+
+  it("generates vegetable amounts in 50g steps", () => {
+    const plan = generateEditablePlan({ ...initialFormState, calories: "2600" }, undefined, new Set(), 4)!;
+    const vegetableAmounts = plan.meals
+      .flatMap((meal) => meal.items)
+      .filter((item) => item.kind === "food" && item.foodItemId === "veggies-excl-potato")
+      .map((item) => item.kind === "food" ? item.quantity.amount : 0);
+
+    expect(vegetableAmounts.length).toBeGreaterThan(0);
+    expect(vegetableAmounts.every((amount) => amount % 50 === 0)).toBe(true);
+  });
+
   it("evaluates meal-specific macro targets and roundtrips share state", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 5)!;
     const mealTargets = { lunch: { protein: "10", calories: "500" } };

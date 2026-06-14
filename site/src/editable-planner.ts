@@ -323,7 +323,7 @@ export function swapExchangeOption(plan: DailyPlan, itemId: string, optionId: st
 export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number): DailyPlan {
   return updatePlanItem(plan, itemId, (item) => {
     if (item.kind === "food") {
-      return { ...item, quantity: { ...item.quantity, amount } };
+      return { ...item, quantity: { ...item.quantity, amount: roundFoodAmount(item, amount) } };
     }
 
     return { ...item, exchangeUnits: roundServingUnits(amount) };
@@ -566,6 +566,14 @@ function formatAmount(value: number, metric: NutritionMetric) {
 
 function roundServingUnits(value: number) {
   return Math.max(0, Math.round(value * 2) / 2);
+}
+
+function roundFoodAmount(item: DailyPlanItem, value: number) {
+  if (item.kind === "food" && item.foodItemId === "veggies-excl-potato" && item.quantity.unit === "g") {
+    return Math.max(0, Math.round(value / 50) * 50);
+  }
+
+  return value;
 }
 
 function recoveryAction(metric: NutritionMetric, direction: "min" | "max") {

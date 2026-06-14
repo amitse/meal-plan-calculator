@@ -941,9 +941,19 @@ function adjustDailyPlanItem(item: DailyPlanItem, factor: number, data: MasterDa
     ...item,
     quantity: {
       ...item.quantity,
-      amount: normalizeAmountByUnit(item.quantity.amount, item.quantity.unit, factor),
+      amount: normalizeFoodAmount(item, factor),
     },
   };
+}
+
+function normalizeFoodAmount(item: FoodPortion, factor: number): number {
+  const scaled = item.quantity.amount * factor;
+
+  if (item.foodItemId === "veggies-excl-potato" && item.quantity.unit === "g") {
+    return Math.max(0, Math.round(scaled / 50) * 50);
+  }
+
+  return normalizeAmountByUnit(item.quantity.amount, item.quantity.unit, factor);
 }
 
 function normalizeAmountByUnit(amount: number, unit: Quantity["unit"], factor: number): number {

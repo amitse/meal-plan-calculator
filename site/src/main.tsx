@@ -350,6 +350,18 @@ function macroLabel(label: string, field: MacroField) {
   return field.mode === "none" || value === "" ? undefined : `${label} ${field.mode} ${value}g`;
 }
 
+function amountStep(item: DailyPlanItem, unit: string) {
+  if (unit === "serving") {
+    return "0.5";
+  }
+
+  if (item.kind === "food" && item.foodItemId === "veggies-excl-potato" && unit === "g") {
+    return "50";
+  }
+
+  return "1";
+}
+
 function SummaryMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {
   return (
     <div className="metric">
@@ -389,7 +401,7 @@ function PlanItemRow({
       <div className="item-actions">
         <label>
           <span className="sr-only">Amount</span>
-          <input inputMode="decimal" value={amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={unit === "serving" ? "0.5" : "1"} type="number" />
+          <input inputMode="decimal" value={amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={amountStep(item, unit)} type="number" />
         </label>
         <span>{unit}</span>
         {item.kind === "exchange" && (
