@@ -64,6 +64,7 @@ function App() {
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState("");
+  const [generationError, setGenerationError] = useState("");
   const resultRef = useRef<HTMLElement>(null);
 
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
@@ -78,6 +79,7 @@ function App() {
   }, [plan]);
 
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
+    setGenerationError("");
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -85,7 +87,10 @@ function App() {
     const next = generateEditablePlan(form, plan, lockedIds, seed);
 
     if (next) {
+      setGenerationError("");
       setPlan(next);
+    } else {
+      setGenerationError("No plan matched these targets. Relax a macro or food rule, then generate again.");
     }
   }
 
@@ -95,6 +100,7 @@ function App() {
   }
 
   function updateDietaryLevel(level: DietaryLevel) {
+    setGenerationError("");
     setForm((current) => ({
       ...current,
       dietaryLevel: level,
@@ -110,6 +116,7 @@ function App() {
     const next = generateEditablePlan(preset.state, undefined, new Set(), Date.now());
     setLockedIds(new Set());
     setMealTargets({});
+    setGenerationError("");
     setPlan(next);
   }
 
@@ -216,6 +223,7 @@ function App() {
               {activeCustomizationChips.map((label) => <span key={label}>{label}</span>)}
             </div>
           )}
+          {generationError && <p className="generation-feedback" role="alert">{generationError}</p>}
         </section>
 
         <div className="bottom-action">
