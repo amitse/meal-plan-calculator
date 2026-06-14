@@ -195,10 +195,16 @@ function App() {
           </fieldset>
 
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
-            <summary>Customize</summary>
+            <summary>
+              <span>Customize</span>
+              <span className="drawer-summary">{activeCustomizationChips.length > 0 ? `${activeCustomizationChips.length} active` : "Food, macros, presets"}</span>
+            </summary>
 
             <details className="nested-drawer">
-              <summary>Food</summary>
+              <summary>
+                <span>Food</span>
+                <span className="drawer-summary">{foodDrawerSummary(form)}</span>
+              </summary>
               <ChoiceGroup legend="Protein" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} value={form.preferredProtein} onChange={(value) => update("preferredProtein", value)} />
               <ChoiceGroup legend="Grain" options={grainOptions} value={form.preferredGrain} onChange={(value) => update("preferredGrain", value)} />
               <fieldset className="avoid-list">
@@ -211,7 +217,10 @@ function App() {
             </details>
 
             <details className="nested-drawer">
-              <summary>Macros</summary>
+              <summary>
+                <span>Macros</span>
+                <span className="drawer-summary">{macroDrawerSummary(form)}</span>
+              </summary>
               <div className="macro-grid">
                 <MacroInput label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
                 <MacroInput label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
@@ -221,7 +230,10 @@ function App() {
             </details>
 
             <details className="nested-drawer">
-              <summary>Presets</summary>
+              <summary>
+                <span>Presets</span>
+                <span className="drawer-summary">Quick starts</span>
+              </summary>
               <div className="preset-strip" aria-label="Scenario presets">
                 {scenarioPresets.map((preset) => (
                   <button key={preset.id} type="button" onClick={() => applyPreset(preset)}><span>{preset.label}</span></button>
@@ -276,11 +288,17 @@ function App() {
             </div>
           )}
           <div className="meal-list">
-            {plan.meals.map((meal) => (
+            {plan.meals.map((meal) => {
+              const mealTotals = calculateMealTotals(meal);
+              const status = mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {});
+              return (
               <details className="meal-card" key={meal.id}>
                 <summary>
-                  <span>{meal.displayName}</span>
-                  <small>{meal.items.length} items</small>
+                  <span className="meal-title">{meal.displayName}</span>
+                  <span className="meal-summary">
+                    <strong>{Math.round(mealTotals.values.calories)} kcal</strong>
+                    <small>{Math.round(mealTotals.values.protein)}g protein · {meal.items.length} items</small>
+                  </span>
                 </summary>
                 <div className="meal-items">
                   {meal.items.map((item, index) => (
@@ -296,7 +314,10 @@ function App() {
                   ))}
                 </div>
                 <details className="meal-tools">
-                  <summary>Meal tools</summary>
+                  <summary>
+                    <span>Meal tools</span>
+                    <span className="drawer-summary">{status.length > 0 ? status.join(" · ") : "Targets + add items"}</span>
+                  </summary>
                   <div className="meal-targets">
                     <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} min="0" max="5000" step="25" type="number" /></label>
                     <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} min="0" step="5" type="number" /></label>
@@ -304,10 +325,11 @@ function App() {
                     <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "protein-serving"))}>Add protein</button>
                     <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "grain"))}>Add grain</button>
                   </div>
-                  <div className="meal-status">{mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {}).join(" · ")}</div>
+                  <div className="meal-status">{status.join(" · ")}</div>
                 </details>
               </details>
-            ))}
+            );
+            })}
           </div>
           <button className="secondary-action" type="button" onClick={() => setPlan(addMeal(plan))}>Add meal</button>
         </section>
@@ -381,6 +403,30 @@ function foodPreferenceLabel(prefix: string, options: { id: string; label: strin
 function macroLabel(label: string, field: MacroField) {
   const value = field.value.trim();
   return field.mode === "none" || value === "" ? undefined : `${label} ${field.mode} ${value}g`;
+}
+
+function foodDrawerSummary(form: EditableFormState) {
+  const protein = proteinOptions.find((option) => option.id === form.preferredProtein)?.label;
+  const grain = grainOptions.find((option) => option.id === form.preferredGrain)?.label;
+  const avoids = [
+    form.avoidPaneer ? "paneer" : undefined,
+    form.avoidWhey ? "whey" : undefined,
+    form.dietaryLevel !== "vegetarian" && form.avoidEggs ? "eggs" : undefined,
+    form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish ? "chicken/fish" : undefined,
+  ].filter(Boolean);
+
+  return `${protein ?? "Protein"} · ${grain ?? "grain"}${avoids.length > 0 ? ` · avoids ${avoids.join(", ")}` : ""}`;
+}
+
+function macroDrawerSummary(form: EditableFormState) {
+  const activeMacros = [
+    macroLabel("Carbs", form.carbs),
+    macroLabel("Fat", form.fat),
+    macroLabel("Fiber", form.fiber),
+    macroLabel("Saturated fat", form.saturatedFat),
+  ].filter(Boolean);
+
+  return activeMacros.length > 0 ? `${activeMacros.length} active` : "Optional limits";
 }
 
 function amountStep(item: DailyPlanItem, unit: string) {

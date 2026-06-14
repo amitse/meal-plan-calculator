@@ -271,6 +271,7 @@ small {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   color: var(--ink);
   cursor: pointer;
   line-height: 1;
@@ -334,10 +335,24 @@ small {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   color: var(--body);
   font-weight: 500;
   cursor: pointer;
   line-height: 1;
+}
+
+.drawer-summary {
+  min-width: 0;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nested-drawer > .field:first-of-type,
@@ -666,18 +681,45 @@ fieldset {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--space-sm);
-  align-items: baseline;
+  align-items: center;
   padding: var(--space-lg) 0 var(--space-md);
   cursor: pointer;
 }
 
-.meal-card > summary span {
+.meal-title {
   color: var(--ink);
   font-family: var(--serif);
   font-size: 1.55rem;
   font-weight: 300;
   letter-spacing: -0.01em;
   line-height: 1;
+}
+
+.meal-summary {
+  display: grid;
+  gap: 2px;
+  min-width: 92px;
+  text-align: right;
+}
+
+.meal-summary strong,
+.meal-summary small {
+  display: block;
+  font-family: var(--sans);
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.meal-summary strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.meal-summary small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 500;
 }
 
 .meal-card[open] > summary {
@@ -701,6 +743,7 @@ fieldset {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   line-height: 1;
 }
 
