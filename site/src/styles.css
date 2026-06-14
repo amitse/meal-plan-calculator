@@ -196,6 +196,22 @@ small {
   margin-top: 14px;
 }
 
+.customization-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.customization-chips span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--body);
+  padding: 7px 10px;
+  font-size: 0.86rem;
+}
+
 .nested-drawer {
   border-top: 1px solid var(--border-soft);
 }

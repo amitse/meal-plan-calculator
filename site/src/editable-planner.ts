@@ -211,6 +211,43 @@ export function randomizePlan(
   mealId?: string,
   seed = Date.now(),
 ): DailyPlan {
+  const attempts = mealId ? 32 : 48;
+  let bestPlan = plan;
+  let bestScore = scorePlanEvaluation(planEvaluation(plan, form));
+  const originalSerialized = JSON.stringify(plan);
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const candidateSeed = seed + attempt * 17;
+    const candidate =
+      mealId === undefined
+        ? restoreLockedItems(generateEditablePlan(form, plan, lockedItemIds, candidateSeed), plan, lockedItemIds)
+        : randomizePlanItems(plan, form, lockedItemIds, mealId, candidateSeed);
+
+    if (!candidate) {
+      continue;
+    }
+
+    const candidateScore = scorePlanEvaluation(planEvaluation(candidate, form));
+    const candidateSerialized = JSON.stringify(candidate);
+    if (
+      candidateScore < bestScore ||
+      (candidateScore === bestScore && candidateSerialized !== originalSerialized)
+    ) {
+      bestPlan = candidate;
+      bestScore = candidateScore;
+    }
+  }
+
+  return bestPlan;
+}
+
+function randomizePlanItems(
+  plan: DailyPlan,
+  form: EditableFormState,
+  lockedItemIds: ReadonlySet<string>,
+  mealId: string | undefined,
+  seed: number,
+): DailyPlan {
   return {
     ...plan,
     meals: plan.meals.map((meal, mealIndex) => {
@@ -245,6 +282,38 @@ export function randomizePlan(
       };
     }),
   };
+}
+
+function restoreLockedItems(
+  candidate: DailyPlan | undefined,
+  original: DailyPlan,
+  lockedItemIds: ReadonlySet<string>,
+): DailyPlan | undefined {
+  if (!candidate || lockedItemIds.size === 0) {
+    return candidate;
+  }
+
+  const lockedItemsById = new Map(
+    original.meals.flatMap((meal) => meal.items.filter((item) => item.id && lockedItemIds.has(item.id)).map((item) => [item.id, item])),
+  );
+
+  return {
+    ...candidate,
+    meals: candidate.meals.map((meal) => ({
+      ...meal,
+      items: meal.items.map((item) => (item.id && lockedItemsById.has(item.id) ? lockedItemsById.get(item.id)! : item)),
+    })),
+  };
+}
+
+function scorePlanEvaluation(evaluation: PlanEvaluation) {
+  const targetScore = evaluation.targetBounds.reduce((score, bound) => {
+    const miss = bound.shortfall ?? bound.excess ?? 0;
+    return score + (bound.status === "fail" ? 1_000 : 0) + miss * metricWeights[bound.bound.metric];
+  }, 0);
+  const mealPenalty = evaluation.meals.filter((meal) => meal.status === "fail").length * 250;
+
+  return (evaluation.status === "pass" ? 0 : 10_000) + targetScore + mealPenalty;
 }
 
 export function swapExchangeOption(plan: DailyPlan, itemId: string, optionId: string): DailyPlan {
@@ -480,6 +549,15 @@ const metricLabels: Record<NutritionMetric, string> = {
   fat: "Fat",
   fiber: "Fiber",
   saturatedFat: "Saturated fat",
+};
+
+const metricWeights: Record<NutritionMetric, number> = {
+  calories: 0.2,
+  protein: 8,
+  carbs: 2,
+  fat: 4,
+  fiber: 6,
+  saturatedFat: 6,
 };
 
 function formatAmount(value: number, metric: NutritionMetric) {

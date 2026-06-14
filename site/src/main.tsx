@@ -68,6 +68,7 @@ function App() {
 
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
+  const activeCustomizationChips = useMemo(() => activeCustomizationLabels(form), [form]);
 
   useEffect(() => {
     if (plan) {
@@ -149,11 +150,11 @@ function App() {
           <div className="quick-fields">
             <label className="field calorie-field">
               <span>Calories (kcal)</span>
-              <input inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="4000" type="number" />
+              <input inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="25" type="number" />
             </label>
             <label className="field">
               <span>Protein (g)</span>
-              <input inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" type="number" />
+              <input inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" step="5" type="number" />
             </label>
           </div>
 
@@ -208,6 +209,12 @@ function App() {
               </div>
             </details>
           </details>
+
+          {activeCustomizationChips.length > 0 && (
+            <div className="customization-chips" aria-label="Active customizations">
+              {activeCustomizationChips.map((label) => <span key={label}>{label}</span>)}
+            </div>
+          )}
         </section>
 
         <div className="bottom-action">
@@ -243,8 +250,8 @@ function App() {
                   <small>{meal.items.length} items</small>
                 </summary>
                 <div className="meal-targets">
-                  <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} /></label>
-                  <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} /></label>
+                  <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} min="0" max="5000" step="25" type="number" /></label>
+                  <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} min="0" step="5" type="number" /></label>
                   <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds, meal.id))}>Randomize meal</button>
                   <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "protein-serving"))}>Add protein</button>
                   <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "grain"))}>Add grain</button>
@@ -311,6 +318,33 @@ function CheckChip({ label, checked, onChange }: { label: string; checked: boole
       <span>{label}</span>
     </label>
   );
+}
+
+function activeCustomizationLabels(form: EditableFormState) {
+  const labels = [
+    foodPreferenceLabel("Prefer", grainOptions, form.preferredGrain),
+    foodPreferenceLabel("Prefer", proteinOptions, form.preferredProtein),
+    form.avoidPaneer ? "Avoid paneer" : undefined,
+    form.avoidWhey ? "Avoid whey" : undefined,
+    form.dietaryLevel !== "vegetarian" && form.avoidEggs ? "Avoid eggs" : undefined,
+    form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish ? "Avoid chicken / fish" : undefined,
+    macroLabel("Carbs", form.carbs),
+    macroLabel("Fat", form.fat),
+    macroLabel("Fiber", form.fiber),
+    macroLabel("Saturated fat", form.saturatedFat),
+  ];
+
+  return labels.filter((label): label is string => Boolean(label));
+}
+
+function foodPreferenceLabel(prefix: string, options: { id: string; label: string }[], value: string) {
+  const option = options.find((item) => item.id === value);
+  return option ? `${prefix} ${option.label.toLocaleLowerCase()}` : undefined;
+}
+
+function macroLabel(label: string, field: MacroField) {
+  const value = field.value.trim();
+  return field.mode === "none" || value === "" ? undefined : `${label} ${field.mode} ${value}g`;
 }
 
 function SummaryMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {

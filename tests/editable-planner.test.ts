@@ -45,6 +45,13 @@ describe("editable planner workflows", () => {
     expect(after).toEqual(lockedItem);
   });
 
+  it("randomizes whole plans toward passing target evaluations", () => {
+    const plan = updateItemAmount(generateEditablePlan(initialFormState, undefined, new Set(), 4)!, "lunch-carb", 12);
+    const randomized = randomizePlan(plan, initialFormState, new Set(), undefined, 101);
+
+    expect(planEvaluation(randomized, initialFormState).status).toBe("pass");
+  });
+
   it("supports swapping, quantity edits, adding meals, and adding items", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
     const swapped = swapExchangeOption(plan, "lunch-carb", "cooked-rice");
