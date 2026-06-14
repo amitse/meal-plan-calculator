@@ -68,6 +68,16 @@ describe("editable planner workflows", () => {
     expect(withItem.meals.find((meal) => meal.id === "meal-5")?.items.some((item) => item.kind === "exchange" && item.exchangeGroupId === "fruit")).toBe(true);
   });
 
+  it("rounds exchange serving edits to half servings", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const edited = updateItemAmount(plan, "lunch-carb", 2.08);
+
+    expect(edited.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb")).toMatchObject({
+      kind: "exchange",
+      exchangeUnits: 2,
+    });
+  });
+
   it("evaluates meal-specific macro targets and roundtrips share state", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 5)!;
     const mealTargets = { lunch: { protein: "10", calories: "500" } };

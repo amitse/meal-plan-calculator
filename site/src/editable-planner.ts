@@ -326,7 +326,7 @@ export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number
       return { ...item, quantity: { ...item.quantity, amount } };
     }
 
-    return { ...item, exchangeUnits: amount };
+    return { ...item, exchangeUnits: roundServingUnits(amount) };
   });
 }
 
@@ -562,6 +562,10 @@ const metricWeights: Record<NutritionMetric, number> = {
 
 function formatAmount(value: number, metric: NutritionMetric) {
   return `${Math.ceil(value)}${metric === "calories" ? " kcal" : "g"}`;
+}
+
+function roundServingUnits(value: number) {
+  return Math.max(0, Math.round(value * 2) / 2);
 }
 
 function recoveryAction(metric: NutritionMetric, direction: "min" | "max") {

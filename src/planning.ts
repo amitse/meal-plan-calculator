@@ -955,7 +955,7 @@ function normalizeAmountByUnit(amount: number, unit: Quantity["unit"], factor: n
     case "scoop":
       return Math.max(0, Math.round(scaled));
     case "serving":
-      return Math.round(scaled * 4) / 4;
+      return Math.round(scaled * 2) / 2;
     case "g":
     case "ml":
       return Math.round(scaled);

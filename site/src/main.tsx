@@ -389,7 +389,7 @@ function PlanItemRow({
       <div className="item-actions">
         <label>
           <span className="sr-only">Amount</span>
-          <input inputMode="decimal" value={amount} onChange={(event) => onAmount(Number(event.target.value || 0))} type="number" />
+          <input inputMode="decimal" value={amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={unit === "serving" ? "0.5" : "1"} type="number" />
         </label>
         <span>{unit}</span>
         {item.kind === "exchange" && (
