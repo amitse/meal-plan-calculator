@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Meal Plan Calculator">
+  <rect width="1200" height="630" fill="#15110d"/>
+  <circle cx="1010" cy="70" r="310" fill="#d2a057" opacity=".18"/>
+  <circle cx="95" cy="210" r="230" fill="#5a4631" opacity=".32"/>
+  <rect x="92" y="82" width="1016" height="466" rx="42" fill="#211a13" stroke="#5a4631" stroke-width="2"/>
+  <text x="140" y="188" fill="#d2a057" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="6">INDIAN MACRO PLANNER</text>
+  <text x="140" y="310" fill="#f7f0e6" font-family="Georgia, serif" font-size="88">Build a day that</text>
+  <text x="140" y="405" fill="#f7f0e6" font-family="Georgia, serif" font-size="88">fits your target.</text>
+  <text x="146" y="480" fill="#d2c2ae" font-family="Arial, sans-serif" font-size="32">Practical meals, rounded servings, tight protein bands.</text>
+  <rect x="820" y="184" width="192" height="260" rx="96" fill="#f7f0e6"/>
+  <path d="M878 272h76M878 318h50M878 364h66" stroke="#15110d" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="966" cy="318" r="24" fill="#d2a057"/>
+</svg>
