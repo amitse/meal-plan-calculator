@@ -75,7 +75,7 @@ The source site uses:
 
 - Calories is required and visually dominant.
 - Optional macros live in an expandable section: protein, carbs, fat, fiber, saturated fat.
-- Protein input defaults to minimum semantics.
+- Protein input defaults to target-band semantics: a number means approximately +/- 5g.
 - Carbs and fat may be ranges or target bands.
 - Inline helper text should explain whether a number means minimum, maximum, or target.
 

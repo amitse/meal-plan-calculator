@@ -17,7 +17,7 @@ These workflows translate the existing library stories into mobile-first UI beha
 
 1. User enters calories.
 2. User expands optional macros.
-3. User enters protein minimum.
+3. User enters a protein target; plain numbers mean approximately +/- 5g.
 4. User optionally enters carb/fat/fiber/saturated-fat bounds.
 5. App shows each bound as a chip before generation.
 6. App calls `generateMealPlan(...)`.
@@ -94,4 +94,3 @@ These workflows translate the existing library stories into mobile-first UI beha
 - Avoid a desktop-like top nav on mobile.
 - Bottom action bar persists on input and result screens.
 - Secondary actions sit as text links above the bottom bar.
-

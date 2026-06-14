@@ -140,7 +140,9 @@ export function generateEditablePlan(
     maxCandidates: 120,
   });
 
-  return result.candidates.find((candidate) => candidate.evaluation?.status === "pass")?.plan ?? result.candidates[0]?.plan;
+  const passingCandidates = result.candidates.filter((candidate) => candidate.evaluation?.status === "pass");
+
+  return passingCandidates[pickIndex(passingCandidates.length, seed)]?.plan ?? result.candidates[0]?.plan;
 }
 
 export function buildDynamicTemplate(

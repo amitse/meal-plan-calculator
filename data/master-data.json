@@ -533,11 +533,11 @@
       },
       "nutrition": {
         "protein": 12.6,
-        "carbs": null,
-        "fat": null,
-        "calories": null,
-        "fiber": null,
-        "saturatedFat": null
+        "carbs": 66.3,
+        "fat": 6.9,
+        "calories": 389,
+        "fiber": 10.6,
+        "saturatedFat": 1.22
       },
       "proteinQuality": "incomplete",
       "cost": {

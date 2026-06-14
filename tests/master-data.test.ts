@@ -5,6 +5,7 @@ import {
   assertMasterDataIntegrity,
   assertMasterDataReferences,
   assertUniqueMasterDataIds,
+  calculateExchangeSelectionNutrition,
   getExchangeGroup,
   getExchangeOption,
   getFoodItem,
@@ -125,6 +126,20 @@ describe("MasterData read API", () => {
       maxAmount: 180,
       unit: "g",
     });
+  });
+
+  it("calculates raw oats exchange nutrition from known food facts", () => {
+    const oats = calculateExchangeSelectionNutrition({
+      kind: "exchange",
+      exchangeGroupId: "grain",
+      exchangeOptionId: "raw-oats",
+      exchangeUnits: 1,
+    });
+
+    expect(oats.calories).toBeCloseTo(194.5);
+    expect(oats.carbs).toBeCloseTo(33.15);
+    expect(oats.fat).toBeCloseTo(3.45);
+    expect(oats.fiber).toBeCloseTo(5.3);
   });
 
   it("reads optional ReferenceFormula data", () => {

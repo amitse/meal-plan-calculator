@@ -113,7 +113,7 @@ describe("documented user stories and workflows", () => {
 
     expect(result.rejected).toEqual([]);
     expect(result.target.bounds).toContainEqual(expect.objectContaining({ metric: "calories", target: 2000 }));
-    expect(result.target.bounds).toContainEqual(expect.objectContaining({ metric: "protein", min: 75 }));
+    expect(result.target.bounds).toContainEqual(expect.objectContaining({ metric: "protein", target: 75, tolerance: 5 }));
     expect(result.selected?.plan.meals.map((meal) => meal.id)).toEqual(["breakfast", "lunch", "snack", "dinner"]);
     expect(result.selected?.evaluation?.status).toBe("pass");
   });

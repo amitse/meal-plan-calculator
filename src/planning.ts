@@ -150,7 +150,7 @@ export function createNutritionTarget(input: NutritionTargetInput): NutritionTar
     displayName: input.displayName,
     bounds: [
       createCalorieBound(input.calories, input.calorieTolerance),
-      createOptionalMacroBound("protein", input.protein, "min", input.macroTolerance),
+      createOptionalMacroBound("protein", input.protein, "target", input.macroTolerance ?? 5),
       createOptionalMacroBound("carbs", input.carbs, "target", input.macroTolerance),
       createOptionalMacroBound("fat", input.fat, "target", input.macroTolerance),
       createOptionalMacroBound("fiber", input.fiber, "min", input.macroTolerance),
@@ -600,53 +600,180 @@ export function adjustDailyPlanToTarget(
 ): DailyPlan {
   let adjustedPlan = plan;
   const calorieBound = target.bounds.find((bound) => bound.metric === "calories" && bound.target !== undefined);
+  const proteinBound = target.bounds.find((bound) => bound.metric === "protein");
 
-  if (calorieBound?.target) {
-    const totals = calculateDailyPlanTotals(adjustedPlan, data);
-    const currentCalories = totals.values.calories;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    adjustedPlan = adjustPlanCalories(adjustedPlan, calorieBound, data, proteinBound !== undefined);
+    adjustedPlan = adjustPlanProtein(adjustedPlan, proteinBound, data);
 
-    if (currentCalories > 0) {
-      const min = calorieBound.target - (calorieBound.tolerance ?? 0);
-      const max = calorieBound.target + (calorieBound.tolerance ?? 0);
-
-      if (currentCalories < min || currentCalories > max) {
-        const calorieSplit = calculateAdjustableMetricSplit(adjustedPlan, "calories", data);
-        const factor =
-          calorieSplit.adjustable > 0
-            ? (calorieBound.target - calorieSplit.fixed) / calorieSplit.adjustable
-            : calorieBound.target / currentCalories;
-
-        adjustedPlan = adjustAllDailyPlanItems(adjustedPlan, factor, data);
-      }
-    }
-  }
-
-  const proteinBound = target.bounds.find((bound) => bound.metric === "protein" && bound.min !== undefined);
-
-  if (proteinBound?.min !== undefined) {
-    const totals = calculateDailyPlanTotals(adjustedPlan, data);
-    const currentProtein = totals.values.protein;
-
-    if (currentProtein < proteinBound.min) {
-      const bestProteinItem = findBestAdjustableProteinItem(adjustedPlan, data);
-
-      if (bestProteinItem && bestProteinItem.protein > 0) {
-        const targetProteinForItem = bestProteinItem.protein + (proteinBound.min - currentProtein);
-        adjustedPlan = adjustOneDailyPlanItem(
-          adjustedPlan,
-          bestProteinItem.mealIndex,
-          bestProteinItem.itemIndex,
-          targetProteinForItem / bestProteinItem.protein,
-          data,
-        );
-      }
+    if (evaluateDailyPlan(adjustedPlan, target, data).status === "pass") {
+      return adjustedPlan;
     }
   }
 
   return adjustedPlan;
 }
 
-function calculateAdjustableMetricSplit(plan: DailyPlan, metric: NutritionMetric, data: MasterData) {
+function adjustPlanCalories(
+  plan: DailyPlan,
+  calorieBound: TargetBound | undefined,
+  data: MasterData,
+  preserveProteinItems = false,
+): DailyPlan {
+  if (!calorieBound?.target) {
+    return plan;
+  }
+
+  let adjustedPlan = plan;
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const totals = calculateDailyPlanTotals(adjustedPlan, data);
+    const currentCalories = totals.values.calories;
+
+    if (currentCalories <= 0) {
+      return adjustedPlan;
+    }
+
+    if (targetBoundPasses(calorieBound, currentCalories)) {
+      return adjustedPlan;
+    }
+
+    const canAdjust = preserveProteinItems ? (item: DailyPlanItem) => !isProteinItem(item) : undefined;
+    let calorieSplit = calculateAdjustableMetricSplit(adjustedPlan, "calories", data, canAdjust);
+    let adjustItems = canAdjust;
+    if (calorieSplit.adjustable <= 0 && canAdjust) {
+      calorieSplit = calculateAdjustableMetricSplit(adjustedPlan, "calories", data);
+      adjustItems = undefined;
+    }
+    const factor =
+      calorieSplit.adjustable > 0
+        ? (calorieBound.target - calorieSplit.fixed) / calorieSplit.adjustable
+        : calorieBound.target / currentCalories;
+    const scaledPlan = adjustAllDailyPlanItems(adjustedPlan, factor, data, adjustItems);
+    const nudgedPlan = nudgeBestAdjustableCalorieItem(
+      scaledPlan,
+      calorieBound,
+      data,
+      adjustItems,
+    );
+    const nextPlan = betterCaloriePlan(adjustedPlan, betterCaloriePlan(scaledPlan, nudgedPlan, calorieBound, data), calorieBound, data);
+
+    if (nextPlan === adjustedPlan) {
+      return adjustedPlan;
+    }
+
+    adjustedPlan = nextPlan;
+  }
+
+  return adjustedPlan;
+}
+
+function targetBoundPasses(bound: TargetBound, value: number): boolean {
+  const min = bound.min ?? (bound.target !== undefined ? bound.target - (bound.tolerance ?? 0) : undefined);
+  const max = bound.max ?? (bound.target !== undefined ? bound.target + (bound.tolerance ?? 0) : undefined);
+
+  return (min === undefined || value >= min) && (max === undefined || value <= max);
+}
+
+function calorieDistance(plan: DailyPlan, bound: TargetBound, data: MasterData): number {
+  const value = calculateDailyPlanTotals(plan, data).values.calories;
+  const min = bound.min ?? (bound.target !== undefined ? bound.target - (bound.tolerance ?? 0) : undefined);
+  const max = bound.max ?? (bound.target !== undefined ? bound.target + (bound.tolerance ?? 0) : undefined);
+
+  if (min !== undefined && value < min) {
+    return min - value;
+  }
+
+  if (max !== undefined && value > max) {
+    return value - max;
+  }
+
+  return 0;
+}
+
+function betterCaloriePlan(left: DailyPlan, right: DailyPlan, bound: TargetBound, data: MasterData): DailyPlan {
+  return calorieDistance(right, bound, data) < calorieDistance(left, bound, data) ? right : left;
+}
+
+function nudgeBestAdjustableCalorieItem(
+  plan: DailyPlan,
+  bound: TargetBound,
+  data: MasterData,
+  canAdjust: ((item: DailyPlanItem) => boolean) | undefined,
+): DailyPlan {
+  const totals = calculateDailyPlanTotals(plan, data);
+  const value = totals.values.calories;
+  const min = bound.min ?? (bound.target !== undefined ? bound.target - (bound.tolerance ?? 0) : undefined);
+  const max = bound.max ?? (bound.target !== undefined ? bound.target + (bound.tolerance ?? 0) : undefined);
+  const difference = min !== undefined && value < min ? min - value : max !== undefined && value > max ? max - value : 0;
+
+  if (difference === 0) {
+    return plan;
+  }
+
+  const bestItem = findBestAdjustableCalorieItem(plan, data, canAdjust);
+  if (!bestItem || bestItem.calories <= 0) {
+    return plan;
+  }
+
+  return adjustOneDailyPlanItem(
+    plan,
+    bestItem.mealIndex,
+    bestItem.itemIndex,
+    Math.max(0, (bestItem.calories + difference) / bestItem.calories),
+    data,
+  );
+}
+
+function adjustPlanProtein(
+  plan: DailyPlan,
+  proteinBound: TargetBound | undefined,
+  data: MasterData,
+): DailyPlan {
+  if (!proteinBound) {
+    return plan;
+  }
+
+  let adjustedPlan = plan;
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const totals = calculateDailyPlanTotals(adjustedPlan, data);
+    const currentProtein = totals.values.protein;
+    const min = proteinBound.min ?? (proteinBound.target !== undefined ? proteinBound.target - (proteinBound.tolerance ?? 0) : undefined);
+    const max = proteinBound.max ?? (proteinBound.target !== undefined ? proteinBound.target + (proteinBound.tolerance ?? 0) : undefined);
+
+    if ((min === undefined || currentProtein >= min) && (max === undefined || currentProtein <= max)) {
+      return adjustedPlan;
+    }
+
+    const bestProteinItem = findBestAdjustableProteinItem(adjustedPlan, data);
+    if (!bestProteinItem || bestProteinItem.protein <= 0) {
+      return adjustedPlan;
+    }
+
+    const targetProteinForItem =
+      min !== undefined && currentProtein < min
+        ? bestProteinItem.protein + (min - currentProtein)
+        : Math.max(0, bestProteinItem.protein - (currentProtein - (max ?? currentProtein)));
+
+    adjustedPlan = adjustOneDailyPlanItem(
+      adjustedPlan,
+      bestProteinItem.mealIndex,
+      bestProteinItem.itemIndex,
+      targetProteinForItem / bestProteinItem.protein,
+      data,
+    );
+  }
+
+  return adjustedPlan;
+}
+
+function calculateAdjustableMetricSplit(
+  plan: DailyPlan,
+  metric: NutritionMetric,
+  data: MasterData,
+  canAdjust: ((item: DailyPlanItem) => boolean) | undefined = undefined,
+) {
   let fixed = 0;
   let adjustable = 0;
 
@@ -658,7 +785,7 @@ function calculateAdjustableMetricSplit(plan: DailyPlan, metric: NutritionMetric
         continue;
       }
 
-      if (item.adjustable === false) {
+      if (item.adjustable === false || (canAdjust && !canAdjust(item))) {
         fixed += value;
       } else {
         adjustable += value;
@@ -857,14 +984,23 @@ function buildSelectionCombinations(
   return combinations.slice(0, maxCandidates);
 }
 
-function adjustAllDailyPlanItems(plan: DailyPlan, factor: number, data: MasterData): DailyPlan {
+function adjustAllDailyPlanItems(
+  plan: DailyPlan,
+  factor: number,
+  data: MasterData,
+  canAdjust: ((item: DailyPlanItem) => boolean) | undefined = undefined,
+): DailyPlan {
   return {
     ...plan,
     meals: plan.meals.map((meal) => ({
       ...meal,
-      items: meal.items.map((item) => adjustDailyPlanItem(item, factor, data)),
+      items: meal.items.map((item) => (canAdjust && !canAdjust(item) ? item : adjustDailyPlanItem(item, factor, data))),
     })),
   };
+}
+
+function isProteinItem(item: DailyPlanItem): boolean {
+  return item.roles?.includes("protein") || (item.kind === "exchange" && item.exchangeGroupId === "protein-serving");
 }
 
 function adjustOneDailyPlanItem(
@@ -913,6 +1049,45 @@ function findBestAdjustableProteinItem(plan: DailyPlan, data: MasterData) {
 
       if (!best || proteinPerCalorie > best.proteinPerCalorie) {
         best = { mealIndex, itemIndex, protein, proteinPerCalorie };
+      }
+    });
+  });
+
+  return best;
+}
+
+function findBestAdjustableCalorieItem(
+  plan: DailyPlan,
+  data: MasterData,
+  canAdjust: ((item: DailyPlanItem) => boolean) | undefined,
+) {
+  let best:
+    | {
+        mealIndex: number;
+        itemIndex: number;
+        calories: number;
+        caloriesPerProtein: number;
+      }
+    | undefined;
+
+  plan.meals.forEach((meal, mealIndex) => {
+    meal.items.forEach((item, itemIndex) => {
+      if (item.adjustable === false || (canAdjust && !canAdjust(item))) {
+        return;
+      }
+
+      const nutrition = calculateDailyPlanItemNutrition(item, data);
+      const calories = nutrition.calories ?? 0;
+      const protein = nutrition.protein ?? 0;
+
+      if (calories <= 0) {
+        return;
+      }
+
+      const caloriesPerProtein = protein > 0 ? calories / protein : calories;
+
+      if (!best || caloriesPerProtein > best.caloriesPerProtein) {
+        best = { mealIndex, itemIndex, calories, caloriesPerProtein };
       }
     });
   });

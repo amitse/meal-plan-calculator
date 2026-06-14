@@ -15,7 +15,7 @@ import { generateMealPlan } from "meal-plan-calculator";
 
 const result = generateMealPlan({
   calories: 2000,
-  protein: 75,
+  protein: 75, // target band, roughly +/- 5g
   carbs: { min: 100, max: 400 },
   fat: { max: 120 },
   dietaryLevel: "vegetarian",

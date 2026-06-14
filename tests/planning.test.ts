@@ -462,7 +462,7 @@ describe("second-layer planning library", () => {
 
     expect(target.bounds).toEqual([
       expect.objectContaining({ metric: "calories", target: 2000, tolerance: 50 }),
-      expect.objectContaining({ metric: "protein", min: 90 }),
+      expect.objectContaining({ metric: "protein", target: 90, tolerance: 5 }),
       expect.objectContaining({ metric: "carbs", target: 250, tolerance: 60 }),
       expect.objectContaining({ metric: "fat", max: 80 }),
       expect.objectContaining({ metric: "fiber", min: 25 }),
