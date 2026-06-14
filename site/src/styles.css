@@ -63,15 +63,15 @@ summary:focus-visible {
 .app-shell {
   width: min(100%, 1180px);
   margin: 0 auto;
-  padding: 24px 20px 104px;
+  padding: 16px 14px 92px;
 }
 
 .hero {
-  min-height: 100dvh;
+  min-height: auto;
   display: grid;
   align-content: end;
-  gap: 24px;
-  padding: 64px 0 34px;
+  gap: 14px;
+  padding: 18px 0 14px;
 }
 
 .hero-copy {
@@ -98,8 +98,8 @@ h2 {
 
 h1 {
   max-width: 780px;
-  font-size: clamp(3.3rem, 18vw, 7rem);
-  line-height: 0.9;
+  font-size: clamp(3.1rem, 17vw, 7rem);
+  line-height: 0.88;
 }
 
 h2 {
@@ -110,8 +110,9 @@ h2 {
 .hero-copy > p:last-child {
   max-width: 34rem;
   color: var(--body);
-  font-size: 1rem;
-  line-height: 1.75;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  margin: 10px 0 0;
 }
 
 .hero-panel,
@@ -122,7 +123,7 @@ h2 {
 }
 
 .hero-panel {
-  padding: 22px;
+  padding: 14px;
   box-shadow: var(--shadow);
 }
 
@@ -135,14 +136,14 @@ small {
 
 .hero-panel strong {
   display: block;
-  margin: 8px 0 2px;
+  margin: 4px 0 0;
   font-family: var(--serif);
-  font-size: 3rem;
+  font-size: 2.4rem;
   font-weight: 300;
 }
 
 .hero-panel p {
-  margin: 14px 0 0;
+  margin: 8px 0 0;
   color: var(--body);
 }
 
@@ -153,7 +154,7 @@ small {
 
 .input-panel,
 .result-panel {
-  padding: 22px;
+  padding: 16px;
 }
 
 .section-heading {
@@ -161,7 +162,7 @@ small {
   grid-template-columns: auto 1fr;
   gap: 14px;
   align-items: start;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 
 .step-num {
@@ -174,39 +175,47 @@ small {
 .field {
   display: grid;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 12px;
+}
+
+.preset-drawer {
+  margin: 12px 0 2px;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.preset-drawer > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--ink);
+  cursor: pointer;
 }
 
 .preset-strip {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(180px, 76%);
+  grid-auto-columns: minmax(132px, 54%);
   gap: 10px;
-  margin: 20px -22px 4px;
-  padding: 0 22px 8px;
+  margin: 0 -16px 4px;
+  padding: 0 16px 12px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
 }
 
 .preset-strip button {
-  min-height: 92px;
+  min-height: 48px;
   scroll-snap-align: start;
   border: 1px solid var(--border);
   background: var(--surface-strong);
   color: var(--ink);
-  padding: 14px;
+  padding: 10px 12px;
   text-align: left;
 }
 
 .preset-strip button span {
   display: block;
   font-weight: 600;
-}
-
-.preset-strip button small {
-  display: block;
-  margin-top: 6px;
-  line-height: 1.45;
 }
 
 .preset-strip button:active {
@@ -224,7 +233,7 @@ legend {
 
 input,
 select {
-  min-height: 52px;
+  min-height: 48px;
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -240,7 +249,7 @@ input:disabled {
 
 .text-toggle {
   min-height: 48px;
-  margin-top: 16px;
+  margin-top: 10px;
   border: 0;
   background: transparent;
   color: var(--ink);
@@ -264,7 +273,7 @@ input:disabled {
 
 fieldset {
   min-width: 0;
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   border: 0;
 }
@@ -310,7 +319,7 @@ fieldset {
 .segmented span,
 .choice-group span,
 .avoid-list span {
-  padding: 11px 15px;
+  padding: 10px 13px;
 }
 
 .segmented input:checked + span,
@@ -348,7 +357,7 @@ fieldset {
 }
 
 .result-panel {
-  margin-top: 18px;
+  margin-top: 14px;
 }
 
 .summary-grid {
@@ -359,7 +368,7 @@ fieldset {
 }
 
 .metric {
-  padding: 16px;
+  padding: 12px;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
@@ -374,7 +383,7 @@ fieldset {
   display: block;
   margin-top: 4px;
   font-family: var(--serif);
-  font-size: 2.1rem;
+  font-size: 1.85rem;
   font-weight: 300;
 }
 
@@ -386,8 +395,8 @@ fieldset {
 
 .status-strip,
 .failure {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: 12px;
+  padding: 12px;
   border: 1px solid var(--border);
   background: var(--surface-strong);
 }
@@ -404,7 +413,7 @@ fieldset {
 .meal-list {
   display: grid;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .meal-card {
@@ -413,7 +422,7 @@ fieldset {
 }
 
 .meal-card summary {
-  min-height: 58px;
+  min-height: 52px;
   display: grid;
   gap: 4px;
   padding: 14px 16px;
@@ -431,8 +440,8 @@ fieldset {
 
 .plan-row {
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: 6px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -473,6 +482,7 @@ fieldset {
     grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
     align-items: end;
     gap: 36px;
+    padding: 64px 0 34px;
   }
 
   .planner {

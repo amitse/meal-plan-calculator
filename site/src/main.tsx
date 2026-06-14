@@ -198,17 +198,14 @@ function App() {
     <main className="app-shell">
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-copy">
-          <p className="eyebrow">Indian meal planning · mobile first</p>
+          <p className="eyebrow">Indian meal planner</p>
           <h1 id="hero-title">
-            Build a realistic meal plan from calories, macros, and actual food preferences.
+            Build your day.
           </h1>
-          <p>
-            Enter your target, choose vegetarian, eggetarian, or non-vegetarian, then tune the plan around roti,
-            rice, paneer, whey, eggs, or chicken/fish.
-          </p>
+          <p>Calories, macros, food rules.</p>
         </div>
         <div className="hero-panel" aria-label="Generated plan preview">
-          <span className="panel-kicker">Live preview</span>
+          <span className="panel-kicker">Preview</span>
           <strong>{Math.round(evaluation?.totals.values.calories ?? 0)} kcal</strong>
           <span>{Math.round(evaluation?.totals.values.protein ?? 0)}g protein</span>
           <p>{statusText}</p>
@@ -221,21 +218,23 @@ function App() {
             <span className="step-num">01</span>
             <div>
               <p className="eyebrow">Targets</p>
-              <h2 id="targets-title">Start with calories.</h2>
+              <h2 id="targets-title">Targets</h2>
             </div>
           </div>
 
-          <div className="preset-strip" aria-label="Scenario presets">
-            {scenarioPresets.map((preset) => (
-              <button key={preset.id} type="button" onClick={() => applyPreset(preset)}>
-                <span>{preset.label}</span>
-                <small>{preset.note}</small>
-              </button>
-            ))}
-          </div>
+          <details className="preset-drawer">
+            <summary>Presets</summary>
+            <div className="preset-strip" aria-label="Scenario presets">
+              {scenarioPresets.map((preset) => (
+                <button key={preset.id} type="button" onClick={() => applyPreset(preset)}>
+                  <span>{preset.label}</span>
+                </button>
+              ))}
+            </div>
+          </details>
 
           <label className="field">
-            <span>Daily calories</span>
+            <span>Calories</span>
             <input
               inputMode="numeric"
               value={form.calories}
@@ -245,11 +244,10 @@ function App() {
               max="4000"
               type="number"
             />
-            <small>Required. The plan will aim for this target with a practical tolerance.</small>
           </label>
 
           <label className="field">
-            <span>Protein minimum</span>
+            <span>Protein min</span>
             <input
               inputMode="numeric"
               value={form.protein}
@@ -257,7 +255,6 @@ function App() {
               min="0"
               type="number"
             />
-            <small>Optional, but recommended for muscle-focused plans.</small>
           </label>
 
           <button className="text-toggle" type="button" onClick={() => setAdvancedOpen((open) => !open)}>
@@ -283,7 +280,7 @@ function App() {
             <span className="step-num">02</span>
             <div>
               <p className="eyebrow">Food rules</p>
-              <h2 id="rules-title">Make it taste like your food.</h2>
+              <h2 id="rules-title">Food rules</h2>
             </div>
           </div>
 
@@ -301,25 +298,21 @@ function App() {
               </label>
             ))}
           </fieldset>
-          <p className="helper">
-            Vegetarian allows dairy but excludes eggs, meat, and fish. Eggetarian adds eggs. Non-vegetarian allows all.
-          </p>
-
           <ChoiceGroup
-            legend="Preferred grain"
+            legend="Grain"
             options={grainOptions}
             value={form.preferredGrain}
             onChange={(value) => update("preferredGrain", value)}
           />
           <ChoiceGroup
-            legend="Preferred protein"
+            legend="Protein"
             options={proteinOptions}
             value={form.preferredProtein}
             onChange={(value) => update("preferredProtein", value)}
           />
 
           <fieldset className="avoid-list">
-            <legend>Avoid foods</legend>
+            <legend>Avoid</legend>
             <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
             <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
             <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />
@@ -377,13 +370,13 @@ function App() {
           </>
         ) : (
           <div className="failure" role="alert">
-            <p>Nothing fake was generated. The current rules conflict.</p>
+            <p>Rules conflict.</p>
             <ul>
               {result.rejected.map((reason) => (
                 <li key={reason}>{reason}</li>
               ))}
             </ul>
-            <p>Try loosening a macro bound, removing an exclusion, or changing the preferred protein.</p>
+            <p>Loosen a bound or remove an exclusion.</p>
           </div>
         )}
       </section>
