@@ -177,6 +177,42 @@ small {
   margin-top: 16px;
 }
 
+.preset-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(180px, 76%);
+  gap: 10px;
+  margin: 20px -22px 4px;
+  padding: 0 22px 8px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.preset-strip button {
+  min-height: 92px;
+  scroll-snap-align: start;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: 14px;
+  text-align: left;
+}
+
+.preset-strip button span {
+  display: block;
+  font-weight: 600;
+}
+
+.preset-strip button small {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+.preset-strip button:active {
+  transform: translateY(1px) scale(0.995);
+}
+
 .field > span,
 legend {
   color: var(--ink);

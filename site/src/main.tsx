@@ -35,6 +35,14 @@ interface FormState {
   avoidChickenFish: boolean;
 }
 
+interface ScenarioPreset {
+  id: string;
+  label: string;
+  note: string;
+  state: FormState;
+  advancedOpen?: boolean;
+}
+
 const initialState: FormState = {
   calories: "2000",
   protein: "75",
@@ -66,6 +74,90 @@ const proteinOptions = [
   { id: "chicken-fish-100g", label: "Chicken / fish" },
 ];
 
+const scenarioPresets: ScenarioPreset[] = [
+  {
+    id: "veg-low",
+    label: "Light vegetarian day",
+    note: "1400 kcal, dairy allowed, no eggs or meat",
+    state: {
+      ...initialState,
+      calories: "1400",
+      protein: "",
+      dietaryLevel: "vegetarian",
+      preferredGrain: "roti",
+      preferredProtein: "paneer-50g",
+    },
+  },
+  {
+    id: "veg-macro",
+    label: "Vegetarian macro target",
+    note: "2000 kcal with protein, carb, fat, fiber, saturated-fat bounds",
+    advancedOpen: true,
+    state: initialState,
+  },
+  {
+    id: "eggetarian",
+    label: "Eggetarian protein",
+    note: "Eggs preferred, meat/fish still excluded",
+    state: {
+      ...initialState,
+      calories: "1800",
+      protein: "80",
+      dietaryLevel: "eggetarian",
+      preferredProtein: "two-whole-eggs",
+    },
+  },
+  {
+    id: "non-veg",
+    label: "Non-veg high protein",
+    note: "Chicken/fish preferred with a higher target",
+    state: {
+      ...initialState,
+      calories: "2200",
+      protein: "100",
+      dietaryLevel: "nonVegetarian",
+      preferredProtein: "chicken-fish-100g",
+    },
+  },
+  {
+    id: "taste-rice-whey",
+    label: "Rice + whey taste",
+    note: "Shows taste preferences changing the generated exchanges",
+    state: {
+      ...initialState,
+      calories: "1900",
+      protein: "80",
+      preferredGrain: "cooked-rice",
+      preferredProtein: "whey-30g",
+    },
+  },
+  {
+    id: "no-paneer-whey",
+    label: "No paneer or whey",
+    note: "Exclusions force a different vegetarian protein option",
+    state: {
+      ...initialState,
+      calories: "1900",
+      protein: "70",
+      avoidPaneer: true,
+      avoidWhey: true,
+    },
+  },
+  {
+    id: "impossible",
+    label: "Impossible rule demo",
+    note: "Vegetarian but only chicken/fish is preferred and allowed",
+    state: {
+      ...initialState,
+      calories: "1800",
+      preferredProtein: "chicken-fish-100g",
+      avoidPaneer: true,
+      avoidWhey: true,
+      avoidEggs: true,
+    },
+  },
+];
+
 function App() {
   const [form, setForm] = useState<FormState>(initialState);
   const [result, setResult] = useState<GenerateMealPlanResult>(() => generateFromState(initialState));
@@ -84,6 +176,12 @@ function App() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setResult(generateFromState(form));
+  }
+
+  function applyPreset(preset: ScenarioPreset) {
+    setForm(preset.state);
+    setAdvancedOpen(Boolean(preset.advancedOpen));
+    setResult(generateFromState(preset.state));
   }
 
   const selectedOptions = useMemo(() => {
@@ -125,6 +223,15 @@ function App() {
               <p className="eyebrow">Targets</p>
               <h2 id="targets-title">Start with calories.</h2>
             </div>
+          </div>
+
+          <div className="preset-strip" aria-label="Scenario presets">
+            {scenarioPresets.map((preset) => (
+              <button key={preset.id} type="button" onClick={() => applyPreset(preset)}>
+                <span>{preset.label}</span>
+                <small>{preset.note}</small>
+              </button>
+            ))}
           </div>
 
           <label className="field">
@@ -401,11 +508,24 @@ function PlanItemRow({ item }: { item: NonNullable<GenerateMealPlanResult["selec
 }
 
 function generateFromState(form: FormState): GenerateMealPlanResult {
+  const preferredProtein =
+    form.preferredProtein === "chicken-fish-100g" &&
+    form.dietaryLevel === "vegetarian" &&
+    form.avoidPaneer &&
+    form.avoidWhey &&
+    form.avoidEggs
+      ? {
+          allowedExchangeOptionIds: {
+            "protein-serving": ["chicken-fish-100g"],
+          },
+        }
+      : {};
   const input: GenerateMealPlanInput = {
     calories: Number(form.calories || 0),
     dietaryLevel: form.dietaryLevel,
     protein: Number(form.protein || 0) || undefined,
     preferences: {
+      ...preferredProtein,
       preferredExchangeOptionIds: {
         grain: [form.preferredGrain],
         "protein-serving": [form.preferredProtein],
