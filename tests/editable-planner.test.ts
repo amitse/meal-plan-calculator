@@ -13,6 +13,7 @@ import {
   planEvaluation,
   proteinOptions,
   randomizePlan,
+  removePlanItem,
   swapExchangeOption,
   updateItemAmount,
 } from "../site/src/editable-planner.js";
@@ -80,13 +81,15 @@ describe("editable planner workflows", () => {
     expect(planEvaluation(randomized, initialFormState).status).toBe("pass");
   });
 
-  it("supports swapping, quantity edits, adding meals, and adding items", () => {
+  it("supports swapping, deleting, quantity edits, adding meals, and adding items", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
     const swapped = swapExchangeOption(plan, "lunch-carb", "cooked-rice");
     const edited = updateItemAmount(swapped, "lunch-carb", 2);
+    const deleted = removePlanItem(edited, "lunch-carb");
     const withMeal = addMeal(edited);
     const withItem = addItemToMeal(withMeal, "meal-6", "fruit");
 
+    expect(deleted.meals.find((meal) => meal.id === "lunch")?.items.some((item) => item.id === "lunch-carb")).toBe(false);
     expect(withItem.meals).toHaveLength(6);
     expect(withItem.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb")).toMatchObject({
       kind: "exchange",

@@ -383,6 +383,16 @@ export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number
   });
 }
 
+export function removePlanItem(plan: DailyPlan, itemId: string): DailyPlan {
+  return {
+    ...plan,
+    meals: plan.meals.map((meal) => ({
+      ...meal,
+      items: meal.items.filter((item) => item.id !== itemId),
+    })),
+  };
+}
+
 export function addMeal(plan: DailyPlan): DailyPlan {
   const next = plan.meals.length + 1;
 

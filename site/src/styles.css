@@ -855,7 +855,7 @@ fieldset {
 
 .plan-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(136px, 42%);
+  grid-template-columns: minmax(0, 1fr) minmax(164px, 46%);
   gap: var(--space-xs);
   align-items: start;
   padding: 10px 0;
@@ -864,7 +864,7 @@ fieldset {
 
 .item-actions {
   display: grid;
-  grid-template-columns: minmax(48px, 0.7fr) min-content min-content;
+  grid-template-columns: minmax(44px, 0.7fr) min-content min-content min-content;
   gap: 6px;
   align-items: center;
   justify-content: end;
@@ -872,11 +872,11 @@ fieldset {
 }
 
 .item-actions.has-swap {
-  grid-template-columns: minmax(48px, 0.7fr) min-content min-content;
+  grid-template-columns: minmax(44px, 0.7fr) min-content min-content min-content;
 }
 
 .item-actions.no-swap {
-  grid-template-columns: minmax(48px, 0.7fr) min-content min-content;
+  grid-template-columns: minmax(44px, 0.7fr) min-content min-content min-content;
 }
 
 .item-actions input,
@@ -900,24 +900,42 @@ fieldset {
   text-align: left;
 }
 
-.swap-select {
+.swap-control {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: min-content minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
   width: 100%;
+}
+
+.swap-control span {
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.swap-select {
   min-width: 0;
   padding-inline: 9px 28px;
   font-size: 0.86rem;
 }
 
-.item-actions .lock-toggle {
+.item-actions .lock-toggle,
+.item-actions .delete-toggle {
   min-height: 40px;
-  min-width: 48px;
-  padding-inline: 8px;
+  min-width: 42px;
+  padding-inline: 7px;
   font-size: 0.78rem;
 }
 
 .lock-toggle[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.delete-toggle {
+  color: var(--danger);
 }
 
 .plan-row:last-child {

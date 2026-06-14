@@ -26,6 +26,7 @@ import {
   planEvaluation,
   proteinOptions,
   randomizePlan,
+  removePlanItem,
   shareUrlForState,
   swapExchangeOption,
   updateItemAmount,
@@ -165,6 +166,16 @@ function App() {
       } else {
         next.add(itemId);
       }
+      return next;
+    });
+  }
+
+  function deleteItem(itemId: string) {
+    if (!plan) return;
+    setPlan(removePlanItem(plan, itemId));
+    setLockedIds((current) => {
+      const next = new Set(current);
+      next.delete(itemId);
       return next;
     });
   }
@@ -395,6 +406,7 @@ function App() {
                       locked={Boolean(item.id && lockedIds.has(item.id))}
                       mealId={meal.id}
                       onAmount={(amount) => item.id && setPlan(updateItemAmount(plan, item.id, amount))}
+                      onDelete={() => item.id && deleteItem(item.id)}
                       onLock={() => item.id && toggleLock(item.id)}
                       onSwap={(optionId) => item.id && setPlan(swapExchangeOption(plan, item.id, optionId))}
                     />
@@ -411,6 +423,7 @@ function App() {
                     <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds, meal.id))}>Randomize meal</button>
                     <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "protein-serving"))}>Add protein</button>
                     <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "grain"))}>Add grain</button>
+                    <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "fruit"))}>Add fruit</button>
                   </div>
                   <div className="meal-status">{status.join(" · ")}</div>
                 </details>
@@ -571,6 +584,7 @@ function PlanItemRow({
   locked,
   mealId,
   onAmount,
+  onDelete,
   onLock,
   onSwap,
 }: {
@@ -579,6 +593,7 @@ function PlanItemRow({
   locked: boolean;
   mealId: string;
   onAmount: (amount: number) => void;
+  onDelete: () => void;
   onLock: () => void;
   onSwap: (optionId: string) => void;
 }) {
@@ -607,10 +622,14 @@ function PlanItemRow({
         </label>
         <span className="unit-label" title={unit}>{compactUnitLabel}</span>
         <button className="lock-toggle" type="button" aria-pressed={locked} onClick={onLock}>{locked ? "Unlock" : "Lock"}</button>
+        <button className="delete-toggle" type="button" aria-label={`Delete ${label}`} onClick={onDelete}>Del</button>
         {item.kind === "exchange" && (
-          <select className="swap-select" aria-label={`Swap ${label}`} value={item.exchangeOptionId} onChange={(event) => onSwap(event.target.value)}>
-            {exchangeOptions.map((option) => <option key={option.id} value={option.id}>{option.displayName}</option>)}
-          </select>
+          <label className="swap-control">
+            <span>Swap</span>
+            <select className="swap-select" aria-label={`Swap ${label}`} value={item.exchangeOptionId} onChange={(event) => onSwap(event.target.value)}>
+              {exchangeOptions.map((option) => <option key={option.id} value={option.id}>{option.displayName}</option>)}
+            </select>
+          </label>
         )}
       </div>
     </div>
