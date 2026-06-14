@@ -199,38 +199,39 @@ function App() {
 
   return (
     <main className="app-shell">
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="eyebrow">Indian meal planner</p>
-          <h1 id="hero-title">
-            Build your day.
-          </h1>
-          <p>Calories, macros, food rules.</p>
-        </div>
-      </section>
+      <header className="mobile-header">
+        <h1>Meal plan</h1>
+      </header>
 
       <form className="planner" onSubmit={submit}>
         <section className="input-panel primary-panel" aria-labelledby="targets-title">
-          <div className="section-heading">
-            <span className="step-num">01</span>
-            <div>
-              <p className="eyebrow">Build</p>
-              <h2 id="targets-title">Plan</h2>
-            </div>
-          </div>
+          <h2 id="targets-title" className="sr-only">Plan</h2>
 
-          <label className="field calorie-field">
-            <span>Calories</span>
-            <input
-              inputMode="numeric"
-              value={form.calories}
-              onChange={(event) => update("calories", event.target.value)}
-              required
-              min="800"
-              max="4000"
-              type="number"
-            />
-          </label>
+          <div className="quick-fields">
+            <label className="field calorie-field">
+              <span>Calories</span>
+              <input
+                inputMode="numeric"
+                value={form.calories}
+                onChange={(event) => update("calories", event.target.value)}
+                required
+                min="800"
+                max="4000"
+                type="number"
+              />
+            </label>
+
+            <label className="field">
+              <span>Protein</span>
+              <input
+                inputMode="numeric"
+                value={form.protein}
+                onChange={(event) => update("protein", event.target.value)}
+                min="0"
+                type="number"
+              />
+            </label>
+          </div>
 
           <fieldset className="segmented">
             <legend>Dietary level</legend>
@@ -248,66 +249,54 @@ function App() {
           </fieldset>
 
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
-            <summary>More options</summary>
+            <summary>Customize</summary>
+
             <details className="nested-drawer">
-              <summary>Protein</summary>
-            <label className="field">
-              <span>Protein min</span>
-              <input
-                inputMode="numeric"
-                value={form.protein}
-                onChange={(event) => update("protein", event.target.value)}
-                min="0"
-                type="number"
+              <summary>Food</summary>
+              <ChoiceGroup
+                legend="Protein"
+                options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))}
+                value={form.preferredProtein}
+                onChange={(value) => update("preferredProtein", value)}
               />
-            </label>
-            <ChoiceGroup
-              legend="Protein"
-              options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))}
-              value={form.preferredProtein}
-              onChange={(value) => update("preferredProtein", value)}
-            />
+              <ChoiceGroup
+                legend="Grain"
+                options={grainOptions}
+                value={form.preferredGrain}
+                onChange={(value) => update("preferredGrain", value)}
+              />
+              <fieldset className="avoid-list">
+                <legend>Avoid</legend>
+                <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
+                <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
+                {form.dietaryLevel !== "vegetarian" && (
+                  <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />
+                )}
+                {form.dietaryLevel === "nonVegetarian" && (
+                  <CheckChip
+                    label="Chicken / fish"
+                    checked={form.avoidChickenFish}
+                    onChange={(checked) => update("avoidChickenFish", checked)}
+                  />
+                )}
+              </fieldset>
             </details>
 
             <details className="nested-drawer">
               <summary>Macros</summary>
-            <div className="macro-grid">
-              <MacroInput label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
-              <MacroInput label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
-              <MacroInput label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
-              <MacroInput
-                label="Saturated fat"
-                value={form.saturatedFat}
-                onChange={(value) => update("saturatedFat", value)}
-              />
-            </div>
+              <div className="macro-grid">
+                <MacroInput label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
+                <MacroInput label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
+                <MacroInput label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
+                <MacroInput
+                  label="Saturated fat"
+                  value={form.saturatedFat}
+                  onChange={(value) => update("saturatedFat", value)}
+                />
+              </div>
             </details>
 
             <details className="nested-drawer">
-              <summary>Foods</summary>
-            <ChoiceGroup
-              legend="Grain"
-              options={grainOptions}
-              value={form.preferredGrain}
-              onChange={(value) => update("preferredGrain", value)}
-            />
-            <fieldset className="avoid-list">
-              <legend>Avoid</legend>
-              <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
-              <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
-              {form.dietaryLevel !== "vegetarian" && (
-                <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />
-              )}
-              {form.dietaryLevel === "nonVegetarian" && (
-                <CheckChip
-                  label="Chicken / fish"
-                  checked={form.avoidChickenFish}
-                  onChange={(checked) => update("avoidChickenFish", checked)}
-                />
-              )}
-            </fieldset>
-            </details>
-            <details className="preset-drawer">
               <summary>Presets</summary>
               <div className="preset-strip" aria-label="Scenario presets">
                 {scenarioPresets.map((preset) => (
@@ -331,7 +320,6 @@ function App() {
       <section className="result-panel" aria-labelledby="result-title" aria-live="polite" tabIndex={-1} ref={resultRef}>
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Result</p>
             <h2 id="result-title">{result.selected ? "Day" : "Adjust"}</h2>
           </div>
         </div>

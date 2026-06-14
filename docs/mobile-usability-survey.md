@@ -25,3 +25,23 @@ Ten independent review agents evaluated the mobile planner flow after the first 
 6. Reduced meal row detail to item name and quantity.
 7. Added result focus/`aria-live` behavior after generation.
 
+## Second survey
+
+A second 10-agent survey after the first fix still rated the mobile UI around **6–8 / 10**.
+
+Repeated remaining blockers:
+
+1. Header and step chrome still delayed the actual calorie input.
+2. Protein minimum was important enough to be visible, especially for high-protein users.
+3. “More options” still mixed too many ideas.
+4. Low-vision agents flagged small uppercase labels and hidden focus treatment.
+5. Result rows were improved, but the first screen still needed fewer layers.
+
+Second-pass changes:
+
+1. Removed the hero section and visible step number.
+2. Made the first screen start with only the app title, calories, protein, dietary level, and generate.
+3. Renamed the optional drawer to **Customize**.
+4. Split customization into **Food**, **Macros**, and **Presets**.
+5. Increased label size/weight and restored visible focus treatment.
+6. Kept result details compact and hidden until the user generates.
