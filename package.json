@@ -18,6 +18,9 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:www": "vite build --config site/vite.config.ts",
+    "dev:www": "vite --config site/vite.config.ts",
+    "preview:www": "vite preview --config site/vite.config.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -29,8 +32,16 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "ajv": "^8.20.0",
     "typescript": "^6.0.3",
+    "vite": "^8.0.16",
     "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

@@ -6,6 +6,7 @@
     "rootDir": ".",
     "outDir": "dist",
     "strict": true,
+    "jsx": "react-jsx",
     "declaration": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -16,6 +17,8 @@
     "src/**/*.ts",
     "data/**/*.json",
     "schemas/**/*.json",
+    "site/**/*.ts",
+    "site/**/*.tsx",
     "tests/**/*.ts"
   ],
   "exclude": [

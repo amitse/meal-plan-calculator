@@ -23,7 +23,7 @@ The source site uses:
 - warm off-white ink `#F0EFEB`
 - light theme background `#F7F6F2`
 - light alternate surface `#EFEDE8`
-- thin editorial borders `#2e2e2e` / `#DDDBD6`
+- accessible thin editorial borders `#4A433A` / `#C9C3B8`
 - serif display: `Cormorant Garamond`
 - sans UI: `DM Sans`
 - uppercase micro-labels with wide tracking
@@ -49,9 +49,9 @@ The source site uses:
 | Background | `#141414` | `#F7F6F2` | App/page base |
 | Surface | `#1c1c1c` | `#EFEDE8` | Panels, result sections |
 | Ink | `#F0EFEB` | `#141414` | Headings and primary text |
-| Body | `#909090` | `#2A2A2A` | Body copy |
-| Muted | `#585858` | `#6B6B6B` | Hints, labels, secondary metadata |
-| Border | `#2e2e2e` | `#DDDBD6` | Dividers and low chrome |
+| Body | `#C8C2B7` | `#2A2A2A` | Body copy; AA/AAA contrast on base backgrounds |
+| Muted | `#ACA394` | `#5E574E` | Hints, labels, secondary metadata; still AA-safe |
+| Border | `#4A433A` | `#C9C3B8` | Dividers and low chrome with visible contrast |
 
 ### Typography roles
 
@@ -145,4 +145,3 @@ The source site uses:
 ## Static site implication
 
 The future GitHub Pages site should not start as a marketing landing page. It should start as a mobile-first tool with a small warm-modern intro, then the target-input workflow. The marketing/proof sections can come later, below the tool or on a separate page.
-
