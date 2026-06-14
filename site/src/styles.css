@@ -17,6 +17,11 @@
   --focus: #f0efeb;
   --shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
   --inner-glow: inset 0 1px 0 rgba(240, 239, 235, 0.05);
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
   --serif: "Cormorant Garamond", Georgia, serif;
   --sans: "DM Sans", sans-serif;
 }
@@ -79,11 +84,11 @@ summary:focus-visible {
 .app-shell {
   width: min(100%, 760px);
   margin: 0 auto;
-  padding: 12px 14px 88px;
+  padding: var(--space-sm) 14px 88px;
 }
 
 .mobile-header {
-  padding: 4px 0 10px;
+  padding: var(--space-2xs) 0 var(--space-sm);
 }
 
 .eyebrow {
@@ -128,16 +133,17 @@ small {
 
 .planner {
   display: grid;
-  gap: 10px;
+  gap: var(--space-sm);
 }
 
 .input-panel,
 .result-panel {
-  padding: 12px 0;
+  padding: var(--space-md) 0;
 }
 
 .primary-panel {
   position: relative;
+  border-top-color: var(--ink);
 }
 
 .sr-only {
@@ -154,15 +160,17 @@ small {
 
 .quick-fields {
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: var(--space-xs);
+  align-items: end;
 }
 
 .section-heading {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 14px;
+  gap: var(--space-xs);
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-md);
 }
 
 .section-heading button,
@@ -173,7 +181,7 @@ small {
   border: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
-  padding: 0 10px;
+  padding: 0 var(--space-sm);
 }
 
 .section-heading button:hover,
@@ -197,8 +205,22 @@ small {
 
 .field {
   display: grid;
-  gap: 8px;
-  margin-top: 10px;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.quick-fields .field {
+  margin-top: 0;
+}
+
+.quick-fields input {
+  min-height: 62px;
+  border-color: var(--muted);
+  font-family: var(--serif);
+  font-size: clamp(1.55rem, 8vw, 2.3rem);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .preset-drawer,
@@ -217,7 +239,7 @@ small {
 }
 
 .options-drawer {
-  margin-top: 14px;
+  margin-top: var(--space-md);
 }
 
 .customization-chips {
@@ -313,7 +335,7 @@ select {
   border-radius: 8px;
   background: var(--surface-strong);
   color: var(--ink);
-  padding: 0 14px;
+  padding: 0 var(--space-sm);
 }
 
 input:hover,
@@ -435,6 +457,7 @@ fieldset {
 .diet-segments {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: var(--space-md);
 }
 
 .diet-segments legend,
@@ -467,7 +490,7 @@ fieldset {
 }
 
 .primary-action {
-  min-height: 52px;
+  min-height: 56px;
   width: 100%;
   border: 0;
   background: var(--ink);
@@ -486,7 +509,8 @@ fieldset {
 }
 
 .result-panel {
-  margin-top: 8px;
+  margin-top: var(--space-lg);
+  border-top-color: var(--ink);
 }
 
 .result-panel:focus-visible {
@@ -497,26 +521,31 @@ fieldset {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-top: 1px solid var(--border-soft);
+  gap: var(--space-md);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .metric {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-soft);
+  padding: var(--space-md) 0;
 }
 
 .metric span {
   display: block;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .metric strong {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--space-2xs);
   font-family: var(--serif);
-  font-size: 1.85rem;
+  font-size: clamp(2.25rem, 12vw, 3.25rem);
   font-weight: 300;
+  line-height: 0.95;
 }
 
 .metric small {
@@ -539,8 +568,8 @@ fieldset {
 
 .meal-list {
   display: grid;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 0;
+  margin-top: var(--space-lg);
 }
 
 .meal-card {
@@ -548,25 +577,39 @@ fieldset {
   background: transparent;
 }
 
+.meal-card:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
 .meal-card > summary {
-  min-height: 50px;
+  min-height: 58px;
   display: grid;
-  gap: 4px;
-  padding: 12px 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: baseline;
+  padding: var(--space-md) 0;
   cursor: pointer;
 }
 
 .meal-card > summary span {
   color: var(--ink);
-  font-weight: 500;
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.meal-card[open] > summary {
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .meal-items {
-  border-top: 1px solid var(--border-soft);
+  padding: var(--space-xs) 0 var(--space-sm);
 }
 
 .meal-tools {
-  margin-top: 8px;
+  margin-top: var(--space-xs);
   border-top: 1px solid var(--border-soft);
 }
 
@@ -580,8 +623,8 @@ fieldset {
 .meal-targets {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 0 0 10px;
+  gap: var(--space-xs);
+  padding: 0 0 var(--space-sm);
 }
 
 .meal-targets label {
@@ -602,8 +645,8 @@ fieldset {
 
 .plan-row {
   display: grid;
-  gap: 6px;
-  padding: 10px 0;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -623,14 +666,16 @@ fieldset {
   border-bottom: 0;
 }
 
-.plan-row div {
+.plan-row > div:first-child {
   display: grid;
-  gap: 3px;
+  gap: var(--space-2xs);
 }
 
 .plan-row strong {
   color: var(--ink);
-  font-weight: 500;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .plan-row span,
@@ -700,7 +745,7 @@ fieldset {
 
 .secondary-action {
   width: 100%;
-  margin-top: 10px;
+  margin-top: var(--space-md);
 }
 
 @media (max-width: 420px) {
@@ -721,11 +766,6 @@ fieldset {
 
   .result-panel {
     margin-top: 22px;
-  }
-
-  .quick-fields {
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 10px;
   }
 
   .bottom-action {
@@ -754,6 +794,7 @@ fieldset {
   .plan-row {
     grid-template-columns: 1fr auto;
     align-items: center;
+    gap: var(--space-md);
   }
 }
 
