@@ -22,6 +22,7 @@ import {
   grainOptions,
   initialFormState,
   mealTargetStatus,
+  normalizeEditableFormState,
   planEvaluation,
   proteinOptions,
   randomizePlan,
@@ -41,9 +42,9 @@ type PlannerView = "targets" | "plan";
 
 const scenarioPresets = [
   { id: "veg-low", label: "Light veg", state: { ...initialFormState, calories: "1400", protein: "" } },
-  { id: "eggs", label: "Eggs", state: { ...initialFormState, calories: "1800", protein: "80", dietaryLevel: "eggetarian" as DietaryLevel, preferredProtein: "two-whole-eggs" } },
-  { id: "nonveg", label: "Chicken", state: { ...initialFormState, calories: "2200", protein: "100", dietaryLevel: "nonVegetarian" as DietaryLevel, preferredProtein: "chicken-fish-100g" } },
-  { id: "rice-whey", label: "Rice + whey", state: { ...initialFormState, calories: "1900", protein: "80", preferredGrain: "cooked-rice", preferredProtein: "whey-30g" } },
+  { id: "eggs", label: "Eggs", state: { ...initialFormState, calories: "1800", protein: "80", dietaryLevel: "eggetarian" as DietaryLevel, preferredProteins: ["two-whole-eggs"] } },
+  { id: "nonveg", label: "Chicken", state: { ...initialFormState, calories: "2200", protein: "100", dietaryLevel: "nonVegetarian" as DietaryLevel, preferredProteins: ["chicken-fish-100g"] } },
+  { id: "rice-whey", label: "Rice + whey", state: { ...initialFormState, calories: "1900", protein: "80", preferredGrains: ["cooked-rice", "raw-oats", "raw-poha"], preferredProteins: ["whey-30g"] } },
 ];
 
 const dietOptions: { level: DietaryLevel; label: string }[] = [
@@ -60,7 +61,7 @@ const dietDescriptions: Record<DietaryLevel, string> = {
 
 function App() {
   const urlState = useMemo(loadStateFromUrl, []);
-  const [form, setForm] = useState<EditableFormState>(urlState?.form ?? initialFormState);
+  const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
   const [activeView, setActiveView] = useState<PlannerView>(urlState?.plan ? "plan" : "targets");
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set(urlState?.lockedItemIds ?? []));
@@ -108,11 +109,20 @@ function App() {
     setForm((current) => ({
       ...current,
       dietaryLevel: level,
-      preferredProtein:
-        level === "vegetarian" ? "paneer-50g" : level === "eggetarian" ? "two-whole-eggs" : "chicken-fish-100g",
+      preferredProteins: visibleProteinPreferences(current.preferredProteins, level),
       avoidEggs: level === "vegetarian",
       avoidChickenFish: level !== "nonVegetarian",
     }));
+  }
+
+  function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
+    setGenerationError("");
+    setForm((current) => {
+      const next = checked
+        ? [...new Set([...current[key], optionId])]
+        : current[key].filter((id) => id !== optionId);
+      return { ...current, [key]: next };
+    });
   }
 
   function applyPreset(preset: (typeof scenarioPresets)[number]) {
@@ -244,8 +254,8 @@ function App() {
                 <span>Food</span>
                 <span className="drawer-summary">{foodDrawerSummary(form)}</span>
               </summary>
-              <ChoiceGroup legend="Protein" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} value={form.preferredProtein} onChange={(value) => update("preferredProtein", value)} />
-              <ChoiceGroup legend="Grain" options={grainOptions} value={form.preferredGrain} onChange={(value) => update("preferredGrain", value)} />
+              <PreferenceGroup label="Like grains" options={grainOptions} values={form.preferredGrains} onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)} />
+              <PreferenceGroup label="Like protein" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} values={form.preferredProteins} onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)} />
               <fieldset className="avoid-list">
                 <legend>Avoid</legend>
                 <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
@@ -357,6 +367,7 @@ function App() {
                       item={item}
                       key={item.id ?? `${meal.id}-${index}`}
                       locked={Boolean(item.id && lockedIds.has(item.id))}
+                      mealId={meal.id}
                       onAmount={(amount) => item.id && setPlan(updateItemAmount(plan, item.id, amount))}
                       onLock={() => item.id && toggleLock(item.id)}
                       onSwap={(optionId) => item.id && setPlan(swapExchangeOption(plan, item.id, optionId))}
@@ -405,13 +416,13 @@ function MacroInput({ label, value, onChange }: { label: string; value: MacroFie
   );
 }
 
-function ChoiceGroup({ legend, options, value, onChange }: { legend: string; options: { id: string; label: string }[]; value: string; onChange: (value: string) => void }) {
+function PreferenceGroup({ label, options, values, onChange }: { label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
   return (
-    <fieldset className="choice-group">
-      <legend>{legend}</legend>
+    <fieldset className="choice-group preference-group">
+      <legend>{label}</legend>
       {options.map((option) => (
         <label key={option.id}>
-          <input type="radio" name={legend} checked={value === option.id} onChange={() => onChange(option.id)} />
+          <input type="checkbox" checked={values.includes(option.id)} onChange={(event) => onChange(option.id, event.target.checked)} />
           <span>{option.label}</span>
         </label>
       ))}
@@ -429,25 +440,15 @@ function CheckChip({ label, checked, onChange }: { label: string; checked: boole
 }
 
 function activeCustomizationLabels(form: EditableFormState) {
+  const avoids = avoidLabels(form);
+  const macroCount = activeMacroCount(form);
   const labels = [
-    foodPreferenceLabel("Prefer", grainOptions, form.preferredGrain),
-    foodPreferenceLabel("Prefer", proteinOptions, form.preferredProtein),
-    form.avoidPaneer ? "Avoid paneer" : undefined,
-    form.avoidWhey ? "Avoid whey" : undefined,
-    form.dietaryLevel !== "vegetarian" && form.avoidEggs ? "Avoid eggs" : undefined,
-    form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish ? "Avoid chicken / fish" : undefined,
-    macroLabel("Carbs", form.carbs),
-    macroLabel("Fat", form.fat),
-    macroLabel("Fiber", form.fiber),
-    macroLabel("Saturated fat", form.saturatedFat),
+    foodPreferenceSummary(form),
+    avoids.length > 0 ? `Avoid ${avoids.length}` : undefined,
+    macroCount > 0 ? `Macros ${macroCount}` : undefined,
   ];
 
   return labels.filter((label): label is string => Boolean(label));
-}
-
-function foodPreferenceLabel(prefix: string, options: { id: string; label: string }[], value: string) {
-  const option = options.find((item) => item.id === value);
-  return option ? `${prefix} ${option.label.toLocaleLowerCase()}` : undefined;
 }
 
 function macroLabel(label: string, field: MacroField) {
@@ -456,27 +457,48 @@ function macroLabel(label: string, field: MacroField) {
 }
 
 function foodDrawerSummary(form: EditableFormState) {
-  const protein = proteinOptions.find((option) => option.id === form.preferredProtein)?.label;
-  const grain = grainOptions.find((option) => option.id === form.preferredGrain)?.label;
-  const avoids = [
+  const avoids = avoidLabels(form);
+  return `${foodPreferenceSummary(form)}${avoids.length > 0 ? ` · avoid ${avoids.length}` : ""}`;
+}
+
+function macroDrawerSummary(form: EditableFormState) {
+  const activeMacros = activeMacroCount(form);
+
+  return activeMacros > 0 ? `${activeMacros} rules` : "Optional limits";
+}
+
+function foodPreferenceSummary(form: EditableFormState) {
+  const proteinCount = visibleProteinPreferences(form.preferredProteins, form.dietaryLevel).length;
+  return `Grains ${form.preferredGrains.length || "auto"} · Protein ${proteinCount || "auto"}`;
+}
+
+function avoidLabels(form: EditableFormState) {
+  return [
     form.avoidPaneer ? "paneer" : undefined,
     form.avoidWhey ? "whey" : undefined,
     form.dietaryLevel !== "vegetarian" && form.avoidEggs ? "eggs" : undefined,
     form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish ? "chicken/fish" : undefined,
-  ].filter(Boolean);
-
-  return `${protein ?? "Protein"} · ${grain ?? "grain"}${avoids.length > 0 ? ` · avoids ${avoids.join(", ")}` : ""}`;
+  ].filter((label): label is string => Boolean(label));
 }
 
-function macroDrawerSummary(form: EditableFormState) {
-  const activeMacros = [
+function activeMacroCount(form: EditableFormState) {
+  return [
     macroLabel("Carbs", form.carbs),
     macroLabel("Fat", form.fat),
     macroLabel("Fiber", form.fiber),
     macroLabel("Saturated fat", form.saturatedFat),
-  ].filter(Boolean);
+  ].filter(Boolean).length;
+}
 
-  return activeMacros.length > 0 ? `${activeMacros.length} active` : "Optional limits";
+function visibleProteinPreferences(preferredProteins: string[], dietaryLevel: DietaryLevel) {
+  const visible = preferredProteins.filter((optionId) => isProteinVisible(optionId, dietaryLevel));
+  if (visible.length > 0) {
+    return visible;
+  }
+
+  if (dietaryLevel === "vegetarian") return ["paneer-50g"];
+  if (dietaryLevel === "eggetarian") return ["two-whole-eggs"];
+  return ["chicken-fish-100g"];
 }
 
 function exportFilename(extension: "csv" | "xls") {
@@ -521,6 +543,7 @@ function PlanItemRow({
   dietaryLevel,
   item,
   locked,
+  mealId,
   onAmount,
   onLock,
   onSwap,
@@ -528,6 +551,7 @@ function PlanItemRow({
   dietaryLevel: DietaryLevel;
   item: DailyPlanItem;
   locked: boolean;
+  mealId: string;
   onAmount: (amount: number) => void;
   onLock: () => void;
   onSwap: (optionId: string) => void;
@@ -536,7 +560,7 @@ function PlanItemRow({
   const amount = item.kind === "food" ? item.quantity.amount : item.exchangeUnits ?? 1;
   const unit = item.kind === "food" ? item.quantity.unit : "serving";
   const nutrition = calculateDailyPlanItemNutrition(item);
-  const exchangeOptions = exchangeOptionsForItem(item, dietaryLevel);
+  const exchangeOptions = exchangeOptionsForItem(item, dietaryLevel, mealId);
 
   return (
     <div className="plan-row">

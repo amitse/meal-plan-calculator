@@ -360,10 +360,40 @@ small {
   white-space: nowrap;
 }
 
+.nested-drawer > .preference-group:first-of-type,
+.nested-drawer > .preference-grid:first-of-type,
 .nested-drawer > .field:first-of-type,
 .nested-drawer > .macro-grid:first-of-type,
 .nested-drawer > .choice-group:first-of-type {
   margin-top: var(--space-xs);
+}
+
+.preference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.preference-field {
+  gap: var(--space-xs);
+  margin-top: 0;
+}
+
+.preference-group {
+  gap: 6px;
+}
+
+.preference-group + .preference-group {
+  margin-top: var(--space-sm);
+}
+
+.preference-group legend::after {
+  content: " · multi-select";
+  color: var(--faint);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .preset-strip {

@@ -24,8 +24,8 @@ export interface EditableFormState {
   fiber: MacroField;
   saturatedFat: MacroField;
   dietaryLevel: DietaryLevel;
-  preferredGrain: string;
-  preferredProtein: string;
+  preferredGrains: string[];
+  preferredProteins: string[];
   avoidPaneer: boolean;
   avoidWhey: boolean;
   avoidEggs: boolean;
@@ -53,8 +53,10 @@ export interface ShareablePlannerState {
 
 export const grainOptions = [
   { id: "roti", label: "Roti" },
+  { id: "bread", label: "Bread" },
   { id: "cooked-rice", label: "Cooked rice" },
   { id: "raw-oats", label: "Oats" },
+  { id: "raw-poha", label: "Poha" },
   { id: "dosa", label: "Dosa" },
   { id: "raw-rice", label: "Rice" },
 ];
@@ -75,17 +77,39 @@ export const initialFormState: EditableFormState = {
   fiber: { mode: "min", value: "10" },
   saturatedFat: { mode: "max", value: "20" },
   dietaryLevel: "vegetarian",
-  preferredGrain: "roti",
-  preferredProtein: "paneer-50g",
+  preferredGrains: ["roti", "raw-oats", "raw-poha"],
+  preferredProteins: ["paneer-50g"],
   avoidPaneer: false,
   avoidWhey: false,
   avoidEggs: false,
   avoidChickenFish: false,
 };
 
+type LegacyEditableFormState = Partial<EditableFormState> & {
+  preferredGrain?: string;
+  preferredProtein?: string;
+};
+
+export function normalizeEditableFormState(form: LegacyEditableFormState | undefined): EditableFormState {
+  if (!form) {
+    return initialFormState;
+  }
+
+  const preferredGrains = normalizedPreferenceList(form.preferredGrains, form.preferredGrain, initialFormState.preferredGrains);
+  const preferredProteins = normalizedPreferenceList(form.preferredProteins, form.preferredProtein, initialFormState.preferredProteins);
+
+  return {
+    ...initialFormState,
+    ...form,
+    preferredGrains,
+    preferredProteins,
+  };
+}
+
 export function buildNutritionInput(form: EditableFormState): GenerateMealPlanInput {
+  const preferredProteins = proteinPreferencesForDiet(form);
   const preferredProtein =
-    form.preferredProtein === "chicken-fish-100g" &&
+    preferredProteins.includes("chicken-fish-100g") &&
     form.dietaryLevel === "vegetarian" &&
     form.avoidPaneer &&
     form.avoidWhey &&
@@ -100,8 +124,8 @@ export function buildNutritionInput(form: EditableFormState): GenerateMealPlanIn
     preferences: {
       ...preferredProtein,
       preferredExchangeOptionIds: {
-        grain: [form.preferredGrain],
-        "protein-serving": [form.preferredProtein],
+        grain: grainPreferences(form),
+        "protein-serving": preferredProteins,
       },
       excludedFoodItemIds: [
         form.avoidPaneer ? "paneer" : undefined,
@@ -154,12 +178,27 @@ export function buildDynamicTemplate(
   return {
     id: "editable-daily-plan",
     displayName: "Editable daily plan",
-    meals: ["breakfast", "lunch", "snack", "dinner"].map((mealId, mealIndex) => {
+    meals: ["breakfast", "lunch", "fruit-snack", "snack", "dinner"].map((mealId, mealIndex) => {
       const lockedItems = lockedPlan?.meals
         .find((meal) => meal.id === mealId)
         ?.items.filter((item) => item.id && lockedItemIds.has(item.id)) ?? [];
       const lockedRoles = new Set(lockedItems.flatMap((item) => item.roles ?? []));
       const items: DailyPlanTemplateItem[] = lockedItems.map(toTemplateItem);
+
+      if (mealId === "fruit-snack") {
+        if (!lockedRoles.has("fruit")) {
+          items.push({
+            kind: "exchange",
+            id: `${mealId}-fruit`,
+            exchangeGroupId: "fruit",
+            defaultOptionId: "banana",
+            exchangeUnits: 1,
+            roles: ["fruit", "snack"],
+          });
+        }
+
+        return { id: mealId, displayName: "Fruit snack", patternId: "snack", items };
+      }
 
       if (mealId === "snack") {
         if (!lockedRoles.has("snack")) {
@@ -172,17 +211,30 @@ export function buildDynamicTemplate(
           });
         }
 
-        return { id: mealId, displayName: titleCase(mealId), patternId: "snack", items };
+        if (!lockedRoles.has("carb")) {
+          const grain = pickAllowedGrain(mealId, form, seed + mealIndex);
+          items.push({
+            kind: "exchange",
+            id: `${mealId}-grain`,
+            exchangeGroupId: "grain",
+            defaultOptionId: grain,
+            allowedOptionIds: grainOptionsForMeal(mealId),
+            exchangeUnits: 0.5,
+            roles: ["snack", "carb"],
+          });
+        }
+
+        return { id: mealId, displayName: mealDisplayName(mealId), patternId: "snack", items };
       }
 
       if (!lockedRoles.has("carb")) {
-        const grain = mealId === "breakfast" ? "raw-oats" : pickAllowedGrain(mealId, form, seed + mealIndex);
+        const grain = pickAllowedGrain(mealId, form, seed + mealIndex);
         items.push({
           kind: "exchange",
           id: `${mealId}-carb`,
           exchangeGroupId: "grain",
           defaultOptionId: grain,
-          allowedOptionIds: mealId === "breakfast" ? ["raw-oats"] : grainOptionsForMeal(mealId),
+          allowedOptionIds: grainOptionsForMeal(mealId),
           exchangeUnits: 1,
           roles: ["carb"],
         });
@@ -201,7 +253,7 @@ export function buildDynamicTemplate(
         });
       }
 
-      return { id: mealId, displayName: titleCase(mealId), patternId: "cooked-plate", items };
+      return { id: mealId, displayName: mealDisplayName(mealId), patternId: "cooked-plate", items };
     }),
   };
 }
@@ -267,8 +319,7 @@ function randomizePlanItems(
           if (item.exchangeGroupId === "grain") {
             return {
               ...item,
-              exchangeOptionId:
-                meal.id === "breakfast" ? "raw-oats" : pickAllowedGrain(meal.id, form, seed + mealIndex + itemIndex),
+              exchangeOptionId: pickAllowedGrain(meal.id, form, seed + mealIndex + itemIndex),
             };
           }
 
@@ -493,16 +544,18 @@ function updatePlanItem(plan: DailyPlan, itemId: string, update: (item: DailyPla
 
 function pickAllowedGrain(mealId: string, form: EditableFormState, seed: number) {
   const options = grainOptionsForMeal(mealId);
-  const preferred = options.includes(form.preferredGrain) ? form.preferredGrain : undefined;
-  const pool = preferred ? [preferred, ...options.filter((option) => option !== preferred)] : options;
+  const preferred = grainPreferences(form).filter((option) => options.includes(option));
+  const pool = preferred.length > 0 ? preferred : options;
 
   return pool[pickIndex(pool.length, seed)] ?? "roti";
 }
 
 function grainOptionsForMeal(mealId: string) {
-  return mealId === "dinner"
-    ? ["roti", "cooked-rice", "dosa", "raw-rice"]
-    : ["roti", "cooked-rice", "raw-oats", "dosa", "raw-rice"];
+  if (mealId === "breakfast" || mealId === "snack") {
+    return ["roti", "bread", "raw-oats", "raw-poha", "dosa"];
+  }
+
+  return ["roti", "bread", "cooked-rice", "dosa", "raw-rice"];
 }
 
 function pickAllowedProtein(form: EditableFormState, seed: number) {
@@ -513,10 +566,39 @@ function pickAllowedProtein(form: EditableFormState, seed: number) {
     if (form.avoidChickenFish && option === "chicken-fish-100g") return false;
     return true;
   });
-  const preferred = options.includes(form.preferredProtein) ? form.preferredProtein : undefined;
-  const pool = preferred ? [preferred, ...options.filter((option) => option !== preferred)] : options;
+  const preferred = proteinPreferencesForDiet(form).filter((option) => options.includes(option));
+  const pool = preferred.length > 0 ? preferred : options;
 
   return pool[pickIndex(pool.length, seed)] ?? "paneer-50g";
+}
+
+function grainPreferences(form: EditableFormState) {
+  return form.preferredGrains.length > 0 ? form.preferredGrains : initialFormState.preferredGrains;
+}
+
+function proteinPreferencesForDiet(form: EditableFormState) {
+  const allowed = new Set(proteinOptionsForDiet(form.dietaryLevel));
+  const selected = form.preferredProteins.filter((option) => allowed.has(option));
+  return selected.length > 0 ? selected : defaultProteinsForDiet(form.dietaryLevel);
+}
+
+function defaultProteinsForDiet(dietaryLevel: DietaryLevel) {
+  if (dietaryLevel === "vegetarian") return ["paneer-50g"];
+  if (dietaryLevel === "eggetarian") return ["two-whole-eggs"];
+  return ["chicken-fish-100g"];
+}
+
+function normalizedPreferenceList(value: string[] | undefined, legacyValue: string | undefined, fallback: string[]) {
+  if (Array.isArray(value) && value.length > 0) {
+    return [...new Set(value)];
+  }
+
+  return legacyValue ? [legacyValue] : [...fallback];
+}
+
+function mealDisplayName(mealId: string) {
+  if (mealId === "fruit-snack") return "Fruit snack";
+  return titleCase(mealId);
 }
 
 function proteinOptionsForDiet(dietaryLevel: DietaryLevel) {
@@ -608,7 +690,7 @@ function recoveryAction(metric: NutritionMetric, direction: "min" | "max") {
     : "Relax the macro max or change preferences before regenerating.";
 }
 
-export function exchangeOptionsForItem(item: DailyPlanItem, dietaryLevel: DietaryLevel) {
+export function exchangeOptionsForItem(item: DailyPlanItem, dietaryLevel: DietaryLevel, mealId?: string) {
   if (item.kind !== "exchange") {
     return [];
   }
@@ -621,7 +703,11 @@ export function exchangeOptionsForItem(item: DailyPlanItem, dietaryLevel: Dietar
   }
 
   if (item.exchangeGroupId === "grain") {
-    return options.filter((option) => option.id !== "raw-oats" || item.roles?.includes("carb"));
+    const allowed = mealId ? new Set(grainOptionsForMeal(mealId)) : undefined;
+    return options.filter((option) => {
+      if (allowed && !allowed.has(option.id)) return false;
+      return option.id !== "raw-oats" || item.roles?.includes("carb");
+    });
   }
 
   return options;

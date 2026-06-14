@@ -16,14 +16,35 @@ import {
 } from "../site/src/editable-planner.js";
 
 describe("editable planner workflows", () => {
-  it("generates breakfast with oats and prevents oats at dinner", () => {
-    const template = buildDynamicTemplate(initialFormState, undefined, new Set(), 1);
+  it("categorizes grains so breakfast varies and dinner excludes snack grains", () => {
+    const template = buildDynamicTemplate(
+      { ...initialFormState, preferredGrains: ["raw-oats", "raw-poha", "roti", "cooked-rice"] },
+      undefined,
+      new Set(),
+      1,
+    );
     const breakfastCarb = template.meals.find((meal) => meal.id === "breakfast")?.items.find((item) => item.id === "breakfast-carb");
     const dinnerCarb = template.meals.find((meal) => meal.id === "dinner")?.items.find((item) => item.id === "dinner-carb");
 
-    expect(breakfastCarb).toMatchObject({ kind: "exchange", defaultOptionId: "raw-oats" });
+    expect(breakfastCarb).toMatchObject({ kind: "exchange" });
+    expect(breakfastCarb && "allowedOptionIds" in breakfastCarb ? breakfastCarb.allowedOptionIds : []).toEqual(expect.arrayContaining(["raw-oats", "raw-poha", "roti"]));
+    expect(breakfastCarb && "defaultOptionId" in breakfastCarb ? breakfastCarb.defaultOptionId : "").not.toBe("cooked-rice");
     expect(dinnerCarb).toMatchObject({ kind: "exchange" });
     expect(dinnerCarb && "allowedOptionIds" in dinnerCarb ? dinnerCarb.allowedOptionIds : []).not.toContain("raw-oats");
+    expect(dinnerCarb && "allowedOptionIds" in dinnerCarb ? dinnerCarb.allowedOptionIds : []).not.toContain("raw-poha");
+  });
+
+  it("always includes a dedicated fruit snack meal with one fruit serving", () => {
+    const template = buildDynamicTemplate(initialFormState, undefined, new Set(), 1);
+    const fruitSnack = template.meals.find((meal) => meal.id === "fruit-snack");
+
+    expect(fruitSnack?.displayName).toBe("Fruit snack");
+    expect(fruitSnack?.items).toContainEqual(expect.objectContaining({
+      kind: "exchange",
+      exchangeGroupId: "fruit",
+      defaultOptionId: "banana",
+      exchangeUnits: 1,
+    }));
   });
 
   it("varies unlocked generated choices across seeds", () => {
@@ -39,7 +60,7 @@ describe("editable planner workflows", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 3)!;
     const lockedId = "dinner-protein";
     const lockedItem = plan.meals.find((meal) => meal.id === "dinner")?.items.find((item) => item.id === lockedId);
-    const randomized = randomizePlan(plan, { ...initialFormState, preferredProtein: "whey-30g" }, new Set([lockedId]), undefined, 99);
+    const randomized = randomizePlan(plan, { ...initialFormState, preferredProteins: ["whey-30g"] }, new Set([lockedId]), undefined, 99);
     const after = randomized.meals.find((meal) => meal.id === "dinner")?.items.find((item) => item.id === lockedId);
 
     expect(after).toEqual(lockedItem);
@@ -57,15 +78,15 @@ describe("editable planner workflows", () => {
     const swapped = swapExchangeOption(plan, "lunch-carb", "cooked-rice");
     const edited = updateItemAmount(swapped, "lunch-carb", 2);
     const withMeal = addMeal(edited);
-    const withItem = addItemToMeal(withMeal, "meal-5", "fruit");
+    const withItem = addItemToMeal(withMeal, "meal-6", "fruit");
 
-    expect(withItem.meals).toHaveLength(5);
+    expect(withItem.meals).toHaveLength(6);
     expect(withItem.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb")).toMatchObject({
       kind: "exchange",
       exchangeOptionId: "cooked-rice",
       exchangeUnits: 2,
     });
-    expect(withItem.meals.find((meal) => meal.id === "meal-5")?.items.some((item) => item.kind === "exchange" && item.exchangeGroupId === "fruit")).toBe(true);
+    expect(withItem.meals.find((meal) => meal.id === "meal-6")?.items.some((item) => item.kind === "exchange" && item.exchangeGroupId === "fruit")).toBe(true);
   });
 
   it("rounds exchange serving edits to half servings", () => {
