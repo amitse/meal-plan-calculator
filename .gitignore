@@ -2,3 +2,5 @@ node_modules/
 dist/
 coverage/
 .vitest/
+.copilot-pipeline/
+.copilot-issue-loop/

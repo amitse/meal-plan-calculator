@@ -21,6 +21,13 @@
     "build:www": "vite build --config site/vite.config.ts",
     "dev:www": "vite --config site/vite.config.ts",
     "preview:www": "vite preview --config site/vite.config.ts",
+    "ux:issue:generate-loop": "node scripts/copilot-issue-loop.mjs generate-loop",
+    "ux:issue:fix-loop": "node scripts/copilot-issue-loop.mjs fix-loop",
+    "ux:issue:fix-next": "node scripts/copilot-issue-loop.mjs fix-next",
+    "ux:issue:generate": "node scripts/copilot-issue-loop.mjs generate",
+    "ux:issue:run-hour": "node scripts/copilot-issue-loop.mjs run-hour",
+    "ux:issue:status": "node scripts/copilot-issue-loop.mjs status",
+    "ux:copilot-pipeline": "node scripts/copilot-ux-pipeline.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

@@ -5,9 +5,11 @@ import {
   buildDynamicTemplate,
   decodeShareState,
   encodeShareState,
+  failureRecoveryMessages,
   generateEditablePlan,
   initialFormState,
   mealTargetStatus,
+  planEvaluation,
   randomizePlan,
   swapExchangeOption,
   updateItemAmount,
@@ -70,5 +72,16 @@ describe("editable planner workflows", () => {
     expect(decoded?.lockedItemIds).toEqual(["lunch-carb"]);
     expect(decoded?.mealTargets).toEqual(mealTargets);
     expect(decoded?.plan?.meals.map((meal) => meal.id)).toEqual(plan.meals.map((meal) => meal.id));
+  });
+
+  it("explains failed target bounds with recovery actions", () => {
+    const form = { ...initialFormState, fat: { mode: "max" as const, value: "1" } };
+    const plan = generateEditablePlan(form, undefined, new Set(), 6)!;
+    const messages = failureRecoveryMessages(planEvaluation(plan, form));
+    const fatMessage = messages.find((message) => message.includes("Fat is over max"));
+
+    expect(fatMessage).toMatch(/Fat is over max/);
+    expect(fatMessage).toMatch(/Relax the fat max/);
+    expect(fatMessage).toMatch(/before regenerating/);
   });
 });

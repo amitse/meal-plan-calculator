@@ -457,6 +457,10 @@ fieldset {
   background: var(--surface-strong);
 }
 
+.failure {
+  border-color: var(--danger);
+}
+
 .meal-list {
   display: grid;
   gap: 10px;

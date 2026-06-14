@@ -17,6 +17,7 @@ import {
   decodeShareState,
   encodeShareState,
   exchangeOptionsForItem,
+  failureRecoveryMessages,
   generateEditablePlan,
   grainOptions,
   initialFormState,
@@ -66,6 +67,7 @@ function App() {
   const resultRef = useRef<HTMLElement>(null);
 
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
+  const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
 
   useEffect(() => {
     if (plan) {
@@ -225,6 +227,14 @@ function App() {
             <SummaryMetric label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
             <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="g" />
           </div>
+          {recoveryMessages.length > 0 && (
+            <div className="failure" role="alert" aria-label="Target recovery actions">
+              <p>Some targets need adjustment:</p>
+              <ul>
+                {recoveryMessages.map((message) => <li key={message}>{message}</li>)}
+              </ul>
+            </div>
+          )}
           <div className="meal-list">
             {plan.meals.map((meal) => (
               <details className="meal-card" key={meal.id}>

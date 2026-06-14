@@ -11,7 +11,9 @@ import {
   type DietaryLevel,
   type FoodPreference,
   type GenerateMealPlanInput,
+  type NutritionMetric,
   type NutritionTarget,
+  type PlanEvaluation,
 } from "../../src/index.js";
 
 export interface EditableFormState {
@@ -356,6 +358,24 @@ export function planEvaluation(plan: DailyPlan, form: EditableFormState) {
   return evaluateDailyPlan(plan, createTargetFromForm(form));
 }
 
+export function failureRecoveryMessages(evaluation: PlanEvaluation): string[] {
+  return evaluation.targetBounds
+    .filter((bound) => bound.status === "fail")
+    .map((bound) => {
+      const metric = metricLabels[bound.bound.metric];
+
+      if (bound.shortfall !== undefined) {
+        return `${metric} short by ${formatAmount(bound.shortfall, bound.bound.metric)}. ${recoveryAction(bound.bound.metric, "min")}`;
+      }
+
+      if (bound.excess !== undefined) {
+        return `${metric} is over max by ${formatAmount(bound.excess, bound.bound.metric)}. ${recoveryAction(bound.bound.metric, "max")}`;
+      }
+
+      return `${metric} misses target. Relax this target before regenerating.`;
+    });
+}
+
 function addMacro(input: GenerateMealPlanInput, key: "carbs" | "fat" | "fiber" | "saturatedFat", field: MacroField) {
   const value = Number(field.value || 0);
 
@@ -451,6 +471,49 @@ function pickIndex(length: number, seed: number) {
 
 function titleCase(value: string) {
   return value.slice(0, 1).toUpperCase() + value.slice(1);
+}
+
+const metricLabels: Record<NutritionMetric, string> = {
+  calories: "Calories",
+  protein: "Protein",
+  carbs: "Carbs",
+  fat: "Fat",
+  fiber: "Fiber",
+  saturatedFat: "Saturated fat",
+};
+
+function formatAmount(value: number, metric: NutritionMetric) {
+  return `${Math.ceil(value)}${metric === "calories" ? " kcal" : "g"}`;
+}
+
+function recoveryAction(metric: NutritionMetric, direction: "min" | "max") {
+  if (metric === "protein") {
+    return direction === "min"
+      ? "Choose a higher-protein preference, remove protein exclusions, or relax the protein minimum before regenerating."
+      : "Choose a lighter protein preference or relax the protein maximum before regenerating.";
+  }
+
+  if (metric === "calories") {
+    return direction === "min"
+      ? "Increase the calorie target or relax the calorie minimum before regenerating."
+      : "Lower the calorie target or relax the calorie maximum before regenerating.";
+  }
+
+  if (metric === "fat" || metric === "saturatedFat") {
+    return direction === "min"
+      ? "Relax the fat minimum or change food preferences before regenerating."
+      : "Relax the fat max, choose leaner protein, or remove high-fat preferences before regenerating.";
+  }
+
+  if (metric === "fiber") {
+    return direction === "min"
+      ? "Add fiber-rich preferences or relax the fiber minimum before regenerating."
+      : "Relax the fiber maximum or change food preferences before regenerating.";
+  }
+
+  return direction === "min"
+    ? "Relax the macro minimum or change preferences before regenerating."
+    : "Relax the macro max or change preferences before regenerating.";
 }
 
 export function exchangeOptionsForItem(item: DailyPlanItem, dietaryLevel: DietaryLevel) {
