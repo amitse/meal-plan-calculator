@@ -44,13 +44,6 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
-const scenarioPresets = [
-  { id: "veg-low", label: "Light veg", state: { ...initialFormState, calories: "1400", protein: "" } },
-  { id: "eggs", label: "Eggs", state: { ...initialFormState, calories: "1800", protein: "80", dietaryLevel: "eggetarian" as DietaryLevel, preferredProteins: ["two-whole-eggs"] } },
-  { id: "nonveg", label: "Chicken", state: { ...initialFormState, calories: "2200", protein: "100", dietaryLevel: "nonVegetarian" as DietaryLevel, preferredProteins: ["chicken-fish-100g"] } },
-  { id: "rice-whey", label: "Rice + whey", state: { ...initialFormState, calories: "1900", protein: "80", preferredGrains: ["cooked-rice", "raw-oats", "raw-poha"], preferredProteins: ["whey-30g"] } },
-];
-
 const dietOptions: { level: DietaryLevel; label: string }[] = [
   { level: "vegetarian", label: "Vegetarian" },
   { level: "eggetarian", label: "Eggetarian" },
@@ -162,16 +155,6 @@ function App() {
         : current[key].filter((id) => id !== optionId);
       return { ...current, [key]: next };
     });
-  }
-
-  function applyPreset(preset: (typeof scenarioPresets)[number]) {
-    setForm(preset.state);
-    const next = generateEditablePlan(preset.state, undefined, new Set(), Date.now());
-    setLockedIds(new Set());
-    setMealTargets({});
-    setGenerationError("");
-    setPlan(next);
-    setActiveView("plan");
   }
 
   function toggleLock(itemId: string) {
@@ -300,7 +283,7 @@ function App() {
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>
               <span>Customize</span>
-              <span className="drawer-summary">{activeCustomizationChips.length > 0 ? `${activeCustomizationChips.length} active` : "Food, macros, presets"}</span>
+              <span className="drawer-summary">{activeCustomizationChips.length > 0 ? `${activeCustomizationChips.length} active` : "Food + macros"}</span>
             </summary>
 
             <details className="nested-drawer">
@@ -332,17 +315,6 @@ function App() {
               </div>
             </details>
 
-            <details className="nested-drawer">
-              <summary>
-                <span>Presets</span>
-                <span className="drawer-summary">Quick starts</span>
-              </summary>
-              <div className="preset-strip" aria-label="Scenario presets">
-                {scenarioPresets.map((preset) => (
-                  <button key={preset.id} type="button" onClick={() => applyPreset(preset)}><span>{preset.label}</span></button>
-                ))}
-              </div>
-            </details>
           </details>
 
           {activeCustomizationChips.length > 0 && (

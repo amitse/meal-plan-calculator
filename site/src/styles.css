@@ -305,7 +305,6 @@ small {
   line-height: 1;
 }
 
-.preset-drawer,
 .options-drawer {
   margin: 10px 0 2px;
   border-top: 1px solid var(--border-soft);
@@ -437,39 +436,6 @@ small {
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
-}
-
-.preset-strip {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(132px, 54%);
-  gap: 10px;
-  margin: 0 calc(var(--app-gutter) * -1) 4px;
-  padding: 0 var(--app-gutter) 12px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-}
-
-.preset-strip button {
-  min-height: var(--control-height);
-  scroll-snap-align: start;
-  border: 1px solid var(--border);
-  border-radius: var(--control-radius);
-  background: var(--surface-strong);
-  color: var(--ink);
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  text-align: left;
-}
-
-.preset-strip button span {
-  display: block;
-  font-weight: 600;
-}
-
-.preset-strip button:active {
-  transform: translateY(1px) scale(0.995);
 }
 
 .field > span,
