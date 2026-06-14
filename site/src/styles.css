@@ -63,11 +63,11 @@ summary:focus-visible {
 .app-shell {
   width: min(100%, 760px);
   margin: 0 auto;
-  padding: 16px 14px 92px;
+  padding: 12px 14px 88px;
 }
 
 .mobile-header {
-  padding: 8px 0 12px;
+  padding: 4px 0 10px;
 }
 
 .eyebrow {
@@ -90,19 +90,19 @@ h2 {
 
 h1 {
   max-width: 780px;
-  font-size: clamp(2.2rem, 13vw, 4rem);
+  font-size: clamp(1.9rem, 11vw, 3.4rem);
   line-height: 1;
 }
 
 h2 {
-  font-size: clamp(2rem, 11vw, 4.4rem);
-  line-height: 0.98;
+  font-size: clamp(1.7rem, 8vw, 3.4rem);
+  line-height: 1.04;
 }
 
 .input-panel,
 .result-panel {
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-top: 1px solid var(--border);
+  background: transparent;
 }
 
 .helper,
@@ -117,7 +117,7 @@ small {
 
 .input-panel,
 .result-panel {
-  padding: 14px;
+  padding: 12px 0;
 }
 
 .primary-panel {
@@ -138,8 +138,7 @@ small {
 
 .quick-fields {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 10px;
+  gap: 8px;
 }
 
 .section-heading {
@@ -160,12 +159,12 @@ small {
 .field {
   display: grid;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .preset-drawer,
 .options-drawer {
-  margin: 12px 0 2px;
+  margin: 10px 0 2px;
   border-top: 1px solid var(--border-soft);
   border-bottom: 1px solid var(--border-soft);
 }
@@ -187,7 +186,7 @@ small {
 }
 
 .nested-drawer > summary {
-  min-height: 46px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   color: var(--body);
@@ -350,8 +349,8 @@ fieldset {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  margin: 0 -20px;
-  padding: 12px 20px max(12px, env(safe-area-inset-bottom));
+  margin: 0 -14px;
+  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
   background: rgba(20, 20, 20, 0.92);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--border);
@@ -373,30 +372,29 @@ fieldset {
 }
 
 .result-panel {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
-.result-panel:focus {
-  outline: none;
+.result-panel:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-top: 1px solid var(--border);
-  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border-soft);
 }
 
 .metric {
-  padding: 12px;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .metric span {
   display: block;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.86rem;
 }
 
 .metric strong {
@@ -428,15 +426,15 @@ fieldset {
 }
 
 .meal-card {
-  border: 1px solid var(--border);
-  background: var(--surface-strong);
+  border-top: 1px solid var(--border);
+  background: transparent;
 }
 
 .meal-card summary {
-  min-height: 52px;
+  min-height: 50px;
   display: grid;
   gap: 4px;
-  padding: 14px 16px;
+  padding: 12px 0;
   cursor: pointer;
 }
 
@@ -446,13 +444,13 @@ fieldset {
 }
 
 .meal-items {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-soft);
 }
 
 .plan-row {
   display: grid;
   gap: 6px;
-  padding: 12px 14px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -493,6 +491,11 @@ fieldset {
     margin-top: 22px;
   }
 
+  .quick-fields {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 10px;
+  }
+
   .bottom-action {
     position: static;
     margin: 0;
@@ -518,22 +521,16 @@ fieldset {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .hero-copy,
-  .hero-panel,
   .input-panel,
   .result-panel {
-    animation: fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  .hero-panel {
-    animation-delay: 120ms;
+    animation: fade-up 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
 
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;

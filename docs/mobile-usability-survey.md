@@ -45,3 +45,22 @@ Second-pass changes:
 4. Split customization into **Food**, **Macros**, and **Presets**.
 5. Increased label size/weight and restored visible focus treatment.
 6. Kept result details compact and hidden until the user generates.
+
+## Third survey
+
+A third 10-agent survey of the flattened version still averaged around **7 / 10**. Agents agreed the first screen was no longer severely cluttered, but repeated a few remaining mobile issues:
+
+1. Calories and protein were side-by-side on small screens.
+2. Protein needed a unit in the label.
+3. The result focus outline was hidden.
+4. Borders and card chrome still made the result feel heavier than necessary.
+5. Motion should stay very short and functional.
+
+Third-pass changes:
+
+1. Stacked calories and protein on mobile.
+2. Renamed labels to `Calories (kcal)` and `Protein (g)`.
+3. Removed the hidden focus style from the result panel.
+4. Reduced panel/card borders to lighter divider treatment.
+5. Fixed the sticky bottom action margin to avoid horizontal overflow.
+6. Shortened reveal motion to a small 220ms warm-modern fade/slide.

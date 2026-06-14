@@ -200,7 +200,7 @@ function App() {
   return (
     <main className="app-shell">
       <header className="mobile-header">
-        <h1>Meal plan</h1>
+        <h1>Plan</h1>
       </header>
 
       <form className="planner" onSubmit={submit}>
@@ -209,7 +209,7 @@ function App() {
 
           <div className="quick-fields">
             <label className="field calorie-field">
-              <span>Calories</span>
+              <span>Calories (kcal)</span>
               <input
                 inputMode="numeric"
                 value={form.calories}
@@ -222,7 +222,7 @@ function App() {
             </label>
 
             <label className="field">
-              <span>Protein</span>
+              <span>Protein (g)</span>
               <input
                 inputMode="numeric"
                 value={form.protein}
@@ -233,20 +233,14 @@ function App() {
             </label>
           </div>
 
-          <fieldset className="segmented">
-            <legend>Dietary level</legend>
-            {(["vegetarian", "eggetarian", "nonVegetarian"] as DietaryLevel[]).map((level) => (
-              <label key={level}>
-                <input
-                  type="radio"
-                  name="dietary"
-                  checked={form.dietaryLevel === level}
-                  onChange={() => updateDietaryLevel(level)}
-                />
-                <span>{dietLabel(level)}</span>
-              </label>
-            ))}
-          </fieldset>
+          <label className="field">
+            <span>Diet</span>
+            <select value={form.dietaryLevel} onChange={(event) => updateDietaryLevel(event.target.value as DietaryLevel)}>
+              <option value="vegetarian">Vegetarian</option>
+              <option value="eggetarian">Eggetarian</option>
+              <option value="nonVegetarian">Non-veg</option>
+            </select>
+          </label>
 
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>Customize</summary>
@@ -320,7 +314,7 @@ function App() {
       <section className="result-panel" aria-labelledby="result-title" aria-live="polite" tabIndex={-1} ref={resultRef}>
         <div className="section-heading">
           <div>
-            <h2 id="result-title">{result.selected ? "Day" : "Adjust"}</h2>
+            <h2 id="result-title">{result.selected ? "Meets target" : "Adjust"}</h2>
           </div>
         </div>
 
@@ -332,7 +326,7 @@ function App() {
             </div>
             <div className="meal-list">
               {result.selected.plan.meals.map((meal) => (
-                <details className="meal-card" key={meal.id} open={meal.id === "lunch"}>
+                <details className="meal-card" key={meal.id}>
                   <summary>
                     <span>{meal.displayName}</span>
                     <small>{meal.items.length} items</small>
@@ -376,13 +370,18 @@ function MacroInput({
     <label className="field compact">
       <span>{label}</span>
       <div className="inline-inputs">
-        <select value={value.mode} onChange={(event) => onChange({ ...value, mode: event.target.value as BoundField })}>
+        <select
+          aria-label={`${label} bound type`}
+          value={value.mode}
+          onChange={(event) => onChange({ ...value, mode: event.target.value as BoundField })}
+        >
           <option value="none">Off</option>
           <option value="min">Min</option>
           <option value="max">Max</option>
           <option value="target">Target</option>
         </select>
         <input
+          aria-label={`${label} value`}
           inputMode="numeric"
           value={value.value}
           onChange={(event) => onChange({ ...value, value: event.target.value })}
