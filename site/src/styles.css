@@ -360,6 +360,29 @@ fieldset {
   border-radius: 999px;
 }
 
+.diet-segments {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.diet-segments legend,
+.diet-helper {
+  grid-column: 1 / -1;
+}
+
+.diet-segments label {
+  width: 100%;
+}
+
+.diet-segments span {
+  width: 100%;
+  text-align: center;
+}
+
+.diet-helper {
+  margin: 0;
+}
+
 .bottom-action {
   position: sticky;
   bottom: 0;

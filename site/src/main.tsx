@@ -43,6 +43,18 @@ const scenarioPresets = [
   { id: "rice-whey", label: "Rice + whey", state: { ...initialFormState, calories: "1900", protein: "80", preferredGrain: "cooked-rice", preferredProtein: "whey-30g" } },
 ];
 
+const dietOptions: { level: DietaryLevel; label: string }[] = [
+  { level: "vegetarian", label: "Vegetarian" },
+  { level: "eggetarian", label: "Eggetarian" },
+  { level: "nonVegetarian", label: "Non-veg" },
+];
+
+const dietDescriptions: Record<DietaryLevel, string> = {
+  vegetarian: "Allows plant, dairy, and whey proteins; excludes eggs, chicken, and fish.",
+  eggetarian: "Allows vegetarian proteins and eggs; excludes chicken and fish.",
+  nonVegetarian: "Allows vegetarian proteins, eggs, chicken, and fish.",
+};
+
 function App() {
   const urlState = useMemo(loadStateFromUrl, []);
   const [form, setForm] = useState<EditableFormState>(urlState?.form ?? initialFormState);
@@ -143,14 +155,21 @@ function App() {
             </label>
           </div>
 
-          <label className="field">
-            <span>Diet</span>
-            <select value={form.dietaryLevel} onChange={(event) => updateDietaryLevel(event.target.value as DietaryLevel)}>
-              <option value="vegetarian">Vegetarian</option>
-              <option value="eggetarian">Eggetarian</option>
-              <option value="nonVegetarian">Non-veg</option>
-            </select>
-          </label>
+          <fieldset className="segmented diet-segments" aria-describedby="diet-helper">
+            <legend>Diet</legend>
+            {dietOptions.map((option) => (
+              <label key={option.level}>
+                <input
+                  type="radio"
+                  name="dietary-level"
+                  checked={form.dietaryLevel === option.level}
+                  onChange={() => updateDietaryLevel(option.level)}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+            <p id="diet-helper" className="helper diet-helper">{dietDescriptions[form.dietaryLevel]}</p>
+          </fieldset>
 
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>Customize</summary>
