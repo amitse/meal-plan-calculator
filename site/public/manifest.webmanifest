@@ -1,0 +1,32 @@
+{
+  "id": "/meal-plan-calculator/",
+  "name": "Meal Plan Calculator",
+  "short_name": "Meal Plan",
+  "description": "Generate realistic Indian meal plans from calories, macros, dietary level, and taste preferences.",
+  "start_url": "/meal-plan-calculator/",
+  "scope": "/meal-plan-calculator/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#141414",
+  "theme_color": "#141414",
+  "categories": ["food", "health", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

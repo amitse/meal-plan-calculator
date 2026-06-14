@@ -39,6 +39,10 @@ import "./styles.css";
 
 type BoundField = "none" | "min" | "max" | "target";
 type PlannerView = "targets" | "plan";
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
 
 const scenarioPresets = [
   { id: "veg-low", label: "Light veg", state: { ...initialFormState, calories: "1400", protein: "" } },
@@ -69,6 +73,7 @@ function App() {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState("");
   const [generationError, setGenerationError] = useState("");
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const resultRef = useRef<HTMLElement>(null);
 
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
@@ -81,6 +86,33 @@ function App() {
       resultRef.current?.focus();
     }
   }, [activeView, plan]);
+
+  useEffect(() => {
+    const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocalDev || !("serviceWorker" in navigator) || !window.location.pathname.startsWith("/meal-plan-calculator/")) {
+      return;
+    }
+
+    void navigator.serviceWorker.register("/meal-plan-calculator/sw.js", { scope: "/meal-plan-calculator/" });
+  }, []);
+
+  useEffect(() => {
+    function handleBeforeInstallPrompt(event: Event) {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    }
+
+    function handleAppInstalled() {
+      setInstallPrompt(undefined);
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
 
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
     setGenerationError("");
@@ -205,10 +237,22 @@ function App() {
     }
   }
 
+  async function installApp() {
+    if (!installPrompt) {
+      return;
+    }
+
+    const prompt = installPrompt;
+    setInstallPrompt(undefined);
+    await prompt.prompt();
+    await prompt.userChoice;
+  }
+
   return (
     <main className="app-shell">
       <header className="mobile-header">
         <h1>Meal plan</h1>
+        {installPrompt && <button type="button" onClick={() => void installApp()}>Install</button>}
       </header>
 
       {activeView === "targets" && (
