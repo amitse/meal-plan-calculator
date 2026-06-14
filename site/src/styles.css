@@ -229,7 +229,14 @@ small {
 }
 
 .result-head {
-  grid-template-columns: 1fr auto auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.result-head h2 {
+  margin-right: auto;
 }
 
 .field {
@@ -582,7 +589,7 @@ fieldset {
 }
 
 .result-panel {
-  margin-top: var(--space-xl);
+  margin-top: 0;
   border-top-color: var(--ink);
 }
 
@@ -863,7 +870,7 @@ fieldset {
   }
 
   .result-panel {
-    margin-top: 40px;
+    margin-top: 0;
   }
 
   .bottom-action {

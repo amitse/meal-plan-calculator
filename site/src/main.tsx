@@ -36,6 +36,7 @@ import {
 import "./styles.css";
 
 type BoundField = "none" | "min" | "max" | "target";
+type PlannerView = "targets" | "plan";
 
 const scenarioPresets = [
   { id: "veg-low", label: "Light veg", state: { ...initialFormState, calories: "1400", protein: "" } },
@@ -60,6 +61,7 @@ function App() {
   const urlState = useMemo(loadStateFromUrl, []);
   const [form, setForm] = useState<EditableFormState>(urlState?.form ?? initialFormState);
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
+  const [activeView, setActiveView] = useState<PlannerView>(urlState?.plan ? "plan" : "targets");
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set(urlState?.lockedItemIds ?? []));
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -73,10 +75,10 @@ function App() {
   const lockedItemCount = lockedIds.size;
 
   useEffect(() => {
-    if (plan) {
+    if (plan && activeView === "plan") {
       resultRef.current?.focus();
     }
-  }, [plan]);
+  }, [activeView, plan]);
 
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
     setGenerationError("");
@@ -89,6 +91,7 @@ function App() {
     if (next) {
       setGenerationError("");
       setPlan(next);
+      setActiveView("plan");
     } else {
       setGenerationError("No plan matched these targets. Relax a macro or food rule, then generate again.");
     }
@@ -118,6 +121,7 @@ function App() {
     setMealTargets({});
     setGenerationError("");
     setPlan(next);
+    setActiveView("plan");
   }
 
   function toggleLock(itemId: string) {
@@ -158,6 +162,7 @@ function App() {
         <h1>Meal plan</h1>
       </header>
 
+      {activeView === "targets" && (
       <form className="planner" onSubmit={submit}>
         <section className="input-panel primary-panel" aria-labelledby="targets-title">
           <h2 id="targets-title" className="sr-only">Plan</h2>
@@ -238,11 +243,13 @@ function App() {
           <button className="primary-action" type="submit">Generate</button>
         </div>
       </form>
+      )}
 
-      {plan && evaluation && (
+      {activeView === "plan" && plan && evaluation && (
         <section className="result-panel" aria-labelledby="result-title" aria-live="polite" tabIndex={-1} ref={resultRef}>
           <div className="section-heading result-head">
             <h2 id="result-title">{evaluation.status === "pass" ? "Meets target" : "Adjust"}</h2>
+            <button type="button" onClick={() => setActiveView("targets")}>Targets</button>
             <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds))}>Randomize</button>
             <button type="button" onClick={share}>Share</button>
           </div>
