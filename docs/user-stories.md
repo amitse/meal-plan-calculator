@@ -187,6 +187,12 @@ This document captures the required workflows for the current library-first meal
 | Cost as FYI | Supported |
 | Reference formulas as FYI | Supported |
 | Taste preference customization | Supported |
+| Editable mobile meal plans | Supported |
+| Locking ingredients while regenerating | Supported |
+| Swapping exchange-equivalent items | Supported |
+| Adding meals and items | Supported |
+| Meal-specific macro targets | Supported |
+| Shareable URL encoded plans | Supported |
 | Target calculation from body metrics | Future scope |
 | Weekly plan scheduling | Future scope |
 | Shopping/prep list generation | Future scope |

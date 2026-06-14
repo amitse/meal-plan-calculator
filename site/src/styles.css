@@ -143,10 +143,25 @@ small {
 
 .section-heading {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr auto auto;
   gap: 14px;
-  align-items: start;
+  align-items: center;
   margin-bottom: 14px;
+}
+
+.section-heading button,
+.secondary-action,
+.meal-targets button,
+.item-actions button {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+  padding: 0 10px;
+}
+
+.result-head {
+  grid-template-columns: 1fr auto auto;
 }
 
 .step-num {
@@ -447,11 +462,47 @@ fieldset {
   border-top: 1px solid var(--border-soft);
 }
 
+.meal-targets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.meal-targets label {
+  display: grid;
+  gap: 4px;
+}
+
+.meal-targets label span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.meal-status {
+  color: var(--warning);
+  font-size: 0.9rem;
+  min-height: 1.2rem;
+}
+
 .plan-row {
   display: grid;
   gap: 6px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border-soft);
+}
+
+.item-actions {
+  display: grid;
+  grid-template-columns: minmax(60px, 0.5fr) auto minmax(120px, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.item-actions input,
+.item-actions select {
+  min-height: 40px;
 }
 
 .plan-row:last-child {
@@ -480,6 +531,16 @@ fieldset {
 .failure li {
   margin: 8px 0;
   color: var(--danger);
+}
+
+.share-state {
+  color: var(--success);
+  margin: 0 0 8px;
+}
+
+.secondary-action {
+  width: 100%;
+  margin-top: 10px;
 }
 
 @media (min-width: 760px) {
