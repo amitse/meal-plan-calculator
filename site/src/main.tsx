@@ -155,7 +155,7 @@ function App() {
   return (
     <main className="app-shell">
       <header className="mobile-header">
-        <h1>Plan</h1>
+        <h1>Meal plan</h1>
       </header>
 
       <form className="planner" onSubmit={submit}>
