@@ -727,6 +727,43 @@ fieldset {
   margin: 0 0 8px;
 }
 
+.locked-notice {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid rgba(210, 160, 87, 0.42);
+  border-radius: 18px;
+  background: rgba(210, 160, 87, 0.1);
+}
+
+.locked-notice p {
+  margin: 0;
+  color: var(--body);
+  line-height: 1.45;
+}
+
+.locked-notice strong {
+  color: var(--ink);
+}
+
+.locked-notice button {
+  min-height: 40px;
+  justify-self: start;
+  border: 1px solid rgba(210, 160, 87, 0.58);
+  border-radius: 999px;
+  background: rgba(15, 12, 9, 0.68);
+  color: var(--ink);
+  padding: 0 13px;
+  box-shadow: var(--inner-glow);
+}
+
+.locked-notice button:hover {
+  border-color: var(--accent);
+  background: rgba(210, 160, 87, 0.14);
+  transform: translateY(-1px);
+}
+
 .secondary-action {
   width: 100%;
   margin-top: 10px;
@@ -803,6 +840,11 @@ fieldset {
 
   .summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .locked-notice {
+    grid-template-columns: 1fr auto;
+    align-items: center;
   }
 
   .plan-row {

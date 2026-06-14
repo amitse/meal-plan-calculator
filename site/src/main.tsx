@@ -69,6 +69,7 @@ function App() {
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
   const activeCustomizationChips = useMemo(() => activeCustomizationLabels(form), [form]);
+  const lockedItemCount = lockedIds.size;
 
   useEffect(() => {
     if (plan) {
@@ -244,6 +245,15 @@ function App() {
             <button type="button" onClick={share}>Share</button>
           </div>
           {shareState && <p className="share-state">{shareState}</p>}
+          {lockedItemCount > 0 && (
+            <div className="locked-notice" role="status">
+              <p>
+                <strong>{lockedItemCount} {lockedItemCount === 1 ? "item" : "items"} locked.</strong>{" "}
+                Generate and Randomize keep locked items fixed.
+              </p>
+              <button type="button" onClick={() => setLockedIds(new Set())}>Clear locks</button>
+            </div>
+          )}
           <div className="summary-grid">
             <SummaryMetric label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
             <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="g" />
