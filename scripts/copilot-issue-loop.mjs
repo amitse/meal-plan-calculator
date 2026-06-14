@@ -672,18 +672,61 @@ async function withRunLock(callback) {
 }
 
 function acquireLock(lockPath) {
-  try {
-    mkdirSync(lockPath);
-  } catch (error) {
-    if (error?.code === "EEXIST") {
-      throw new Error(`Lock is already held: ${relativeToRoot(lockPath)}`);
-    }
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      mkdirSync(lockPath);
+      writeFileSync(resolve(lockPath, "owner.txt"), `${process.pid}\n`, "utf8");
+      return () => rmSync(lockPath, { recursive: true, force: true });
+    } catch (error) {
+      if (error?.code === "EEXIST" && clearStaleLock(lockPath)) {
+        continue;
+      }
 
-    throw error;
+      if (error?.code === "EEXIST") {
+        throw new Error(`Lock is already held: ${relativeToRoot(lockPath)}`);
+      }
+
+      throw error;
+    }
   }
 
-  writeFileSync(resolve(lockPath, "owner.txt"), `${process.pid}\n`, "utf8");
-  return () => rmSync(lockPath, { recursive: true, force: true });
+  throw new Error(`Could not acquire lock: ${relativeToRoot(lockPath)}`);
+}
+
+function clearStaleLock(lockPath) {
+  const ownerPath = resolve(lockPath, "owner.txt");
+  const lockAgeMs = Date.now() - statSync(lockPath).mtimeMs;
+
+  if (!existsSync(ownerPath)) {
+    if (lockAgeMs < 30_000) {
+      return false;
+    }
+
+    rmSync(lockPath, { recursive: true, force: true });
+    return true;
+  }
+
+  const ownerText = readFileSync(ownerPath, "utf8");
+  const ownerPid = Number.parseInt(ownerText.trim(), 10);
+  if (Number.isFinite(ownerPid) && isProcessRunning(ownerPid)) {
+    return false;
+  }
+
+  rmSync(lockPath, { recursive: true, force: true });
+  return true;
+}
+
+function isProcessRunning(pid) {
+  if (pid === process.pid) {
+    return true;
+  }
+
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
 }
 
 function runCopilot(label, prompt) {
