@@ -488,7 +488,7 @@ fieldset {
   background: transparent;
 }
 
-.meal-card summary {
+.meal-card > summary {
   min-height: 50px;
   display: grid;
   gap: 4px;
@@ -496,7 +496,7 @@ fieldset {
   cursor: pointer;
 }
 
-.meal-card summary span {
+.meal-card > summary span {
   color: var(--ink);
   font-weight: 500;
 }
@@ -505,12 +505,23 @@ fieldset {
   border-top: 1px solid var(--border-soft);
 }
 
+.meal-tools {
+  margin-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.meal-tools > summary {
+  padding: 10px 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
 .meal-targets {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  padding: 10px 0;
-  border-top: 1px solid var(--border-soft);
+  padding: 0 0 10px;
 }
 
 .meal-targets label {

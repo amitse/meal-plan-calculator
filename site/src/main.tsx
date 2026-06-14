@@ -249,14 +249,6 @@ function App() {
                   <span>{meal.displayName}</span>
                   <small>{meal.items.length} items</small>
                 </summary>
-                <div className="meal-targets">
-                  <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} min="0" max="5000" step="25" type="number" /></label>
-                  <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} min="0" step="5" type="number" /></label>
-                  <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds, meal.id))}>Randomize meal</button>
-                  <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "protein-serving"))}>Add protein</button>
-                  <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "grain"))}>Add grain</button>
-                </div>
-                <div className="meal-status">{mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {}).join(" · ")}</div>
                 <div className="meal-items">
                   {meal.items.map((item, index) => (
                     <PlanItemRow
@@ -270,6 +262,17 @@ function App() {
                     />
                   ))}
                 </div>
+                <details className="meal-tools">
+                  <summary>Meal tools</summary>
+                  <div className="meal-targets">
+                    <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} min="0" max="5000" step="25" type="number" /></label>
+                    <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} min="0" step="5" type="number" /></label>
+                    <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds, meal.id))}>Randomize meal</button>
+                    <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "protein-serving"))}>Add protein</button>
+                    <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "grain"))}>Add grain</button>
+                  </div>
+                  <div className="meal-status">{mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {}).join(" · ")}</div>
+                </details>
               </details>
             ))}
           </div>
