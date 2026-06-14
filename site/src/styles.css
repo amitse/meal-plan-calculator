@@ -223,17 +223,28 @@ small {
 .customization-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: baseline;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
-.customization-chips span {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-strong);
+.customization-label {
+  color: var(--faint);
+  font-weight: 600;
+}
+
+.customization-note {
   color: var(--body);
-  padding: 7px 10px;
-  font-size: 0.86rem;
+}
+
+.customization-note::before {
+  content: "·";
+  margin-right: 8px;
+  color: var(--faint);
 }
 
 .nested-drawer {

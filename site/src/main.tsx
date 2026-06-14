@@ -227,7 +227,8 @@ function App() {
 
           {activeCustomizationChips.length > 0 && (
             <div className="customization-chips" aria-label="Active customizations">
-              {activeCustomizationChips.map((label) => <span key={label}>{label}</span>)}
+              <span className="customization-label">Active settings</span>
+              {activeCustomizationChips.map((label) => <span className="customization-note" key={label}>{label}</span>)}
             </div>
           )}
           {generationError && <p className="generation-feedback" role="alert">{generationError}</p>}
