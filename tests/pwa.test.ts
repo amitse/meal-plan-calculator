@@ -5,6 +5,7 @@ describe("PWA shell", () => {
   it("declares installable app metadata", async () => {
     const manifest = JSON.parse(await readFile("site/public/manifest.webmanifest", "utf8")) as {
       display?: string;
+      display_override?: string[];
       icons?: { sizes?: string; purpose?: string }[];
       scope?: string;
       start_url?: string;
@@ -13,7 +14,8 @@ describe("PWA shell", () => {
 
     expect(manifest.start_url).toBe("/meal-plan-calculator/");
     expect(manifest.scope).toBe("/meal-plan-calculator/");
-    expect(manifest.display).toBe("standalone");
+    expect(manifest.display).toBe("fullscreen");
+    expect(manifest.display_override).toContain("fullscreen");
     expect(manifest.icons?.some((icon) => icon.sizes === "192x192")).toBe(true);
     expect(manifest.icons?.some((icon) => icon.sizes === "512x512")).toBe(true);
     expect(manifest.icons?.some((icon) => icon.purpose === "maskable")).toBe(true);

@@ -39,6 +39,7 @@
 
 html {
   background: var(--bg);
+  height: 100%;
   min-height: 100%;
   scroll-behavior: smooth;
 }
@@ -57,6 +58,11 @@ body {
   font-variant-numeric: tabular-nums;
   overscroll-behavior-y: contain;
   -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100dvh;
+  min-height: 100svh;
 }
 
 button,
@@ -136,6 +142,14 @@ summary:focus-visible {
 
 .mobile-header button:hover {
   border-color: var(--muted);
+}
+
+.install-state {
+  margin: 0 0 var(--space-xs);
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.3;
+  text-align: right;
 }
 
 .eyebrow {
@@ -638,14 +652,16 @@ fieldset {
 }
 
 .bottom-action {
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 50%;
   z-index: 10;
-  margin: 0 calc(var(--app-gutter) * -1);
+  width: min(100%, var(--app-max-width));
   padding: var(--space-sm) var(--app-gutter) max(var(--space-sm), env(safe-area-inset-bottom));
   background: rgba(20, 20, 20, 0.92);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--border);
+  transform: translateX(-50%);
 }
 
 .primary-action {
@@ -1007,20 +1023,6 @@ fieldset {
 
   .result-panel {
     margin-top: 0;
-  }
-
-  .bottom-action {
-    position: static;
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    backdrop-filter: none;
-  }
-
-  .primary-action {
-    width: auto;
-    min-width: 280px;
   }
 
   .summary-grid {

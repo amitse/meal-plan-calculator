@@ -73,7 +73,9 @@ function App() {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState("");
   const [generationError, setGenerationError] = useState("");
+  const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
+  const [isInstalledView, setIsInstalledView] = useState(false);
   const resultRef = useRef<HTMLElement>(null);
 
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
@@ -97,13 +99,18 @@ function App() {
   }, []);
 
   useEffect(() => {
+    setIsInstalledView(isStandaloneApp());
+
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallState("");
     }
 
     function handleAppInstalled() {
       setInstallPrompt(undefined);
+      setInstallState("");
+      setIsInstalledView(true);
     }
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -239,21 +246,24 @@ function App() {
 
   async function installApp() {
     if (!installPrompt) {
+      setInstallState("Install from browser menu");
       return;
     }
 
     const prompt = installPrompt;
     setInstallPrompt(undefined);
     await prompt.prompt();
-    await prompt.userChoice;
+    const choice = await prompt.userChoice;
+    setInstallState(choice.outcome === "accepted" ? "" : "Install from browser menu");
   }
 
   return (
     <main className="app-shell">
       <header className="mobile-header">
         <h1>Meal plan</h1>
-        {installPrompt && <button type="button" onClick={() => void installApp()}>Install</button>}
+        {!isInstalledView && <button type="button" onClick={() => void installApp()}>Install</button>}
       </header>
+      {installState && <p className="install-state" role="status">{installState}</p>}
 
       {activeView === "targets" && (
       <form className="planner" onSubmit={submit}>
@@ -639,6 +649,10 @@ function isProteinVisible(optionId: string, dietaryLevel: DietaryLevel) {
   if (dietaryLevel === "vegetarian") return optionId !== "two-whole-eggs" && optionId !== "chicken-fish-100g";
   if (dietaryLevel === "eggetarian") return optionId !== "chicken-fish-100g";
   return true;
+}
+
+function isStandaloneApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 }
 
 createRoot(document.getElementById("root")!).render(
