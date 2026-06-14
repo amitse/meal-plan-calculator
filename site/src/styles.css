@@ -198,6 +198,7 @@ small {
 
 .section-heading button,
 .secondary-action,
+.export-actions button,
 .meal-targets button,
 .item-actions button {
   min-height: 44px;
@@ -215,6 +216,7 @@ small {
 
 .section-heading button:hover,
 .secondary-action:hover,
+.export-actions button:hover,
 .meal-targets button:hover,
 .item-actions button:hover {
   border-color: var(--muted);
@@ -223,6 +225,7 @@ small {
 
 .section-heading button:active,
 .secondary-action:active,
+.export-actions button:active,
 .meal-targets button:active,
 .item-actions button:active {
   transform: translateY(1px) scale(0.99);
@@ -278,6 +281,7 @@ small {
 }
 
 .options-drawer > summary::after,
+.export-drawer > summary::after,
 .nested-drawer > summary::after,
 .meal-tools > summary::after,
 .meal-card > summary::after {
@@ -289,6 +293,7 @@ small {
 }
 
 .options-drawer[open] > summary::after,
+.export-drawer[open] > summary::after,
 .nested-drawer[open] > summary::after,
 .meal-tools[open] > summary::after,
 .meal-card[open] > summary::after {
@@ -506,6 +511,7 @@ fieldset {
 .choice-group label:hover,
 .avoid-list label:hover,
 .options-drawer > summary:hover,
+.export-drawer > summary:hover,
 .nested-drawer > summary:hover,
 .meal-card > summary:hover,
 .meal-tools > summary:hover {
@@ -619,6 +625,34 @@ fieldset {
   gap: var(--space-lg);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+}
+
+.export-drawer {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.export-drawer > summary {
+  min-height: var(--control-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  color: var(--body);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.export-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
+  padding: 0 0 var(--space-md);
+}
+
+.export-actions button {
+  width: 100%;
 }
 
 .metric {

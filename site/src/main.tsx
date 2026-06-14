@@ -33,6 +33,7 @@ import {
   type MealMacroTarget,
   type ShareablePlannerState,
 } from "./editable-planner.js";
+import { planExportCsv, planExportExcelHtml, planExportHtmlTable, planExportTsv } from "./export-plan.js";
 import "./styles.css";
 
 type BoundField = "none" | "min" | "max" | "target";
@@ -156,6 +157,44 @@ function App() {
       .catch(() => setShareState("Copy blocked; link is in address bar"));
   }
 
+  function exportCsv() {
+    if (!plan) return;
+    downloadTextFile(exportFilename("csv"), "text/csv;charset=utf-8", planExportCsv(plan));
+    setShareState("CSV downloaded");
+  }
+
+  function exportExcel() {
+    if (!plan) return;
+    downloadTextFile(exportFilename("xls"), "application/vnd.ms-excel;charset=utf-8", planExportExcelHtml(plan));
+    setShareState("Excel file downloaded");
+  }
+
+  async function copyForGoogleDocs() {
+    if (!plan) return;
+    const plainText = planExportTsv(plan);
+    const html = planExportHtmlTable(plan);
+
+    try {
+      if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([plainText], { type: "text/plain" }),
+          }),
+        ]);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(plainText);
+      } else {
+        setShareState("Copy blocked; use CSV or Excel");
+        return;
+      }
+
+      setShareState("Copied for Google Docs");
+    } catch {
+      setShareState("Copy blocked; use CSV or Excel");
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="mobile-header">
@@ -266,6 +305,17 @@ function App() {
             <button type="button" onClick={share}>Share</button>
           </div>
           {shareState && <p className="share-state">{shareState}</p>}
+          <details className="export-drawer">
+            <summary>
+              <span>Export</span>
+              <span className="drawer-summary">CSV · Excel · Google Docs</span>
+            </summary>
+            <div className="export-actions" aria-label="Export meal plan">
+              <button type="button" onClick={exportCsv}>CSV</button>
+              <button type="button" onClick={exportExcel}>Excel</button>
+              <button type="button" onClick={() => void copyForGoogleDocs()}>Google Docs</button>
+            </div>
+          </details>
           {lockedItemCount > 0 && (
             <div className="locked-notice" role="status">
               <p>
@@ -427,6 +477,23 @@ function macroDrawerSummary(form: EditableFormState) {
   ].filter(Boolean);
 
   return activeMacros.length > 0 ? `${activeMacros.length} active` : "Optional limits";
+}
+
+function exportFilename(extension: "csv" | "xls") {
+  const date = new Date().toISOString().slice(0, 10);
+  return `meal-plan-${date}.${extension}`;
+}
+
+function downloadTextFile(filename: string, type: string, contents: string) {
+  const blob = new Blob([contents], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function amountStep(item: DailyPlanItem, unit: string) {
