@@ -424,7 +424,7 @@ function PlanItemRow({
         <strong>{label}</strong>
         <small>{Math.round(nutrition.calories ?? 0)} kcal · {Math.round(nutrition.protein ?? 0)}g</small>
       </div>
-      <div className="item-actions">
+      <div className={`item-actions ${item.kind === "exchange" ? "has-swap" : "no-swap"}`}>
         <label>
           <span className="sr-only">Amount</span>
           <input inputMode="decimal" value={amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={amountStep(item, unit)} type="number" />
