@@ -305,6 +305,8 @@ function waitForGenerationProgressFrame() {
 function App() {
   const loadedUrlState = useMemo(loadStateFromUrl, []);
   const generationProgressId = useId();
+  const quickStartConfirmTitleId = useId();
+  const quickStartConfirmDescriptionId = useId();
   const urlState = loadedUrlState.state;
   const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
@@ -332,9 +334,11 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [calorieInputError, setCalorieInputError] = useState("");
   const [dietRuleNotice, setDietRuleNotice] = useState("");
+  const [pendingQuickStartPreset, setPendingQuickStartPreset] = useState<QuickStartPreset | undefined>();
   const resultRef = useRef<HTMLElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
   const calorieInputRef = useRef<HTMLInputElement>(null);
+  const quickStartConfirmDialogRef = useRef<HTMLDialogElement>(null);
   const generationInFlight = useRef(false);
   const mealCardRefs = useRef<Map<string, HTMLDetailsElement>>(new Map());
   const addedMealFeedbackKey = useRef(0);
@@ -377,6 +381,15 @@ function App() {
     feedbackPanel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
     feedbackPanel.focus({ preventScroll: true });
   }, [generationBlockers]);
+
+  useEffect(() => {
+    const dialog = quickStartConfirmDialogRef.current;
+    if (!dialog || !pendingQuickStartPreset || dialog.open) {
+      return;
+    }
+
+    dialog.showModal();
+  }, [pendingQuickStartPreset]);
 
   useEffect(() => {
     if (!addedMealFeedback || activeView !== "plan" || revealedAddedMealKey.current === addedMealFeedback.key) {
@@ -532,8 +545,18 @@ function App() {
     event.currentTarget.focus();
   }
 
+  function selectQuickStartPreset(preset: QuickStartPreset) {
+    if (plan) {
+      setPendingQuickStartPreset(preset);
+      return;
+    }
+
+    applyQuickStartPreset(preset);
+  }
+
   function applyQuickStartPreset(preset: QuickStartPreset) {
     const replacesPlan = Boolean(plan);
+    setPendingQuickStartPreset(undefined);
     setForm(preset.form);
     setLockedIds(new Set());
     setMealTargets({});
@@ -545,6 +568,10 @@ function App() {
     if (generate(preset.form, { useExistingLocks: false }) && replacesPlan) {
       setShareState({ message: `${preset.label} example replaced the previous plan.` });
     }
+  }
+
+  function cancelQuickStartReplacement() {
+    setPendingQuickStartPreset(undefined);
   }
 
   function markPlanStale() {
@@ -1175,13 +1202,47 @@ function App() {
             </summary>
             <div className="quick-start-row">
               {quickStartPresets.map((preset) => (
-                <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
+                <button key={preset.label} type="button" onClick={() => selectQuickStartPreset(preset)}>
                   <span className="quick-start-label"><Icon name="bowl" />{preset.label}</span>
                   <span className="quick-start-preview">{quickStartPresetPreview(preset.form)}</span>
                 </button>
               ))}
             </div>
           </details>
+
+          {pendingQuickStartPreset && (
+            <dialog
+              className="preset-confirm-dialog"
+              ref={quickStartConfirmDialogRef}
+              aria-labelledby={quickStartConfirmTitleId}
+              aria-describedby={quickStartConfirmDescriptionId}
+              onCancel={cancelQuickStartReplacement}
+              onClose={cancelQuickStartReplacement}
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  cancelQuickStartReplacement();
+                }
+              }}
+            >
+              <div className="preset-confirm-panel">
+                <header className="preset-confirm-header">
+                  <p>Replace example</p>
+                  <h3 id={quickStartConfirmTitleId}>Replace with {pendingQuickStartPreset.label}?</h3>
+                </header>
+                <p id={quickStartConfirmDescriptionId} className="preset-confirm-description">
+                  This will replace your current plan and clear plan-specific edits, including locked items and meal targets.
+                </p>
+                <div className="preset-confirm-actions">
+                  <button type="button" onClick={cancelQuickStartReplacement}>
+                    Cancel
+                  </button>
+                  <button type="button" onClick={() => applyQuickStartPreset(pendingQuickStartPreset)}>
+                    Replace plan
+                  </button>
+                </div>
+              </div>
+            </dialog>
+          )}
 
           {generationBlockers.length > 0 && (
             <div

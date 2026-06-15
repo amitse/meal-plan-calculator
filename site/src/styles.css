@@ -674,6 +674,98 @@ small {
   transform: translateY(1px) scale(0.99);
 }
 
+.preset-confirm-dialog {
+  width: min(calc(100vw - 28px), 420px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.preset-confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.66);
+}
+
+.preset-confirm-panel {
+  display: grid;
+}
+
+.preset-confirm-header {
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.preset-confirm-header p,
+.preset-confirm-header h3,
+.preset-confirm-description {
+  margin: 0;
+}
+
+.preset-confirm-header p {
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.preset-confirm-header h3 {
+  margin-top: 6px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.preset-confirm-description {
+  padding: var(--space-sm) var(--space-md) 0;
+  color: var(--body);
+  font-size: 0.9rem;
+  line-height: 1.42;
+}
+
+.preset-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+}
+
+.preset-confirm-actions button {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--body);
+  padding: 0 var(--space-sm);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.preset-confirm-actions button:hover {
+  border-color: var(--muted);
+  color: var(--ink);
+}
+
+.preset-confirm-actions button:last-child {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--inverse-ink);
+}
+
+.preset-confirm-actions button:last-child:hover {
+  background: #e1bd63;
+  border-color: #e1bd63;
+  color: var(--inverse-ink);
+}
+
 .options-drawer {
   margin: 10px 0 2px;
   border-top: 1px solid var(--border-soft);
@@ -1750,9 +1842,9 @@ fieldset {
 .plan-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px var(--space-xs);
+  gap: 4px var(--space-xs);
   align-items: center;
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -1761,39 +1853,39 @@ fieldset {
 }
 
 .item-actions {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  align-items: center;
   gap: 4px;
-  justify-items: end;
-  width: 126px;
+  justify-content: flex-end;
+  width: auto;
   min-width: 0;
 }
 
 .amount-line {
   display: grid;
   grid-template-columns: minmax(0, 1fr) min-content;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
-  width: 100%;
+  width: 132px;
 }
 
 .item-button-row {
   display: flex;
   justify-content: flex-end;
   gap: 4px;
-  width: 100%;
+  width: auto;
 }
 
 .amount-line .number-stepper.is-compact {
-  grid-template-columns: 26px minmax(30px, 1fr) 26px;
-  min-height: 34px;
+  grid-template-columns: 24px minmax(28px, 1fr) 24px;
+  min-height: 32px;
 }
 
 .item-actions .icon-button {
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  min-height: 34px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
   border-color: rgba(172, 163, 148, 0.24);
   background: transparent;
   color: var(--muted);
@@ -1821,7 +1913,7 @@ fieldset {
 }
 
 .unit-label {
-  min-width: 24px;
+  min-width: 20px;
   color: var(--faint);
   font-size: 0.72rem;
   font-weight: 650;
@@ -1829,8 +1921,8 @@ fieldset {
 }
 
 .swap-button {
-  min-width: 50px;
-  min-height: 34px;
+  min-width: 48px;
+  min-height: 32px;
   border-color: rgba(210, 160, 87, 0.28);
   background: rgba(210, 160, 87, 0.06);
   color: var(--accent);
@@ -1976,8 +2068,8 @@ fieldset {
 
 .item-actions .lock-toggle,
 .item-actions .delete-toggle {
-  min-height: 34px;
-  min-width: 34px;
+  min-height: 32px;
+  min-width: 32px;
   padding-inline: 0;
   font-size: 0.78rem;
 }
@@ -1997,7 +2089,7 @@ fieldset {
 
 .item-summary {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
