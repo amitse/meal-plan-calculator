@@ -1486,6 +1486,25 @@ fieldset {
   padding: 8px var(--space-sm) var(--space-sm);
 }
 
+.meal-empty-state {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-sm);
+  border: 1px dashed rgba(225, 189, 99, 0.5);
+  background: rgba(225, 189, 99, 0.08);
+  color: var(--body);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.meal-empty-state strong {
+  color: var(--warning);
+}
+
+.meal-empty-state span {
+  color: var(--muted);
+}
+
 .meal-tools {
   margin: 0 var(--space-sm) var(--space-md);
   border-top: 1px solid var(--border-soft);

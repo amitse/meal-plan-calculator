@@ -1160,6 +1160,7 @@ function App() {
               const mealFeedback = mealRandomizeFeedback[meal.id];
               const mealToolMessage = mealToolMessages[meal.id];
               const addedFeedback = addedMealFeedback?.mealId === meal.id ? addedMealFeedback : undefined;
+              const mealUndo = deletedItemUndo?.mealId === meal.id ? deletedItemUndo : undefined;
               return (
               <details
                 className={`meal-card${addedFeedback ? " is-newly-added" : ""}`}
@@ -1209,20 +1210,31 @@ function App() {
                   </p>
                 )}
                 <div className="meal-items">
-                  {meal.items.map((item, index) => (
-                    <PlanItemRow
-                      form={form}
-                      item={item}
-                      key={item.id ?? `${meal.id}-${index}`}
-                      locked={Boolean(item.id && lockedIds.has(item.id))}
-                      mealId={meal.id}
-                      mealName={meal.displayName}
-                      onAmount={(amount) => item.id && updatePlanItemServing(item.id, amount)}
-                      onDelete={() => item.id && deleteItem(item.id)}
-                      onLock={() => item.id && toggleLock(item.id)}
-                      onSwap={(optionId) => item.id && swapPlanItem(item.id, optionId)}
-                    />
-                  ))}
+                  {meal.items.length > 0 ? (
+                    meal.items.map((item, index) => (
+                      <PlanItemRow
+                        form={form}
+                        item={item}
+                        key={item.id ?? `${meal.id}-${index}`}
+                        locked={Boolean(item.id && lockedIds.has(item.id))}
+                        mealId={meal.id}
+                        mealName={meal.displayName}
+                        onAmount={(amount) => item.id && updatePlanItemServing(item.id, amount)}
+                        onDelete={() => item.id && deleteItem(item.id)}
+                        onLock={() => item.id && toggleLock(item.id)}
+                        onSwap={(optionId) => item.id && swapPlanItem(item.id, optionId)}
+                      />
+                    ))
+                  ) : (
+                    <div className="meal-empty-state" role="note">
+                      <strong>No foods in this meal.</strong>
+                      <span>
+                        {mealUndo
+                          ? `Use Undo to restore ${mealUndo.label}, or open Meal tools to add protein, grain, or fruit.`
+                          : "Open Meal tools to add protein, grain, or fruit."}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <details className="meal-tools">
                   <summary>
