@@ -413,7 +413,7 @@ function App() {
 
     setDeletedItemUndo(undefined);
     setPlanRandomizeFeedback(undefined);
-    const next = randomizePlan(plan, form, lockedIds, mealId);
+    const next = randomizePlan(plan, form, lockedIds, mealId, Date.now(), mealTargets[mealId]);
     const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
     const changed = JSON.stringify(nextMeal) !== JSON.stringify(meal);
     setPlan(next);

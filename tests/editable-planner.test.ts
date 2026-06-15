@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { calculateMealTotals } from "../src/index.js";
 import {
   addItemToMeal,
   addMeal,
@@ -131,6 +132,31 @@ describe("editable planner workflows", () => {
     const randomized = randomizePlan(plan, initialFormState, new Set(), undefined, 101);
 
     expect(planEvaluation(randomized, initialFormState).status).toBe("pass");
+  });
+
+  it("randomizes a meal toward its protein target when one is set", () => {
+    const form = {
+      ...initialFormState,
+      preferredProteins: ["paneer-50g", "whey-30g", "tofu-100g"],
+    };
+    const plan = swapExchangeOption(generateEditablePlan(form, undefined, new Set(), 4)!, "lunch-protein", "paneer-50g");
+    const beforeLunch = plan.meals.find((meal) => meal.id === "lunch")!;
+    const beforeProtein = calculateMealTotals(beforeLunch).values.protein;
+    const target = { protein: String(Math.ceil(beforeProtein + 5)) };
+    const randomized = randomizePlan(plan, form, new Set(), "lunch", 101, target);
+    const afterLunch = randomized.meals.find((meal) => meal.id === "lunch")!;
+    const afterProtein = calculateMealTotals(afterLunch).values.protein;
+
+    expect(afterProtein).toBeGreaterThan(beforeProtein);
+    expect(mealTargetStatus(randomized, "lunch", target)).toContain("Protein met");
+  });
+
+  it("keeps untargeted meal randomization behavior for empty meal targets", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const untargeted = randomizePlan(plan, initialFormState, new Set(), "lunch", 101);
+    const emptyTarget = randomizePlan(plan, initialFormState, new Set(), "lunch", 101, { calories: "", protein: "" });
+
+    expect(emptyTarget).toEqual(untargeted);
   });
 
   it("supports swapping, deleting, quantity edits, adding meals, and adding items", () => {

@@ -316,10 +316,12 @@ export function randomizePlan(
   lockedItemIds: ReadonlySet<string>,
   mealId?: string,
   seed = Date.now(),
+  mealTarget?: MealMacroTarget,
 ): DailyPlan {
   const attempts = mealId ? 32 : 48;
   let bestPlan = plan;
   let bestScore = scorePlanEvaluation(planEvaluation(plan, form));
+  let bestMealTargetScore = scoreMealTarget(plan, mealId, mealTarget);
   const originalSerialized = JSON.stringify(plan);
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -334,17 +336,77 @@ export function randomizePlan(
     }
 
     const candidateScore = scorePlanEvaluation(planEvaluation(candidate, form));
+    const candidateMealTargetScore = bestMealTargetScore === undefined
+      ? undefined
+      : scoreMealTarget(candidate, mealId, mealTarget);
     const candidateSerialized = JSON.stringify(candidate);
     if (
-      candidateScore < bestScore ||
-      (candidateScore === bestScore && candidateSerialized !== originalSerialized)
+      isBetterRandomizedCandidate(
+        candidateScore,
+        candidateMealTargetScore,
+        candidateSerialized,
+        bestScore,
+        bestMealTargetScore,
+        originalSerialized,
+      )
     ) {
       bestPlan = candidate;
       bestScore = candidateScore;
+      bestMealTargetScore = candidateMealTargetScore;
     }
   }
 
   return bestPlan;
+}
+
+function isBetterRandomizedCandidate(
+  candidateScore: number,
+  candidateMealTargetScore: number | undefined,
+  candidateSerialized: string,
+  bestScore: number,
+  bestMealTargetScore: number | undefined,
+  originalSerialized: string,
+) {
+  if (candidateMealTargetScore !== undefined && bestMealTargetScore !== undefined) {
+    return (
+      candidateMealTargetScore < bestMealTargetScore ||
+      (candidateMealTargetScore === bestMealTargetScore && candidateScore < bestScore) ||
+      (
+        candidateMealTargetScore === bestMealTargetScore &&
+        candidateScore === bestScore &&
+        candidateSerialized !== originalSerialized
+      )
+    );
+  }
+
+  return candidateScore < bestScore || (candidateScore === bestScore && candidateSerialized !== originalSerialized);
+}
+
+function scoreMealTarget(plan: DailyPlan, mealId: string | undefined, target: MealMacroTarget | undefined) {
+  if (!mealId || !target) {
+    return undefined;
+  }
+
+  const proteinTarget = positiveNumber(target.protein);
+  const calorieTarget = positiveNumber(target.calories);
+  if (proteinTarget === undefined && calorieTarget === undefined) {
+    return undefined;
+  }
+
+  const meal = plan.meals.find((candidate) => candidate.id === mealId);
+  if (!meal) {
+    return undefined;
+  }
+
+  const totals = calculateMealTotals(meal);
+  const proteinScore = proteinTarget === undefined
+    ? 0
+    : Math.max(0, proteinTarget - totals.values.protein) * metricWeights.protein;
+  const calorieScore = calorieTarget === undefined
+    ? 0
+    : Math.max(0, Math.abs(totals.values.calories - calorieTarget) - 50) * metricWeights.calories;
+
+  return proteinScore + calorieScore;
 }
 
 function randomizePlanItems(
@@ -563,6 +625,12 @@ export function mealTargetStatus(plan: DailyPlan, mealId: string, target: MealMa
   }
 
   return statuses;
+}
+
+function positiveNumber(value: string | undefined) {
+  const parsed = Number(value || 0);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 export function encodeShareState(state: ShareablePlannerState): string {
