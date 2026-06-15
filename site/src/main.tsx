@@ -825,6 +825,11 @@ function App() {
     setLockedIds(new Set());
   }
 
+  function clearLocksFromGenerationBlocker() {
+    clearLocks();
+    setGenerationBlockers([]);
+  }
+
   function updateMealTarget(mealId: string, key: keyof MealMacroTarget, value: string) {
     clearRandomizeFeedback();
     clearMealToolMessage(mealId);
@@ -1272,6 +1277,18 @@ function App() {
               <ul>
                 {generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
               </ul>
+              {lockedItemCount > 0 && (
+                <div className="generation-lock-recovery">
+                  <p>
+                    <strong>{lockedItemCount} locked {lockedItemCount === 1 ? "food is" : "foods are"} still fixed.</strong>{" "}
+                    Clear all locks here, or return to the plan to unlock specific foods.
+                  </p>
+                  <div className="generation-lock-actions">
+                    <button type="button" onClick={clearLocksFromGenerationBlocker}>Clear all locks</button>
+                    {plan && <button type="button" onClick={() => setActiveView("plan")}>Back to plan</button>}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>

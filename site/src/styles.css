@@ -2294,6 +2294,38 @@ fieldset {
   margin: 4px 0;
 }
 
+.generation-lock-recovery {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid rgba(223, 138, 120, 0.34);
+}
+
+.generation-lock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.generation-lock-actions button {
+  min-height: 38px;
+  border: 1px solid rgba(223, 138, 120, 0.58);
+  border-radius: 999px;
+  background: rgba(14, 14, 14, 0.72);
+  color: var(--ink);
+  padding: 0 12px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.generation-lock-actions button:hover {
+  border-color: var(--danger);
+  background: rgba(223, 138, 120, 0.14);
+  transform: translateY(-1px);
+}
+
 .stale-plan-notice {
   display: flex;
   gap: var(--space-sm);
