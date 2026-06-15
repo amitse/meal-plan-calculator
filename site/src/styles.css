@@ -1748,33 +1748,31 @@ fieldset {
 }
 
 .plan-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px var(--space-sm);
-  align-items: start;
-  padding: 12px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px var(--space-xs);
+  align-items: center;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border-soft);
 }
 
 .plan-row > div:first-child {
-  flex: 1 1 174px;
   min-width: 0;
-  padding-top: 2px;
 }
 
 .item-actions {
-  flex: 0 0 122px;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 4px;
   justify-items: end;
+  width: 126px;
   min-width: 0;
 }
 
 .amount-line {
   display: grid;
   grid-template-columns: minmax(0, 1fr) min-content;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   width: 100%;
 }
@@ -1782,20 +1780,20 @@ fieldset {
 .item-button-row {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
 }
 
 .amount-line .number-stepper.is-compact {
-  grid-template-columns: 28px minmax(30px, 1fr) 28px;
-  min-height: 40px;
+  grid-template-columns: 26px minmax(30px, 1fr) 26px;
+  min-height: 34px;
 }
 
 .item-actions .icon-button {
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
   border-color: rgba(172, 163, 148, 0.24);
   background: transparent;
   color: var(--muted);
@@ -1831,14 +1829,19 @@ fieldset {
 }
 
 .swap-button {
-  width: 100%;
-  min-height: 36px;
+  min-width: 50px;
+  min-height: 34px;
   border-color: rgba(210, 160, 87, 0.28);
   background: rgba(210, 160, 87, 0.06);
   color: var(--accent);
   font-size: 0.78rem;
   font-weight: 700;
-  padding-inline: var(--space-sm);
+  padding-inline: 8px;
+}
+
+.swap-button .line-icon {
+  width: 0.82rem;
+  height: 0.82rem;
 }
 
 .swap-sheet {
@@ -1973,9 +1976,9 @@ fieldset {
 
 .item-actions .lock-toggle,
 .item-actions .delete-toggle {
-  min-height: 40px;
-  min-width: 42px;
-  padding-inline: 7px;
+  min-height: 34px;
+  min-width: 34px;
+  padding-inline: 0;
   font-size: 0.78rem;
 }
 
@@ -1994,7 +1997,7 @@ fieldset {
 
 .item-summary {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
