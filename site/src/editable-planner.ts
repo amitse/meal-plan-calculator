@@ -436,21 +436,47 @@ export function addMeal(plan: DailyPlan): DailyPlan {
   };
 }
 
-export function addItemToMeal(plan: DailyPlan, mealId: string, groupId: "grain" | "protein-serving" | "fruit"): DailyPlan {
+export function addItemToMeal(
+  plan: DailyPlan,
+  mealId: string,
+  groupId: "grain" | "protein-serving" | "fruit",
+  form?: EditableFormState,
+): DailyPlan {
   const id = `${mealId}-${groupId}-${Date.now().toString(36)}`;
+
+  if (groupId === "protein-serving") {
+    const proteinOptionId = firstAllowedProteinOption(form);
+    if (!proteinOptionId) {
+      return plan;
+    }
+
+    return {
+      ...plan,
+      meals: plan.meals.map((meal) => (
+        meal.id === mealId
+          ? {
+              ...meal,
+              items: [
+                ...meal.items,
+                {
+                  kind: "exchange",
+                  id,
+                  exchangeGroupId: "protein-serving",
+                  exchangeOptionId: proteinOptionId,
+                  exchangeUnits: 1,
+                  roles: ["protein"],
+                },
+              ],
+            }
+          : meal
+      )),
+    };
+  }
+
   const item: DailyPlanItem =
     groupId === "fruit"
       ? { kind: "exchange", id, exchangeGroupId: "fruit", exchangeOptionId: "banana", exchangeUnits: 1, roles: ["fruit"] }
-      : groupId === "grain"
-        ? { kind: "exchange", id, exchangeGroupId: "grain", exchangeOptionId: "roti", exchangeUnits: 1, roles: ["carb"] }
-        : {
-            kind: "exchange",
-            id,
-            exchangeGroupId: "protein-serving",
-            exchangeOptionId: "paneer-50g",
-            exchangeUnits: 1,
-            roles: ["protein"],
-          };
+      : { kind: "exchange", id, exchangeGroupId: "grain", exchangeOptionId: "roti", exchangeUnits: 1, roles: ["carb"] };
 
   return {
     ...plan,
@@ -633,17 +659,24 @@ function grainOptionsForMeal(mealId: string) {
 }
 
 function pickAllowedProtein(form: EditableFormState, seed: number) {
-  const options = proteinOptionsForDiet(form.dietaryLevel).filter((option) => {
-    if (form.avoidPaneer && option === "paneer-50g") return false;
-    if (form.avoidWhey && option === "whey-30g") return false;
-    if (form.avoidEggs && option === "two-whole-eggs") return false;
-    if (form.avoidChickenFish && option === "chicken-fish-100g") return false;
-    return true;
-  });
-  const preferred = proteinPreferencesForDiet(form).filter((option) => options.includes(option));
-  const pool = preferred.length > 0 ? preferred : options;
+  const pool = proteinChoicePool(form);
 
   return pool[pickIndex(pool.length, seed)] ?? "paneer-50g";
+}
+
+function firstAllowedProteinOption(form: EditableFormState | undefined) {
+  return form ? proteinChoicePool(form)[0] : "paneer-50g";
+}
+
+function proteinChoicePool(form: EditableFormState) {
+  const options = proteinOptionsForFoodRules(form);
+  const preferred = proteinPreferencesForDiet(form).filter((option) => options.includes(option));
+
+  return preferred.length > 0 ? preferred : options;
+}
+
+export function proteinOptionsForFoodRules(form: EditableFormState) {
+  return proteinOptionsForDiet(form.dietaryLevel).filter((option) => isProteinOptionAllowedByFoodRules(option, form));
 }
 
 function grainPreferences(form: EditableFormState) {
@@ -763,7 +796,7 @@ function recoveryAction(metric: NutritionMetric, direction: "min" | "max") {
     : "Relax the macro max or change preferences before regenerating.";
 }
 
-export function exchangeOptionsForItem(item: DailyPlanItem, dietaryLevel: DietaryLevel, mealId?: string) {
+export function exchangeOptionsForItem(item: DailyPlanItem, form: EditableFormState, mealId?: string) {
   if (item.kind !== "exchange") {
     return [];
   }
@@ -771,7 +804,7 @@ export function exchangeOptionsForItem(item: DailyPlanItem, dietaryLevel: Dietar
   const options = getExchangeGroup(item.exchangeGroupId).options;
 
   if (item.exchangeGroupId === "protein-serving") {
-    const allowed = new Set(proteinOptionsForDiet(dietaryLevel));
+    const allowed = new Set(proteinOptionsForFoodRules(form));
     return options.filter((option) => allowed.has(option.id));
   }
 
@@ -784,4 +817,15 @@ export function exchangeOptionsForItem(item: DailyPlanItem, dietaryLevel: Dietar
   }
 
   return options;
+}
+
+function isProteinOptionAllowedByFoodRules(optionId: string, form: EditableFormState) {
+  const option = getExchangeOption("protein-serving", optionId);
+
+  if (form.avoidPaneer && option.foodItemId === "paneer") return false;
+  if (form.avoidWhey && option.foodItemId === "whey") return false;
+  if (form.avoidEggs && option.foodItemId === "egg-whole") return false;
+  if (form.avoidChickenFish && (option.id === "chicken-fish-100g" || option.foodItemId === "chicken-breast" || option.foodItemId === "rohu-fish")) return false;
+
+  return true;
 }

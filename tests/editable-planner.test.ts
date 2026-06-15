@@ -5,6 +5,7 @@ import {
   buildDynamicTemplate,
   decodeShareState,
   encodeShareState,
+  exchangeOptionsForItem,
   failureRecoveryMessages,
   generateEditablePlan,
   grainOptions,
@@ -100,6 +101,41 @@ describe("editable planner workflows", () => {
     });
     expect(lunchCarb ? planItemDisplayQuantity(lunchCarb).amount : 0).toBe(300);
     expect(withItem.meals.find((meal) => meal.id === "meal-6")?.items.some((item) => item.kind === "exchange" && item.exchangeGroupId === "fruit")).toBe(true);
+  });
+
+  it("filters protein swaps by active diet and avoid rules", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const proteinItem = plan.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-protein");
+    const form = {
+      ...initialFormState,
+      dietaryLevel: "nonVegetarian" as const,
+      avoidPaneer: true,
+      avoidWhey: true,
+      avoidEggs: true,
+      avoidChickenFish: true,
+    };
+    const optionIds = proteinItem ? exchangeOptionsForItem(proteinItem, form, "lunch").map((option) => option.id) : [];
+
+    expect(optionIds).not.toEqual(expect.arrayContaining(["paneer-50g", "whey-30g", "two-whole-eggs", "chicken-fish-100g"]));
+    expect(optionIds).toEqual(expect.arrayContaining(["tofu-100g", "soy-chunks-dal-40g"]));
+  });
+
+  it("adds a protein item that respects active avoid rules", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const form = {
+      ...initialFormState,
+      dietaryLevel: "nonVegetarian" as const,
+      preferredProteins: ["paneer-50g", "whey-30g", "two-whole-eggs", "chicken-fish-100g"],
+      avoidPaneer: true,
+      avoidWhey: true,
+      avoidEggs: true,
+      avoidChickenFish: true,
+    };
+    const withProtein = addItemToMeal(plan, "lunch", "protein-serving", form);
+    const added = withProtein.meals.find((meal) => meal.id === "lunch")?.items.at(-1);
+
+    expect(added).toMatchObject({ kind: "exchange", exchangeGroupId: "protein-serving" });
+    expect(added && "exchangeOptionId" in added ? added.exchangeOptionId : "").toBe("tofu-100g");
   });
 
   it("edits exchange items in grams", () => {

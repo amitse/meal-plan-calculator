@@ -139,6 +139,7 @@ function App() {
   const [shareState, setShareState] = useState<ShareState | undefined>();
   const [generationError, setGenerationError] = useState("");
   const [isPlanStale, setIsPlanStale] = useState(false);
+  const [mealToolMessages, setMealToolMessages] = useState<Record<string, string>>({});
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(false);
@@ -190,6 +191,7 @@ function App() {
 
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
     setGenerationError("");
+    setMealToolMessages({});
     markPlanStale();
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -231,6 +233,7 @@ function App() {
 
   function updateDietaryLevel(level: DietaryLevel) {
     setGenerationError("");
+    setMealToolMessages({});
     markPlanStale();
     setForm((current) => ({
       ...current,
@@ -243,6 +246,7 @@ function App() {
 
   function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
     setGenerationError("");
+    setMealToolMessages({});
     markPlanStale();
     setForm((current) => {
       const next = checked
@@ -272,6 +276,26 @@ function App() {
       next.delete(itemId);
       return next;
     });
+  }
+
+  function addMealItem(mealId: string, groupId: "grain" | "protein-serving" | "fruit") {
+    if (!plan) return;
+
+    const next = addItemToMeal(plan, mealId, groupId, groupId === "protein-serving" ? form : undefined);
+    if (next === plan && groupId === "protein-serving") {
+      setMealToolMessages((current) => ({
+        ...current,
+        [mealId]: "No protein matches your active diet and avoid rules. Change food rules, then add protein.",
+      }));
+      return;
+    }
+
+    setMealToolMessages((current) => {
+      if (!current[mealId]) return current;
+      const { [mealId]: _removed, ...rest } = current;
+      return rest;
+    });
+    setPlan(next);
   }
 
   function share() {
@@ -554,7 +578,7 @@ function App() {
                 <div className="meal-items">
                   {meal.items.map((item, index) => (
                     <PlanItemRow
-                      dietaryLevel={form.dietaryLevel}
+                      form={form}
                       item={item}
                       key={item.id ?? `${meal.id}-${index}`}
                       locked={Boolean(item.id && lockedIds.has(item.id))}
@@ -575,11 +599,11 @@ function App() {
                     <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} min="0" max="5000" step="25" type="number" /></label>
                     <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} min="0" step="5" type="number" /></label>
                     <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds, meal.id))}>Randomize meal</button>
-                    <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "protein-serving"))}>Add protein</button>
-                    <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "grain"))}>Add grain</button>
-                    <button type="button" onClick={() => setPlan(addItemToMeal(plan, meal.id, "fruit"))}>Add fruit</button>
+                    <button type="button" onClick={() => addMealItem(meal.id, "protein-serving")}>Add protein</button>
+                    <button type="button" onClick={() => addMealItem(meal.id, "grain")}>Add grain</button>
+                    <button type="button" onClick={() => addMealItem(meal.id, "fruit")}>Add fruit</button>
                   </div>
-                  <div className="meal-status">{status.join(" · ")}</div>
+                  <div className="meal-status">{[mealToolMessages[meal.id], status.join(" · ")].filter(Boolean).join(" · ")}</div>
                 </details>
               </details>
             );
@@ -842,7 +866,7 @@ const statusDisplayNames: Record<BoundEvaluation["status"] | "unknown", string> 
 };
 
 function PlanItemRow({
-  dietaryLevel,
+  form,
   item,
   locked,
   mealId,
@@ -851,7 +875,7 @@ function PlanItemRow({
   onLock,
   onSwap,
 }: {
-  dietaryLevel: DietaryLevel;
+  form: EditableFormState;
   item: DailyPlanItem;
   locked: boolean;
   mealId: string;
@@ -863,7 +887,7 @@ function PlanItemRow({
   const label = item.kind === "food" ? getFoodItem(item.foodItemId).displayName : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
   const quantity = planItemDisplayQuantity(item);
   const nutrition = calculateDailyPlanItemNutrition(item);
-  const exchangeOptions = exchangeOptionsForItem(item, dietaryLevel, mealId);
+  const exchangeOptions = exchangeOptionsForItem(item, form, mealId);
 
   return (
     <div className="plan-row">
