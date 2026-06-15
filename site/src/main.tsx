@@ -57,6 +57,7 @@ import {
   buildNutritionInput,
   decodeShareState,
   encodeShareState,
+  exchangeOptionDisplayAmountLabel,
   exchangeOptionGramAmount,
   exchangeOptionsForItem,
   failureRecoveryMessages,
@@ -67,7 +68,10 @@ import {
   mealTargetStatus,
   normalizeEditableFormState,
   parseServingAmountInput,
+  planItemDisplayAmountLabel,
+  planItemDisplayLabel,
   planItemDisplayQuantity,
+  planItemDisplayUnitLabel,
   planEvaluation,
   proteinOptions,
   randomizePlan,
@@ -1031,11 +1035,10 @@ function App() {
     setPlan(next);
 
     if (updatedMeal && updatedItem) {
-      const servingAmount = planItemDisplayQuantity(updatedItem).amount;
       setServingEditConfirmation({
         itemId,
         mealId: updatedMeal.id,
-        message: servingEditConfirmationMessage(servingAmount, nextEvaluation.status),
+        message: servingEditConfirmationMessage(planItemDisplayAmountLabel(updatedItem), nextEvaluation.status),
         previousAmount,
         tone: nextEvaluation.status === "fail" ? "notice" : "success",
       });
@@ -1059,11 +1062,10 @@ function App() {
     setPlan(next);
 
     if (restoredMeal && restoredItem) {
-      const servingAmount = planItemDisplayQuantity(restoredItem).amount;
       setServingEditConfirmation({
         itemId,
         mealId: restoredMeal.id,
-        message: servingRestoredConfirmationMessage(servingAmount, nextEvaluation.status),
+        message: servingRestoredConfirmationMessage(planItemDisplayAmountLabel(restoredItem), nextEvaluation.status),
         tone: nextEvaluation.status === "fail" ? "notice" : "success",
       });
     } else {
@@ -1338,8 +1340,8 @@ function App() {
     } catch {
       // Manual recovery is shown below when clipboard access is unavailable or blocked.
     }
-
     setManualShareText(text);
+    setShareState(undefined);
     setShareState(undefined);
   }
 
@@ -2090,9 +2092,7 @@ function App() {
 }
 
 function planItemLabel(item: DailyPlanItem) {
-  return item.kind === "food"
-    ? getFoodItem(item.foodItemId).displayName
-    : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
+  return planItemDisplayLabel(item);
 }
 
 function mealItemGroupLabel(groupId: "grain" | "protein-serving" | "fruit") {
@@ -2505,15 +2505,13 @@ function targetResultLabel(status: "pass" | "fail") {
   return status === "pass" ? "Within targets" : "Needs adjustment";
 }
 
-function servingEditConfirmationMessage(servingAmount: number, status: "pass" | "fail") {
-  const amount = `${Math.round(servingAmount)}gm`;
+function servingEditConfirmationMessage(amount: string, status: "pass" | "fail") {
   return status === "pass"
     ? `Serving updated to ${amount}; meal and daily totals recalculated.`
     : `Serving updated to ${amount}; totals recalculated. Daily targets need attention.`;
 }
 
-function servingRestoredConfirmationMessage(servingAmount: number, status: "pass" | "fail") {
-  const amount = `${Math.round(servingAmount)}gm`;
+function servingRestoredConfirmationMessage(amount: string, status: "pass" | "fail") {
   return status === "pass"
     ? `Serving restored to ${amount}; meal and daily totals recalculated.`
     : `Serving restored to ${amount}; totals recalculated. Daily targets need attention.`;
@@ -2906,6 +2904,10 @@ function isAbortError(error: unknown) {
 }
 
 function amountStep(item: DailyPlanItem, unit: string) {
+  if (unit !== "g") {
+    return "1";
+  }
+
   if (item.kind === "exchange") {
     return "5";
   }
@@ -3173,7 +3175,9 @@ const statusDisplayNames: Record<BoundEvaluation["status"] | "unknown", string> 
 };
 
 function swapOptionPreviewNutrition(item: Extract<DailyPlanItem, { kind: "exchange" }>, optionId: string) {
-  const servingAmount = planItemDisplayQuantity(item).amount;
+  const currentOption = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
+  const currentUnits = item.exchangeUnits ?? currentOption.exchangeUnits ?? 1;
+  const servingAmount = exchangeOptionGramAmount(item.exchangeGroupId, item.exchangeOptionId) * currentUnits;
   const optionServingAmount = exchangeOptionGramAmount(item.exchangeGroupId, optionId);
 
   return calculateDailyPlanItemNutrition({
@@ -3216,6 +3220,7 @@ function PlanItemRow({
 }) {
   const label = planItemLabel(item);
   const quantity = planItemDisplayQuantity(item);
+  const quantityUnitLabel = planItemDisplayUnitLabel(item, quantity.amount);
   const nutrition = calculateDailyPlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, form, mealId);
   const hasSelectableSwapAlternative = item.kind === "exchange"
@@ -3230,7 +3235,8 @@ function PlanItemRow({
   const swapDescriptionId = useId();
   const isExchangeItem = item.kind === "exchange";
   const servingStep = Number(amountStep(item, quantity.unit));
-  const servingAmountLabel = `${label} amount in grams for ${mealName}`;
+  const servingStepUnitLabel = planItemDisplayUnitLabel(item, servingStep);
+  const servingAmountLabel = `${label} amount in ${quantityUnitLabel} for ${mealName}`;
 
   useEffect(() => {
     setServingDraft(String(quantity.amount));
@@ -3313,14 +3319,14 @@ function PlanItemRow({
             ariaInvalid={Boolean(servingValidationMessage)}
             ariaLabel={servingAmountLabel}
             className="amount-control"
-            decrementLabel={`Decrease ${servingAmountLabel} by ${servingStep} ${quantity.unit}`}
-            incrementLabel={`Increase ${servingAmountLabel} by ${servingStep} ${quantity.unit}`}
+            decrementLabel={`Decrease ${servingAmountLabel} by ${servingStep} ${servingStepUnitLabel}`}
+            incrementLabel={`Increase ${servingAmountLabel} by ${servingStep} ${servingStepUnitLabel}`}
             onChange={updateServingDraft}
             size="compact"
             step={servingStep}
             value={servingDraft}
           />
-          <span className="unit-label notranslate" translate="no" title="grams">gm</span>
+          <span className="unit-label notranslate" translate="no" title={quantityUnitLabel}>{quantityUnitLabel}</span>
         </div>
         <div className="item-button-row">
           <button className="lock-toggle icon-button" type="button" aria-label={`${locked ? "Unlock" : "Lock"} ${label}`} aria-pressed={locked} onClick={onLock}>
@@ -3406,7 +3412,7 @@ function PlanItemRow({
                       >
                         <span className="swap-option-name">{option.displayName}</span>
                         <small className="swap-option-meta">
-                          <span><span className="notranslate" translate="no">{exchangeOptionGramAmount(item.exchangeGroupId, option.id)}gm</span> exchange</span>
+                          <span><span className="notranslate" translate="no">{exchangeOptionDisplayAmountLabel(item.exchangeGroupId, option.id)}</span> exchange</span>
                           <span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.calories, "calories")}</span>
                           <span><span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.protein, "protein")}</span>{previewNutrition.protein == null ? "" : " protein"}</span>
                           {isCurrentOption && <span className="swap-option-current">Current</span>}

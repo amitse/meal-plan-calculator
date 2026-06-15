@@ -2354,7 +2354,7 @@ fieldset {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--size-4) var(--space-xs);
-  align-items: center;
+  align-items: start;
   padding: var(--size-6) 0;
   border-bottom: var(--size-px) solid var(--border-soft);
 }
@@ -2365,7 +2365,7 @@ fieldset {
 
 .item-actions {
   display: grid;
-  align-items: center;
+  align-items: start;
   gap: var(--size-6);
   justify-items: end;
   width: auto;

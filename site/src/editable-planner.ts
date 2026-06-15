@@ -16,6 +16,7 @@ import {
   type NutritionMetric,
   type NutritionTarget,
   type PlanEvaluation,
+  type QuantityUnit,
 } from "../../src/index.js";
 
 export interface EditableFormState {
@@ -60,7 +61,7 @@ export interface EditablePlanGenerationResult {
 
 export interface DisplayQuantity {
   amount: number;
-  unit: "g";
+  unit: QuantityUnit;
 }
 
 export const grainOptions = [
@@ -507,7 +508,7 @@ export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number
       return { ...item, quantity: { ...item.quantity, amount: roundFoodAmount(item, amount) } };
     }
 
-    return { ...item, exchangeUnits: exchangeUnitsForGramAmount(item.exchangeGroupId, item.exchangeOptionId, roundGramAmount(amount)) };
+    return { ...item, exchangeUnits: exchangeUnitsForDisplayAmount(item.exchangeGroupId, item.exchangeOptionId, amount) };
   });
 }
 
@@ -628,10 +629,63 @@ export function addItemToMeal(
 
 export function planItemDisplayQuantity(item: DailyPlanItem): DisplayQuantity {
   if (item.kind === "food") {
-    return { amount: roundGramAmount(item.quantity.amount), unit: "g" };
+    return { amount: roundDisplayAmount(item.quantity.amount, item.quantity.unit), unit: item.quantity.unit };
+  }
+
+  const option = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
+  if (isWholeDisplayUnit(option.quantity.unit)) {
+    return {
+      amount: roundDisplayAmount(exchangeItemDisplayAmount(item), option.quantity.unit),
+      unit: option.quantity.unit,
+    };
   }
 
   return { amount: exchangeItemGramAmount(item), unit: "g" };
+}
+
+export function planItemDisplayLabel(item: DailyPlanItem) {
+  if (item.kind === "food") {
+    return getFoodItem(item.foodItemId).displayName;
+  }
+
+  const option = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
+  if (option.foodItemId === "egg-whole" && option.quantity.unit === "count") {
+    return "Whole eggs";
+  }
+
+  return option.displayName;
+}
+
+export function planItemDisplayUnitLabel(item: DailyPlanItem, amount = planItemDisplayQuantity(item).amount) {
+  const quantity = planItemDisplayQuantity(item);
+  return displayUnitLabel(quantity.unit, amount, planItemFoodItemId(item));
+}
+
+export function planItemDisplayAmountLabel(item: DailyPlanItem) {
+  const quantity = planItemDisplayQuantity(item);
+  const spacer = quantity.unit === "g" ? "" : " ";
+  return `${formatDisplayQuantityAmount(quantity.amount)}${spacer}${planItemDisplayUnitLabel(item, quantity.amount)}`;
+}
+
+export function exchangeOptionDisplayQuantity(groupId: string, optionId: string): DisplayQuantity {
+  const option = getExchangeOption(groupId, optionId);
+  const optionUnits = option.exchangeUnits ?? 1;
+
+  if (isWholeDisplayUnit(option.quantity.unit)) {
+    return {
+      amount: roundDisplayAmount(option.quantity.amount / optionUnits, option.quantity.unit),
+      unit: option.quantity.unit,
+    };
+  }
+
+  return { amount: exchangeOptionGramAmount(groupId, optionId), unit: "g" };
+}
+
+export function exchangeOptionDisplayAmountLabel(groupId: string, optionId: string) {
+  const option = getExchangeOption(groupId, optionId);
+  const quantity = exchangeOptionDisplayQuantity(groupId, optionId);
+  const spacer = quantity.unit === "g" ? "" : " ";
+  return `${formatDisplayQuantityAmount(quantity.amount)}${spacer}${displayUnitLabel(quantity.unit, quantity.amount, option.foodItemId)}`;
 }
 
 export function mealTargetStatus(plan: DailyPlan, mealId: string, target: MealMacroTarget) {
@@ -973,9 +1027,28 @@ function exchangeItemGramAmount(item: Extract<DailyPlanItem, { kind: "exchange" 
   return roundGramAmount(exchangeOptionGramAmount(item.exchangeGroupId, item.exchangeOptionId) * units);
 }
 
+function exchangeItemDisplayAmount(item: Extract<DailyPlanItem, { kind: "exchange" }>) {
+  const option = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
+  const optionUnits = option.exchangeUnits ?? 1;
+  const units = item.exchangeUnits ?? optionUnits;
+  return optionUnits > 0 ? (option.quantity.amount / optionUnits) * units : option.quantity.amount;
+}
+
 function exchangeUnitsForGramAmount(groupId: string, optionId: string, amount: number) {
   const gramsPerUnit = exchangeOptionGramAmount(groupId, optionId);
   return gramsPerUnit > 0 ? Math.max(0, roundGramAmount(amount) / gramsPerUnit) : 0;
+}
+
+function exchangeUnitsForDisplayAmount(groupId: string, optionId: string, amount: number) {
+  const option = getExchangeOption(groupId, optionId);
+  if (!isWholeDisplayUnit(option.quantity.unit)) {
+    return exchangeUnitsForGramAmount(groupId, optionId, roundGramAmount(amount));
+  }
+
+  const optionUnits = option.exchangeUnits ?? 1;
+  return option.quantity.amount > 0
+    ? Math.max(0, roundDisplayAmount(amount, option.quantity.unit) * optionUnits / option.quantity.amount)
+    : 0;
 }
 
 export function exchangeOptionGramAmount(groupId: string, optionId: string) {
@@ -1179,12 +1252,42 @@ function roundGramAmount(value: number) {
   return Math.max(0, Math.round(value));
 }
 
+function roundDisplayAmount(value: number, unit: QuantityUnit) {
+  return isWholeDisplayUnit(unit)
+    ? Math.max(0, Math.round(value))
+    : roundGramAmount(value);
+}
+
+function formatDisplayQuantityAmount(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
+function isWholeDisplayUnit(unit: QuantityUnit) {
+  return unit === "count" || unit === "slice" || unit === "scoop" || unit === "serving";
+}
+
+function displayUnitLabel(unit: QuantityUnit, amount: number, foodItemId?: string) {
+  if (unit === "g") return "gm";
+  if (unit === "count" && foodItemId === "egg-whole") return amount === 1 ? "egg" : "eggs";
+  if (unit === "count") return "pcs";
+  if (unit === "slice") return amount === 1 ? "slice" : "slices";
+  if (unit === "scoop") return amount === 1 ? "scoop" : "scoops";
+  if (unit === "serving") return amount === 1 ? "serving" : "servings";
+  return unit;
+}
+
 function roundFoodAmount(item: DailyPlanItem, value: number) {
   if (item.kind === "food" && item.foodItemId === "veggies-excl-potato" && item.quantity.unit === "g") {
     return Math.max(0, Math.round(value / 50) * 50);
   }
 
-  return value;
+  return roundDisplayAmount(value, item.kind === "food" ? item.quantity.unit : "g");
+}
+
+function planItemFoodItemId(item: DailyPlanItem) {
+  return item.kind === "food"
+    ? item.foodItemId
+    : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).foodItemId;
 }
 
 function recoveryAction(metric: NutritionMetric, direction: "min" | "max") {

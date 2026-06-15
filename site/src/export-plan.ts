@@ -2,13 +2,11 @@ import {
   calculateDailyPlanItemNutrition,
   calculateDailyPlanTotals,
   calculateMealTotals,
-  getExchangeOption,
-  getFoodItem,
   type DailyPlan,
   type DailyPlanItem,
   type NutritionFacts,
 } from "../../src/index.js";
-import { planItemDisplayQuantity } from "./editable-planner.js";
+import { planItemDisplayAmountLabel, planItemDisplayLabel, planItemDisplayQuantity, planItemDisplayUnitLabel } from "./editable-planner.js";
 
 const exportHeaders = [
   "Meal",
@@ -74,7 +72,7 @@ export function planShareText(plan: DailyPlan, options?: PlanExportOptions) {
     for (const item of meal.items) {
       const amount = planItemAmount(item);
       const nutrition = calculateDailyPlanItemNutrition(item);
-      lines.push(`- ${planItemLabel(item)}: ${formatNumber(amount.amount)}${amount.unit} · ${formatNumber(nutrition.calories)} kcal · ${formatNumber(nutrition.protein)}gm protein`);
+      lines.push(`- ${planItemLabel(item)}: ${planItemDisplayAmountLabel(item)} · ${formatNumber(nutrition.calories)} kcal · ${formatNumber(nutrition.protein)}gm protein`);
     }
 
     lines.push(`Meal total: ${formatNumber(mealTotals.calories)} kcal · ${formatNumber(mealTotals.protein)}gm protein`, "");
@@ -180,14 +178,12 @@ function exportRowToCells(row: ExportRow) {
 }
 
 function planItemLabel(item: DailyPlanItem) {
-  return item.kind === "food"
-    ? getFoodItem(item.foodItemId).displayName
-    : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
+  return planItemDisplayLabel(item);
 }
 
 function planItemAmount(item: DailyPlanItem) {
   const quantity = planItemDisplayQuantity(item);
-  return { ...quantity, unit: "gm" };
+  return { ...quantity, unit: planItemDisplayUnitLabel(item, quantity.amount) };
 }
 
 function formatNumber(value: number | null | undefined) {

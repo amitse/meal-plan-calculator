@@ -41,6 +41,25 @@ describe("plan export formatting", () => {
     macroRules: ["Carbs min 100gm", "Fat max 60gm"],
     targetStatus: "Needs adjustment",
   };
+  const eggPlan: DailyPlan = {
+    id: "egg-export",
+    displayName: "Egg export",
+    meals: [
+      {
+        id: "breakfast",
+        displayName: "Breakfast",
+        items: [
+          {
+            kind: "exchange",
+            id: "breakfast-eggs",
+            exchangeGroupId: "protein-serving",
+            exchangeOptionId: "two-whole-eggs",
+            exchangeUnits: 1,
+          },
+        ],
+      },
+    ],
+  };
 
   it("exports CSV with item rows, meal totals, daily totals, and escaped cells", () => {
     const csv = planExportCsv(plan);
@@ -75,6 +94,11 @@ describe("plan export formatting", () => {
     expect(text).toContain("Breakfast, hot");
     expect(text).toContain("- Nuts: 15gm");
     expect(text).toContain("Meal total:");
+  });
+
+  it("exports whole-unit foods with practical units", () => {
+    expect(planExportTsv(eggPlan)).toContain("Breakfast\tWhole eggs\t2\teggs");
+    expect(planShareText(eggPlan)).toContain("- Whole eggs: 2 eggs");
   });
 
   it("includes target context in CSV, spreadsheet, and paste-friendly exports", () => {

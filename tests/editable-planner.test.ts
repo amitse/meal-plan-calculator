@@ -380,6 +380,33 @@ describe("editable planner workflows", () => {
     expect(lunchCarb ? planItemDisplayQuantity(lunchCarb).amount : 0).toBe(125);
   });
 
+  it("edits whole-unit exchange items as counts instead of grams", () => {
+    const plan: DailyPlan = {
+      id: "egg-edit",
+      displayName: "Egg edit",
+      meals: [
+        {
+          id: "breakfast",
+          displayName: "Breakfast",
+          items: [
+            {
+              kind: "exchange",
+              id: "breakfast-eggs",
+              exchangeGroupId: "protein-serving",
+              exchangeOptionId: "two-whole-eggs",
+              exchangeUnits: 1,
+            },
+          ],
+        },
+      ],
+    };
+    const edited = updateItemAmount(plan, "breakfast-eggs", 3);
+    const item = edited.meals[0]?.items[0];
+
+    expect(item).toMatchObject({ kind: "exchange", exchangeUnits: 1.5 });
+    expect(item ? planItemDisplayQuantity(item) : undefined).toEqual({ amount: 3, unit: "count" });
+  });
+
   it("restores a previous serving amount and recalculates meal totals", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
     const previousItem = plan.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb");
