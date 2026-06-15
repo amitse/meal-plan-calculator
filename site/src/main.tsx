@@ -7,7 +7,9 @@ import {
   getFoodItem,
   type DailyPlan,
   type DailyPlanItem,
+  type BoundEvaluation,
   type DietaryLevel,
+  type NutritionMetric,
 } from "../../src/index.js";
 import {
   addItemToMeal,
@@ -136,6 +138,7 @@ function App() {
 
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
+  const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
   const activeCustomizationChips = useMemo(() => activeCustomizationLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
 
@@ -471,6 +474,13 @@ function App() {
             <SummaryMetric label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
             <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
           </div>
+          {targetStatusItems.length > 0 && (
+            <div className="target-status" aria-label="Daily target status">
+              {targetStatusItems.map((item) => (
+                <TargetStatusItem item={item} key={`${item.bound.metric}-${targetBoundLabel(item)}`} />
+              ))}
+            </div>
+          )}
           {recoveryMessages.length > 0 && (
             <div className="failure" role="alert" aria-label="Target recovery actions">
               <p>Some targets need adjustment:</p>
@@ -674,6 +684,71 @@ function SummaryMetric({ label, value, suffix }: { label: string; value: number;
     </div>
   );
 }
+
+function TargetStatusItem({ item }: { item: BoundEvaluation }) {
+  const status = item.unknown ? "unknown" : item.status;
+
+  return (
+    <div className={`target-status-item is-${status}`}>
+      <div>
+        <strong>{metricDisplayNames[item.bound.metric]}</strong>
+        <span>{targetBoundLabel(item)}</span>
+      </div>
+      <div>
+        <span>{formatMetricValue(item.value, item.bound.metric)}{item.unknown ? " + unknown" : ""}</span>
+        <strong>{statusDisplayNames[status]}</strong>
+      </div>
+    </div>
+  );
+}
+
+function hasOptionalMacroTarget(items: BoundEvaluation[]) {
+  return items.some((item) => optionalMacroMetrics.has(item.bound.metric));
+}
+
+function targetBoundLabel(item: BoundEvaluation) {
+  if (item.bound.target !== undefined) {
+    const tolerance = item.bound.tolerance && item.bound.tolerance > 0
+      ? ` ± ${formatMetricValue(item.bound.tolerance, item.bound.metric)}`
+      : "";
+    return `Target ${formatMetricValue(item.bound.target, item.bound.metric)}${tolerance}`;
+  }
+
+  if (item.bound.min !== undefined && item.bound.max !== undefined) {
+    return `${formatMetricValue(item.bound.min, item.bound.metric)}-${formatMetricValue(item.bound.max, item.bound.metric)}`;
+  }
+
+  if (item.bound.min !== undefined) {
+    return `Min ${formatMetricValue(item.bound.min, item.bound.metric)}`;
+  }
+
+  if (item.bound.max !== undefined) {
+    return `Max ${formatMetricValue(item.bound.max, item.bound.metric)}`;
+  }
+
+  return "Active target";
+}
+
+function formatMetricValue(value: number, metric: NutritionMetric) {
+  return `${Math.round(value)} ${metric === "calories" ? "kcal" : "gm"}`;
+}
+
+const metricDisplayNames: Record<NutritionMetric, string> = {
+  calories: "Calories",
+  protein: "Protein",
+  carbs: "Carbs",
+  fat: "Fat",
+  fiber: "Fiber",
+  saturatedFat: "Saturated fat",
+};
+
+const optionalMacroMetrics = new Set<NutritionMetric>(["carbs", "fat", "fiber", "saturatedFat"]);
+
+const statusDisplayNames: Record<BoundEvaluation["status"] | "unknown", string> = {
+  pass: "Pass",
+  fail: "Fail",
+  unknown: "Unknown",
+};
 
 function PlanItemRow({
   dietaryLevel,
