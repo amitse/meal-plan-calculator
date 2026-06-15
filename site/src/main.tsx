@@ -49,6 +49,8 @@ type PlannerView = "targets" | "plan";
 type ShareState = {
   message: string;
   manualUrl?: string;
+  shareKey?: string;
+  stale?: boolean;
 };
 type RandomizeFeedback = {
   message: string;
@@ -142,6 +144,7 @@ const quickStartPresets: QuickStartPreset[] = [
     },
   },
 ];
+const staleShareMessage = "Plan changed - share again for an updated link.";
 
 function App() {
   const loadedUrlState = useMemo(loadStateFromUrl, []);
@@ -170,12 +173,31 @@ function App() {
   const activeCustomizationChips = useMemo(() => activeCustomizationLabels(form), [form]);
   const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
+  const currentShareableState = useMemo<ShareablePlannerState>(() => ({
+    form,
+    plan,
+    lockedItemIds: [...lockedIds],
+    mealTargets,
+  }), [form, plan, lockedIds, mealTargets]);
+  const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
 
   useEffect(() => {
     if (plan && activeView === "plan") {
       resultRef.current?.focus();
     }
   }, [activeView, plan]);
+
+  useEffect(() => {
+    if (!shareState?.shareKey || shareState.stale || shareState.shareKey === currentShareKey) {
+      return;
+    }
+
+    setShareState({
+      message: staleShareMessage,
+      shareKey: shareState.shareKey,
+      stale: true,
+    });
+  }, [currentShareKey, shareState]);
 
   useEffect(() => {
     const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -445,18 +467,15 @@ function App() {
   }
 
   function share() {
-    const state: ShareablePlannerState = {
-      form,
-      plan,
-      lockedItemIds: [...lockedIds],
-      mealTargets,
-    };
+    const state = currentShareableState;
+    const shareKey = currentShareKey;
     const url = shareUrlForState(state);
-    window.history.replaceState(null, "", `?s=${encodeShareState(state)}`);
+    window.history.replaceState(null, "", `?s=${shareKey}`);
 
     const showManualShareRecovery = () => setShareState({
       message: "Copy blocked. Copy this share link manually.",
       manualUrl: url,
+      shareKey,
     });
 
     if (typeof navigator.clipboard?.writeText !== "function") {
@@ -465,7 +484,7 @@ function App() {
     }
 
     void navigator.clipboard.writeText(url)
-      .then(() => setShareState({ message: "Link copied" }))
+      .then(() => setShareState({ message: "Link copied", shareKey }))
       .catch(showManualShareRecovery);
   }
 
@@ -662,9 +681,9 @@ function App() {
             </p>
           )}
           {shareState && (
-            <div className={`share-state${shareState.manualUrl ? " manual-share" : ""}`} role="status">
+            <div className={`share-state${shareState.manualUrl && !shareState.stale ? " manual-share" : ""}${shareState.stale ? " stale-share" : ""}`} role="status">
               <p>{shareState.message}</p>
-              {shareState.manualUrl && (
+              {shareState.manualUrl && !shareState.stale && (
                 <label className="manual-share-link">
                   <span>Share link</span>
                   <input readOnly value={shareState.manualUrl} onFocus={(event) => event.currentTarget.select()} />

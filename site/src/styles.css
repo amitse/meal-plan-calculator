@@ -1374,6 +1374,10 @@ fieldset {
   margin: 0;
 }
 
+.share-state.stale-share {
+  color: var(--warning);
+}
+
 .share-state.manual-share {
   display: grid;
   gap: var(--space-xs);
