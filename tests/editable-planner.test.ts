@@ -9,6 +9,7 @@ import {
   exchangeOptionsForItem,
   failureRecoveryMessages,
   generateEditablePlan,
+  generateEditablePlanResult,
   grainOptions,
   initialFormState,
   mealTargetStatus,
@@ -260,5 +261,43 @@ describe("editable planner workflows", () => {
     expect(fatMessage).toMatch(/Fat is over max/);
     expect(fatMessage).toMatch(/Relax the fat max/);
     expect(fatMessage).toMatch(/before regenerating/);
+  });
+
+  it("returns blocker copy instead of a plan when no candidate satisfies macro bounds", () => {
+    const result = generateEditablePlanResult(
+      { ...initialFormState, fat: { mode: "max", value: "1" } },
+      undefined,
+      new Set(),
+      6,
+    );
+
+    expect(result.plan).toBeUndefined();
+    expect(result.blockers[0]).toMatch(/Fat is over max/);
+    expect(result.blockers[0]).toMatch(/Relax the fat max/);
+  });
+
+  it("returns blocker copy when a locked protein conflicts with dietary rules", () => {
+    const nonVegetarianPlan = generateEditablePlan(
+      {
+        ...initialFormState,
+        dietaryLevel: "nonVegetarian",
+        preferredProteins: ["chicken-fish-100g"],
+        avoidEggs: false,
+        avoidChickenFish: false,
+      },
+      undefined,
+      new Set(),
+      8,
+    )!;
+    const result = generateEditablePlanResult(
+      initialFormState,
+      nonVegetarianPlan,
+      new Set(["lunch-protein"]),
+      8,
+    );
+
+    expect(result.plan).toBeUndefined();
+    expect(result.blockers[0]).toMatch(/Protein is blocked/);
+    expect(result.blockers[0]).toMatch(/change dietary level/);
   });
 });

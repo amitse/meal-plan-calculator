@@ -23,6 +23,7 @@ import {
   exchangeOptionsForItem,
   failureRecoveryMessages,
   generateEditablePlan,
+  generateEditablePlanResult,
   grainOptions,
   initialFormState,
   mealTargetStatus,
@@ -152,7 +153,7 @@ function App() {
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState<ShareState | undefined>();
-  const [generationError, setGenerationError] = useState("");
+  const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, string>>({});
   const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
@@ -208,7 +209,7 @@ function App() {
   }, []);
 
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
-    setGenerationError("");
+    setGenerationBlockers([]);
     setMealToolMessages({});
     clearRandomizeFeedback();
     markPlanStale();
@@ -219,18 +220,18 @@ function App() {
     const seed = options.seed ?? Date.now();
     const useExistingLocks = options.useExistingLocks ?? true;
     setDeletedItemUndo(undefined);
+    setGenerationBlockers([]);
     setMealToolMessages({});
     clearRandomizeFeedback();
-    const next = generateEditablePlan(sourceForm, useExistingLocks ? plan : undefined, useExistingLocks ? lockedIds : new Set<string>(), seed);
+    const result = generateEditablePlanResult(sourceForm, useExistingLocks ? plan : undefined, useExistingLocks ? lockedIds : new Set<string>(), seed);
 
-    if (next) {
-      setGenerationError("");
+    if (result.plan) {
       setIsPlanStale(false);
-      setPlan(next);
+      setPlan(result.plan);
       setActiveView("plan");
       return true;
     } else {
-      setGenerationError("No plan matched these targets. Relax a macro or food rule, then generate again.");
+      setGenerationBlockers(result.blockers);
       return false;
     }
   }
@@ -276,7 +277,7 @@ function App() {
   }
 
   function updateDietaryLevel(level: DietaryLevel) {
-    setGenerationError("");
+    setGenerationBlockers([]);
     setMealToolMessages({});
     clearRandomizeFeedback();
     markPlanStale();
@@ -290,7 +291,7 @@ function App() {
   }
 
   function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
-    setGenerationError("");
+    setGenerationBlockers([]);
     setMealToolMessages({});
     clearRandomizeFeedback();
     markPlanStale();
@@ -624,7 +625,14 @@ function App() {
               {activeCustomizationChips.map((label) => <span className="customization-note" key={label}>{label}</span>)}
             </div>
           )}
-          {generationError && <p className="generation-feedback" role="alert">{generationError}</p>}
+          {generationBlockers.length > 0 && (
+            <div className="generation-feedback" role="alert" aria-label="Generation blockers">
+              <p><strong>Plan blocked.</strong> Adjust these before regenerating:</p>
+              <ul>
+                {generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+              </ul>
+            </div>
+          )}
         </section>
 
         <div className="bottom-action">

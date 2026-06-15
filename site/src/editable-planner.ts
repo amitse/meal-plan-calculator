@@ -5,6 +5,7 @@ import {
   generateDailyPlans,
   getExchangeGroup,
   getExchangeOption,
+  getFoodItem,
   type DailyPlan,
   type DailyPlanItem,
   type DailyPlanTemplate,
@@ -50,6 +51,11 @@ export interface ShareablePlannerState {
   plan?: DailyPlan;
   lockedItemIds: string[];
   mealTargets: Record<string, MealMacroTarget>;
+}
+
+export interface EditablePlanGenerationResult {
+  plan?: DailyPlan;
+  blockers: string[];
 }
 
 export interface DisplayQuantity {
@@ -161,18 +167,58 @@ export function generateEditablePlan(
   lockedItemIds: ReadonlySet<string>,
   seed = Date.now(),
 ): DailyPlan | undefined {
+  const generation = runEditablePlanGeneration(form, lockedPlan, lockedItemIds, seed);
+
+  return pickPassingPlan(generation.result.candidates, seed) ?? generation.result.candidates[0]?.plan;
+}
+
+export function generateEditablePlanResult(
+  form: EditableFormState,
+  lockedPlan: DailyPlan | undefined,
+  lockedItemIds: ReadonlySet<string>,
+  seed = Date.now(),
+): EditablePlanGenerationResult {
+  const generation = runEditablePlanGeneration(form, lockedPlan, lockedItemIds, seed);
+  const plan = pickPassingPlan(generation.result.candidates, seed);
+
+  if (plan) {
+    return { plan, blockers: [] };
+  }
+
+  const bestEvaluation = generation.result.candidates
+    .map((candidate) => candidate.evaluation)
+    .filter((evaluation): evaluation is PlanEvaluation => Boolean(evaluation))
+    .sort((left, right) => scorePlanEvaluation(left) - scorePlanEvaluation(right))[0];
+
+  return {
+    blockers: bestEvaluation
+      ? failureRecoveryMessages(bestEvaluation).slice(0, 2)
+      : generationRejectionMessages(generation.result.rejected, form).slice(0, 2),
+  };
+}
+
+function runEditablePlanGeneration(
+  form: EditableFormState,
+  lockedPlan: DailyPlan | undefined,
+  lockedItemIds: ReadonlySet<string>,
+  seed: number,
+) {
   const template = buildDynamicTemplate(form, lockedPlan, lockedItemIds, seed);
   const input = buildNutritionInput(form);
   const result = generateDailyPlans({
     template,
     target: createNutritionTarget(input),
-    preferences: input.preferences,
+    preferences: { ...input.preferences, dietaryLevel: input.dietaryLevel },
     maxCandidates: 120,
   });
 
-  const passingCandidates = result.candidates.filter((candidate) => candidate.evaluation?.status === "pass");
+  return { result };
+}
 
-  return passingCandidates[pickIndex(passingCandidates.length, seed)]?.plan ?? result.candidates[0]?.plan;
+function pickPassingPlan(candidates: ReturnType<typeof generateDailyPlans>["candidates"], seed: number) {
+  const passingCandidates = candidates.filter((candidate) => candidate.evaluation?.status === "pass");
+
+  return passingCandidates[pickIndex(passingCandidates.length, seed)]?.plan;
 }
 
 export function buildDynamicTemplate(
@@ -563,6 +609,72 @@ export function failureRecoveryMessages(evaluation: PlanEvaluation): string[] {
     });
 }
 
+function generationRejectionMessages(rejected: string[], form: EditableFormState): string[] {
+  const messages = rejected.map((reason) => rejectionRecoveryMessage(reason, form));
+  const uniqueMessages = [...new Set(messages)];
+
+  return uniqueMessages.length > 0
+    ? uniqueMessages
+    : ["Required food choices are blocked. Relax a food rule or reset preferences before regenerating."];
+}
+
+function rejectionRecoveryMessage(reason: string, form: EditableFormState) {
+  const noOptionsPrefix = "No allowed exchange options for template item ";
+  if (reason.startsWith(noOptionsPrefix)) {
+    return noAllowedExchangeOptionsMessage(reason.slice(noOptionsPrefix.length), form);
+  }
+
+  const excludedFoodMatch = reason.match(/^FoodItem (.+) is excluded for template item /);
+  const excludedFoodId = excludedFoodMatch?.[1];
+  if (excludedFoodId) {
+    const food = getFoodItem(excludedFoodId);
+    return `${food.displayName} is excluded by your food rules. Remove that exclusion or unlock and swap the item before regenerating.`;
+  }
+
+  const dietaryFoodMatch = reason.match(/^FoodItem (.+) is not allowed for (.+) dietary level$/);
+  const dietaryFoodId = dietaryFoodMatch?.[1];
+  const dietaryLevel = dietaryFoodMatch?.[2];
+  if (dietaryFoodId) {
+    const food = getFoodItem(dietaryFoodId);
+    const dietLabel = isDietaryLevel(dietaryLevel) ? dietaryLevelLabels[dietaryLevel] : "the selected diet";
+    return `${food.displayName} does not fit ${dietLabel}. Change dietary level or unlock and swap the item before regenerating.`;
+  }
+
+  return `${reason}. Relax the related food rule before regenerating.`;
+}
+
+function noAllowedExchangeOptionsMessage(templateItemId: string, form: EditableFormState) {
+  if (templateItemId.includes("protein")) {
+    const proteinRules = activeProteinRuleLabels(form);
+    const ruleCopy = proteinRules.length > 0 ? ` (${proteinRules.join(", ")})` : "";
+    return `Protein is blocked by your diet or food rules${ruleCopy}. Unlock the fixed protein, remove an exclusion, or change dietary level before regenerating.`;
+  }
+
+  if (templateItemId.includes("grain") || templateItemId.includes("carb")) {
+    return "Grain choices are blocked for a required meal. Select another grain preference or reset food rules before regenerating.";
+  }
+
+  if (templateItemId.includes("fruit")) {
+    return "Fruit choices are blocked for the snack. Relax the related food rule before regenerating.";
+  }
+
+  return "A required food slot has no allowed choices. Relax food preferences or remove an exclusion before regenerating.";
+}
+
+function activeProteinRuleLabels(form: EditableFormState) {
+  return [
+    dietaryLevelLabels[form.dietaryLevel],
+    form.avoidPaneer ? "avoid paneer" : undefined,
+    form.avoidWhey ? "avoid whey" : undefined,
+    form.dietaryLevel !== "vegetarian" && form.avoidEggs ? "avoid eggs" : undefined,
+    form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish ? "avoid chicken/fish" : undefined,
+  ].filter((label): label is string => Boolean(label));
+}
+
+function isDietaryLevel(value: string | undefined): value is DietaryLevel {
+  return value === "vegetarian" || value === "eggetarian" || value === "nonVegetarian";
+}
+
 function addMacro(input: GenerateMealPlanInput, key: "carbs" | "fat" | "fiber" | "saturatedFat", field: MacroField) {
   const value = Number(field.value || 0);
 
@@ -739,6 +851,12 @@ const metricLabels: Record<NutritionMetric, string> = {
   fat: "Fat",
   fiber: "Fiber",
   saturatedFat: "Saturated fat",
+};
+
+const dietaryLevelLabels: Record<DietaryLevel, string> = {
+  vegetarian: "vegetarian",
+  eggetarian: "eggetarian",
+  nonVegetarian: "non-vegetarian",
 };
 
 const metricWeights: Record<NutritionMetric, number> = {
