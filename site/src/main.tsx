@@ -3442,11 +3442,13 @@ function PlanItemRow({
                         disabled={isCurrentOption}
                         onClick={() => chooseSwapOption(option.id)}
                       >
-                        <span className="swap-option-name">{option.displayName}</span>
+                        <span className="swap-option-main">
+                          <span className="swap-option-name">{option.displayName}</span>
+                          <span className="swap-option-exchange"><span className="notranslate" translate="no">{exchangeOptionDisplayAmountLabel(item.exchangeGroupId, option.id)}</span> exchange</span>
+                        </span>
                         <small className="swap-option-meta">
-                          <span><span className="notranslate" translate="no">{exchangeOptionDisplayAmountLabel(item.exchangeGroupId, option.id)}</span> exchange</span>
-                          <span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.calories, "calories")}</span>
-                          <span><span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.protein, "protein")}</span>{previewNutrition.protein == null ? "" : " protein"}</span>
+                          <span className="swap-option-metric notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.calories, "calories")}</span>
+                          <span className="swap-option-metric"><span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.protein, "protein")}</span>{previewNutrition.protein == null ? "" : " protein"}</span>
                           {isCurrentOption && <span className="swap-option-current">Current</span>}
                           {!isCurrentOption && (
                             <span className="swap-option-impact" aria-label={`Impact compared with current item: ${calorieImpact}, ${proteinImpact}`}>

@@ -2595,7 +2595,8 @@ fieldset {
 
 .swap-option {
   display: grid;
-  gap: var(--size-4);
+  gap: var(--size-6);
+  align-items: stretch;
   width: 100%;
   min-height: var(--size-58);
   border: 0;
@@ -2605,6 +2606,13 @@ fieldset {
   color: var(--ink);
   padding: var(--size-10) 0;
   text-align: left;
+}
+
+.swap-option-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: var(--size-8);
+  align-items: baseline;
 }
 
 .swap-option:hover:not(:disabled) {
@@ -2621,15 +2629,28 @@ fieldset {
 }
 
 .swap-option-name {
+  min-width: 0;
   font-size: 0.98rem;
   font-weight: 650;
   line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.swap-option-exchange {
+  justify-self: end;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .swap-option-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--size-3) var(--size-8);
+  display: grid;
+  grid-template-columns: minmax(var(--size-82), max-content) minmax(var(--size-116), 1fr);
+  gap: var(--size-4) var(--size-8);
+  align-items: center;
 }
 
 .swap-option-meta,
@@ -2640,13 +2661,15 @@ fieldset {
 }
 
 .swap-option-current {
+  grid-column: 1 / -1;
+  justify-self: start;
   color: var(--accent);
   font-weight: 700;
 }
 
 .swap-option-impact {
   display: inline-flex;
-  flex: 1 1 100%;
+  grid-column: 1 / -1;
   flex-wrap: wrap;
   gap: var(--size-3) var(--size-6);
   align-items: center;
