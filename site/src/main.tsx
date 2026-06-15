@@ -96,6 +96,10 @@ type ShareState = {
   shareKey?: string;
   stale?: boolean;
 };
+type ExportSheetStatus = {
+  message: string;
+  tone: "success" | "notice";
+};
 type RandomizeFeedback = {
   message: string;
   changed: boolean;
@@ -424,6 +428,7 @@ function App() {
   const [shareState, setShareState] = useState<ShareState | undefined>();
   const [showSharedPlanOrientation, setShowSharedPlanOrientation] = useState(Boolean(urlState?.plan));
   const [manualShareText, setManualShareText] = useState("");
+  const [exportSheetStatus, setExportSheetStatus] = useState<ExportSheetStatus | undefined>();
   const [shareLoadFailed, setShareLoadFailed] = useState(loadedUrlState.shareLoadFailed);
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
@@ -1268,6 +1273,7 @@ function App() {
     setShareState(undefined);
     setShowSharedPlanOrientation(false);
     setManualShareText("");
+    setExportSheetStatus(undefined);
     setGenerationBlockers([]);
     setIsPlanStale(false);
     setMealToolMessages({});
@@ -1289,7 +1295,9 @@ function App() {
     }
 
     downloadTextFile(exportFilename("csv"), "text/csv;charset=utf-8", planExportCsv(plan, exportOptions()));
-    setShareState({ message: "CSV downloaded" });
+    const message = "CSV downloaded";
+    setShareState({ message });
+    setExportSheetStatus({ message, tone: "success" });
   }
 
   function exportSpreadsheet() {
@@ -1301,10 +1309,13 @@ function App() {
 
     downloadTextFile(exportFilename("xls"), "application/vnd.ms-excel;charset=utf-8", planExportExcelHtml(plan, exportOptions()));
     setManualShareText("");
-    setShareState({ message: "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets." });
+    const message = "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets.";
+    setShareState({ message });
+    setExportSheetStatus({ message, tone: "success" });
   }
 
   function openShareSheet() {
+    setExportSheetStatus(undefined);
     setExportSheetOpen(true);
   }
 
@@ -1321,12 +1332,16 @@ function App() {
     try {
       if (typeof navigator.share === "function") {
         await navigator.share({ title: "Meal plan", text });
-        setShareState({ message: "Text share opened" });
+        const message = "Text share opened";
+        setShareState({ message });
+        setExportSheetStatus({ message, tone: "success" });
         return;
       }
     } catch (error) {
       if (isAbortError(error)) {
-        setShareState({ message: "Text share canceled" });
+        const message = "Text share canceled";
+        setShareState({ message });
+        setExportSheetStatus({ message, tone: "notice" });
         return;
       }
     }
@@ -1334,7 +1349,9 @@ function App() {
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
-        setShareState({ message: "Text copied. Paste it into WhatsApp, Messages, or notes." });
+        const message = "Text copied. Paste it into WhatsApp, Messages, or notes.";
+        setShareState({ message });
+        setExportSheetStatus({ message, tone: "success" });
         return;
       }
     } catch {
@@ -1343,6 +1360,7 @@ function App() {
     setManualShareText(text);
     setShareState(undefined);
     setShareState(undefined);
+    setExportSheetStatus({ message: "Share blocked. Copy the text below.", tone: "notice" });
   }
 
   function exportOptions(): PlanExportOptions {
@@ -1375,26 +1393,35 @@ function App() {
       if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ title: "Meal plan", text: "Meal plan image", files: [file] });
-          setShareState({ message: "Image share opened" });
+          const message = "Image share opened";
+          setShareState({ message });
+          setExportSheetStatus({ message, tone: "success" });
           return;
         } catch (error) {
           if (isAbortError(error)) {
-            setShareState({ message: "Image share canceled" });
+            const message = "Image share canceled";
+            setShareState({ message });
+            setExportSheetStatus({ message, tone: "notice" });
             return;
           }
         }
       }
 
       downloadBlob(file.name, file);
-      setShareState({ message: "Image downloaded. Attach it in WhatsApp or Messages." });
+      const message = "Image downloaded. Attach it in WhatsApp or Messages.";
+      setShareState({ message });
+      setExportSheetStatus({ message, tone: "success" });
     } catch {
-      setShareState({ message: "Image export failed. Use Share text instead." });
+      const message = "Image export failed. Use Share text instead.";
+      setShareState({ message });
+      setExportSheetStatus({ message, tone: "notice" });
     }
   }
 
   function blockStaleExportAction() {
     setManualShareText("");
     setShareState({ message: staleExportBlockedMessage, stale: true });
+    setExportSheetStatus({ message: staleExportBlockedMessage, tone: "notice" });
   }
 
   async function installApp() {
@@ -2065,6 +2092,11 @@ function App() {
                   <button className="with-icon" type="button" onClick={exportSpreadsheet} disabled={isPlanStale} aria-describedby={exportActionDescriptionId}><Icon name="export" />Spreadsheet</button>
                   <button className="with-icon" type="button" onClick={exportCsv} disabled={isPlanStale} aria-describedby={exportActionDescriptionId}><Icon name="download" />CSV</button>
                 </div>
+                {exportSheetStatus && (
+                  <div className={`export-action-status is-${exportSheetStatus.tone}`} role="status" aria-live="polite" aria-atomic="true">
+                    <p>{exportSheetStatus.message}</p>
+                  </div>
+                )}
                 <p className="export-helper">Spreadsheet downloads as one file. Import it into Google Sheets or open it in Excel.</p>
                 {!isPlanStale && manualShareText && (
                   <div className="manual-share-recovery">

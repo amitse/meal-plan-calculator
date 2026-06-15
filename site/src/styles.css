@@ -1774,6 +1774,28 @@ fieldset {
   transform: none;
 }
 
+.export-action-status {
+  margin: 0;
+  padding: var(--size-8) var(--size-10);
+  border: var(--size-px) solid var(--alpha-success-40);
+  border-radius: var(--control-radius);
+  background: var(--alpha-success-10);
+  color: var(--success);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.export-action-status.is-notice {
+  border-color: var(--alpha-warning-42);
+  background: var(--alpha-warning-10);
+  color: var(--warning);
+}
+
+.export-action-status p {
+  margin: 0;
+}
+
 .manual-share-recovery {
   display: grid;
   gap: var(--space-sm);
