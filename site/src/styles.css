@@ -2394,6 +2394,25 @@ fieldset {
   margin-top: var(--space-lg);
 }
 
+@media (max-width: 430px) {
+  .plan-row {
+    align-items: start;
+  }
+
+  .item-actions {
+    display: grid;
+    width: 118px;
+  }
+
+  .amount-line {
+    width: 118px;
+  }
+
+  .item-button-row {
+    width: 100%;
+  }
+}
+
 @media (min-width: 760px) {
   .app-shell {
     padding: var(--space-lg) 40px 96px;
