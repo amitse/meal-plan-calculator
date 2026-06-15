@@ -373,6 +373,7 @@ function App() {
   }), [form, plan, lockedIds, mealTargets]);
   const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
   const generationActionLabel = isGenerating ? "Generating..." : plan ? "Regenerate plan" : "Generate";
+  const canUndoPlanRandomize = Boolean(randomizeUndo && !randomizeUndo.mealId);
 
   useEffect(() => {
     if (plan && activeView === "plan") {
@@ -1133,7 +1134,7 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell${activeView === "plan" && planRandomizeFeedback ? " has-bottom-status" : ""}`}>
       <header className="mobile-header">
         <h1>Meal plan</h1>
         <div className="header-actions">
@@ -1405,9 +1406,9 @@ function App() {
             </div>
           </div>
           {planRandomizeFeedback && (
-            <div className={`randomize-feedback ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}${randomizeUndo && !randomizeUndo.mealId ? " has-action" : ""}`} role="status">
+            <div className={`randomize-feedback ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}${canUndoPlanRandomize ? " has-action" : ""}`} role="status">
               <span>{planRandomizeFeedback.message}</span>
-              {randomizeUndo && !randomizeUndo.mealId && (
+              {canUndoPlanRandomize && (
                 <button type="button" onClick={undoRandomize}>Undo</button>
               )}
             </div>
@@ -1680,6 +1681,18 @@ function App() {
           )}
           <nav className="bottom-action result-action-bar" aria-label="Plan actions">
             {shareState?.stale && <p className="share-action-status" role="status">{shareState.message}</p>}
+            {planRandomizeFeedback && (
+              <div
+                className={`randomize-action-status ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}${canUndoPlanRandomize ? " has-action" : ""}`}
+                role="status"
+                aria-atomic="true"
+              >
+                <span>{planRandomizeFeedback.message}</span>
+                {canUndoPlanRandomize && (
+                  <button type="button" onClick={undoRandomize}>Undo</button>
+                )}
+              </div>
+            )}
             <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
             <button className="plan-action-button with-icon" type="button" onClick={openExportDrawer}><Icon name="export" />Export</button>
             <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
