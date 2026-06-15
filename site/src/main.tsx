@@ -49,6 +49,10 @@ type ShareState = {
   message: string;
   manualUrl?: string;
 };
+type LoadedUrlState = {
+  state?: ShareablePlannerState;
+  shareLoadFailed: boolean;
+};
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -124,7 +128,8 @@ const quickStartPresets: QuickStartPreset[] = [
 ];
 
 function App() {
-  const urlState = useMemo(loadStateFromUrl, []);
+  const loadedUrlState = useMemo(loadStateFromUrl, []);
+  const urlState = loadedUrlState.state;
   const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
   const [activeView, setActiveView] = useState<PlannerView>(urlState?.plan ? "plan" : "targets");
@@ -352,6 +357,11 @@ function App() {
         {!isInstalledView && <button type="button" onClick={() => void installApp()}>Install</button>}
       </header>
       {installState && <p className="install-state" role="status">{installState}</p>}
+      {loadedUrlState.shareLoadFailed && (
+        <div className="share-load-warning" role="alert">
+          <p><strong>Shared plan could not be opened.</strong> Start a new plan or ask for a fresh link.</p>
+        </div>
+      )}
 
       {activeView === "targets" && (
       <form className="planner" onSubmit={submit}>
@@ -890,10 +900,13 @@ function swapOptionLabel(groupId: string, optionId: string, label: string) {
   return /\d+\s*g(?:m)?\b/i.test(label) ? label.replace(/\bg\b/i, "gm") : `${label} (${grams}gm)`;
 }
 
-function loadStateFromUrl(): ShareablePlannerState | undefined {
-  if (typeof window === "undefined") return undefined;
-  const encoded = new URLSearchParams(window.location.search).get("s");
-  return encoded ? decodeShareState(encoded) : undefined;
+function loadStateFromUrl(): LoadedUrlState {
+  if (typeof window === "undefined") return { shareLoadFailed: false };
+  const searchParams = new URLSearchParams(window.location.search);
+  if (!searchParams.has("s")) return { shareLoadFailed: false };
+
+  const state = decodeShareState(searchParams.get("s") ?? "");
+  return { state, shareLoadFailed: !state };
 }
 
 function isProteinVisible(optionId: string, dietaryLevel: DietaryLevel) {

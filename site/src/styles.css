@@ -1176,6 +1176,24 @@ fieldset {
   padding: 0 var(--space-sm);
 }
 
+.share-load-warning {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(225, 189, 99, 0.48);
+  border-radius: var(--control-radius);
+  background: rgba(225, 189, 99, 0.12);
+  color: var(--body);
+  line-height: 1.45;
+}
+
+.share-load-warning p {
+  margin: 0;
+}
+
+.share-load-warning strong {
+  color: var(--warning);
+}
+
 .generation-feedback {
   margin: var(--space-sm) 0 0;
   padding: var(--space-sm) var(--space-md);
