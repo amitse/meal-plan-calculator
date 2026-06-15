@@ -608,7 +608,7 @@ function App() {
     url.searchParams.delete("s");
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 
-    setForm(normalizeEditableFormState());
+    setForm(normalizeEditableFormState(undefined));
     setPlan(undefined);
     setActiveView("targets");
     setLockedIds(new Set());
