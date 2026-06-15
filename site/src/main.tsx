@@ -457,7 +457,7 @@ function App() {
         mealId: addedMeal.id,
         message: `${addedMeal.displayName} added. Review its foods and tools below.`,
       });
-      setExpandedMealIds((current) => new Set(current).add(addedMeal.id));
+      setExpandedMealIds(new Set([addedMeal.id]));
     }
   }
 
@@ -518,14 +518,12 @@ function App() {
         return current;
       }
 
-      const next = new Set(current);
-
       if (open) {
-        next.add(mealId);
-      } else {
-        next.delete(mealId);
+        return new Set([mealId]);
       }
 
+      const next = new Set(current);
+      next.delete(mealId);
       return next;
     });
   }
