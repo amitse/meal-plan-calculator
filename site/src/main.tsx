@@ -71,6 +71,7 @@ import {
   shareUrlForState,
   swapExchangeOption,
   updateItemAmount,
+  unusedFoodPreferenceLabels,
   type EditableFormState,
   type MacroField,
   type MealMacroTarget,
@@ -348,6 +349,7 @@ function App() {
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
   const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
+  const unusedFoodPreferences = useMemo(() => (plan ? unusedFoodPreferenceLabels(plan, form) : []), [form, plan]);
   const proteinTarget = Number(form.protein || 0);
   const activeMacroRuleLabels = activeMacroLabels(form);
   const activeMacroRuleCount = activeMacroRuleLabels.length;
@@ -1439,6 +1441,13 @@ function App() {
               </div>
             )}
           </dl>
+          {unusedFoodPreferences.length > 0 && (
+            <p className="unused-preferences-note" role="note">
+              <strong>Not used in this plan:</strong>{" "}
+              <span className="notranslate" translate="no">{formatFoodRuleConflictList(unusedFoodPreferences)}</span>.
+              {" "}The plan still respected active diet and Leave out rules.
+            </p>
+          )}
           {targetStatusItems.length > 0 && (
             <div className="target-status" aria-label="Daily target status">
               {targetStatusItems.map((item) => (

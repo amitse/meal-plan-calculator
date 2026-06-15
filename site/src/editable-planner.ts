@@ -653,6 +653,13 @@ export function mealTargetStatus(plan: DailyPlan, mealId: string, target: MealMa
   return statuses;
 }
 
+export function unusedFoodPreferenceLabels(plan: DailyPlan, form: EditableFormState) {
+  return [
+    ...unusedNarrowedPreferenceLabels(plan, form.preferredGrains, grainOptions.map((option) => option.id), grainOptions, "grain"),
+    ...unusedNarrowedPreferenceLabels(plan, form.preferredProteins, visibleProteinOptionIds(form.dietaryLevel), proteinOptions, "protein-serving"),
+  ];
+}
+
 function positiveNumber(value: string | undefined) {
   const parsed = Number(value || 0);
 
@@ -898,6 +905,51 @@ function proteinPreferencesForDiet(form: EditableFormState) {
 function defaultProteinsForDiet(dietaryLevel: DietaryLevel) {
   const visibleProteinOptionIds = proteinOptions.map((option) => option.id);
   return proteinOptionsForDiet(dietaryLevel).filter((option) => visibleProteinOptionIds.includes(option));
+}
+
+function visibleProteinOptionIds(dietaryLevel: DietaryLevel) {
+  const visibleProteinOptionIds = proteinOptions.map((option) => option.id);
+  return proteinOptionsForDiet(dietaryLevel).filter((option) => visibleProteinOptionIds.includes(option));
+}
+
+function unusedNarrowedPreferenceLabels(
+  plan: DailyPlan,
+  values: string[],
+  automaticOptionIds: string[],
+  options: { id: string; label: string }[],
+  groupId: "grain" | "protein-serving",
+) {
+  const selectedIds = selectedOptionIds(values, automaticOptionIds);
+
+  if (isAutomaticOptionSet(selectedIds, automaticOptionIds)) {
+    return [];
+  }
+
+  const selected = new Set(selectedIds);
+  return options
+    .filter((option) => selected.has(option.id) && !planUsesExchangeOption(plan, groupId, option.id))
+    .map((option) => option.label.toLocaleLowerCase());
+}
+
+function planUsesExchangeOption(plan: DailyPlan, groupId: "grain" | "protein-serving", optionId: string) {
+  const optionFoodItemId = getExchangeOption(groupId, optionId).foodItemId;
+
+  return plan.meals.some((meal) => meal.items.some((item) => {
+    if (item.kind === "exchange") {
+      return item.exchangeGroupId === groupId && item.exchangeOptionId === optionId;
+    }
+
+    return item.foodItemId === optionFoodItemId;
+  }));
+}
+
+function selectedOptionIds(values: string[], allowedValues: string[]) {
+  const allowed = new Set(allowedValues);
+  return [...new Set(values.filter((value) => allowed.has(value)))];
+}
+
+function isAutomaticOptionSet(selectedValues: string[], allValues: string[]) {
+  return selectedValues.length === 0 || (selectedValues.length === allValues.length && allValues.every((value) => selectedValues.includes(value)));
 }
 
 function normalizedPreferenceList(value: string[] | undefined, legacyValue: string | undefined, fallback: string[]) {

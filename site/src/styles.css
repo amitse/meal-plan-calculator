@@ -1520,6 +1520,20 @@ fieldset {
   line-height: 1.35;
 }
 
+.unused-preferences-note {
+  margin: var(--space-sm) 0 0;
+  border-left: 2px solid var(--warning);
+  background: rgba(225, 189, 99, 0.08);
+  color: var(--body);
+  padding: 8px 10px;
+  font-size: 0.83rem;
+  line-height: 1.35;
+}
+
+.unused-preferences-note strong {
+  color: var(--warning);
+}
+
 .target-status {
   display: grid;
   gap: 0;

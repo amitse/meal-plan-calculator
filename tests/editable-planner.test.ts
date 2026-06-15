@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateMealTotals } from "../src/index.js";
+import { calculateMealTotals, type DailyPlan } from "../src/index.js";
 import {
   addItemToMeal,
   addMeal,
@@ -22,6 +22,7 @@ import {
   removePlanItem,
   swapExchangeOption,
   updateItemAmount,
+  unusedFoodPreferenceLabels,
 } from "../site/src/editable-planner.js";
 
 describe("editable planner workflows", () => {
@@ -228,6 +229,58 @@ describe("editable planner workflows", () => {
     expect(withMeal.meals).toHaveLength(plan.meals.length + 1);
     expect(addedProtein).toMatchObject({ kind: "exchange", exchangeGroupId: "protein-serving" });
     expect(addedProtein && "exchangeOptionId" in addedProtein ? addedProtein.exchangeOptionId : "").toBe("tofu-100g");
+  });
+
+  it("reports narrowed liked foods that are absent from the current plan", () => {
+    const plan: DailyPlan = {
+      id: "preference-feedback",
+      displayName: "Preference feedback",
+      meals: [
+        {
+          id: "lunch",
+          displayName: "Lunch",
+          items: [
+            { kind: "exchange", exchangeGroupId: "grain", exchangeOptionId: "cooked-rice", exchangeUnits: 1 },
+            { kind: "exchange", exchangeGroupId: "protein-serving", exchangeOptionId: "tofu-100g", exchangeUnits: 1 },
+          ],
+        },
+      ],
+    };
+    const form = {
+      ...initialFormState,
+      preferredGrains: ["cooked-rice", "raw-rice"],
+      preferredProteins: ["whey-30g", "tofu-100g"],
+    };
+
+    expect(unusedFoodPreferenceLabels(plan, form)).toEqual(["rice", "whey"]);
+  });
+
+  it("does not report automatic or fully represented liked foods", () => {
+    const plan: DailyPlan = {
+      id: "represented-preferences",
+      displayName: "Represented preferences",
+      meals: [
+        {
+          id: "lunch",
+          displayName: "Lunch",
+          items: [
+            { kind: "exchange", exchangeGroupId: "grain", exchangeOptionId: "cooked-rice", exchangeUnits: 1 },
+            { kind: "exchange", exchangeGroupId: "grain", exchangeOptionId: "raw-rice", exchangeUnits: 1 },
+            { kind: "exchange", exchangeGroupId: "protein-serving", exchangeOptionId: "whey-30g", exchangeUnits: 1 },
+            { kind: "exchange", exchangeGroupId: "protein-serving", exchangeOptionId: "tofu-100g", exchangeUnits: 1 },
+          ],
+        },
+      ],
+    };
+    const narrowedForm = {
+      ...initialFormState,
+      preferredGrains: ["cooked-rice", "raw-rice"],
+      preferredProteins: ["whey-30g", "tofu-100g"],
+    };
+
+    expect(unusedFoodPreferenceLabels(plan, initialFormState)).toEqual([]);
+    expect(unusedFoodPreferenceLabels(plan, { ...initialFormState, preferredGrains: [], preferredProteins: [] })).toEqual([]);
+    expect(unusedFoodPreferenceLabels(plan, narrowedForm)).toEqual([]);
   });
 
   it("edits exchange items in grams", () => {
