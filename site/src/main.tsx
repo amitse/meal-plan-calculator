@@ -287,6 +287,7 @@ const quickStartPresets: QuickStartPreset[] = [
 ];
 const staleShareMessage = "Plan changed - share again for an updated link.";
 const staleShareBlockedMessage = "Regenerate before sharing updated targets.";
+const staleExportBlockedMessage = "Regenerate before exporting updated targets.";
 const generationProgressMessage = "Generating plan...";
 const googleTranslateElementId = "google_translate_element";
 const googleTranslateScriptId = "google-translate-script";
@@ -402,6 +403,7 @@ function App() {
   const quickStartConfirmDescriptionId = useId();
   const exportSheetTitleId = useId();
   const exportSheetDescriptionId = useId();
+  const exportStaleNoticeId = useId();
   const urlState = loadedUrlState.state;
   const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
@@ -476,6 +478,7 @@ function App() {
   const shareActionFeedback = shareState && (shareState.stale || shareState.shareKey || shareState.manualUrl) ? shareState : undefined;
   const topShareState = shareState && !shareActionFeedback ? shareState : undefined;
   const hasResultActionStatus = Boolean(activeView === "plan" && (planRandomizeFeedback || shareActionFeedback));
+  const exportActionDescriptionId = isPlanStale ? exportStaleNoticeId : undefined;
   const resolvedTheme = resolveTheme(themePreference, systemTheme);
 
   useEffect(() => {
@@ -676,7 +679,16 @@ function App() {
   }
 
   function regenerateStalePlan() {
+    regenerateStalePlanFromChangedInputs();
+  }
+
+  function regenerateStalePlanFromExportSheet() {
+    regenerateStalePlanFromChangedInputs();
+  }
+
+  function regenerateStalePlanFromChangedInputs() {
     if (!isValidCalorieTarget(form.calories)) {
+      setExportSheetOpen(false);
       setCalorieInputError(calorieValidationMessage);
       openTargetsView();
       window.requestAnimationFrame(() => calorieInputRef.current?.focus());
@@ -739,6 +751,7 @@ function App() {
   function markPlanStale() {
     if (plan) {
       setIsPlanStale(true);
+      setManualShareText("");
     }
   }
 
@@ -1214,12 +1227,22 @@ function App() {
 
   function exportCsv() {
     if (!plan) return;
+    if (isPlanStale) {
+      blockStaleExportAction();
+      return;
+    }
+
     downloadTextFile(exportFilename("csv"), "text/csv;charset=utf-8", planExportCsv(plan, exportOptions()));
     setShareState({ message: "CSV downloaded" });
   }
 
   function exportSpreadsheet() {
     if (!plan) return;
+    if (isPlanStale) {
+      blockStaleExportAction();
+      return;
+    }
+
     downloadTextFile(exportFilename("xls"), "application/vnd.ms-excel;charset=utf-8", planExportExcelHtml(plan, exportOptions()));
     setManualShareText("");
     setShareState({ message: "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets." });
@@ -1231,6 +1254,11 @@ function App() {
 
   async function sharePlanText() {
     if (!plan) return;
+    if (isPlanStale) {
+      blockStaleExportAction();
+      return;
+    }
+
     const text = planShareText(plan, exportOptions());
     setManualShareText("");
 
@@ -1279,6 +1307,11 @@ function App() {
 
   async function sharePlanImage() {
     if (!plan) return;
+    if (isPlanStale) {
+      blockStaleExportAction();
+      return;
+    }
+
     setManualShareText("");
 
     try {
@@ -1301,6 +1334,11 @@ function App() {
     } catch {
       setShareState({ message: "Image export failed. Use Share text instead." });
     }
+  }
+
+  function blockStaleExportAction() {
+    setManualShareText("");
+    setShareState({ message: staleExportBlockedMessage, stale: true });
   }
 
   async function installApp() {
@@ -1946,15 +1984,24 @@ function App() {
                 Share a live link to this plan, send text or image to WhatsApp, or download one spreadsheet file for Excel and Google Sheets.
               </p>
               <div className="export-options" aria-label="Share and export meal plan">
+                {isPlanStale && (
+                  <div id={exportStaleNoticeId} className="export-stale-notice" role="status" aria-live="polite">
+                    <p><strong>Exports paused.</strong> Regenerate first so shared files match the current targets and food rules.</p>
+                    <button className="with-icon" type="button" onClick={regenerateStalePlanFromExportSheet} disabled={isGenerating} aria-busy={isGenerating}>
+                      <Icon name="plate" />
+                      {isGenerating ? "Generating..." : "Regenerate now"}
+                    </button>
+                  </div>
+                )}
                 <div className="export-actions">
-                  <button className="with-icon" type="button" onClick={share}><Icon name="share" />Share link</button>
-                  <button className="with-icon" type="button" onClick={() => void sharePlanText()}><Icon name="share" />Share text</button>
-                  <button className="with-icon" type="button" onClick={() => void sharePlanImage()}><Icon name="image" />Share image</button>
-                  <button className="with-icon" type="button" onClick={exportSpreadsheet}><Icon name="export" />Spreadsheet</button>
-                  <button className="with-icon" type="button" onClick={exportCsv}><Icon name="download" />CSV</button>
+                  <button className="with-icon" type="button" onClick={share} disabled={isPlanStale} aria-describedby={exportActionDescriptionId}><Icon name="share" />Share link</button>
+                  <button className="with-icon" type="button" onClick={() => void sharePlanText()} disabled={isPlanStale} aria-describedby={exportActionDescriptionId}><Icon name="share" />Share text</button>
+                  <button className="with-icon" type="button" onClick={() => void sharePlanImage()} disabled={isPlanStale} aria-describedby={exportActionDescriptionId}><Icon name="image" />Share image</button>
+                  <button className="with-icon" type="button" onClick={exportSpreadsheet} disabled={isPlanStale} aria-describedby={exportActionDescriptionId}><Icon name="export" />Spreadsheet</button>
+                  <button className="with-icon" type="button" onClick={exportCsv} disabled={isPlanStale} aria-describedby={exportActionDescriptionId}><Icon name="download" />CSV</button>
                 </div>
                 <p className="export-helper">Spreadsheet downloads as one file. Import it into Google Sheets or open it in Excel.</p>
-                {manualShareText && (
+                {!isPlanStale && manualShareText && (
                   <div className="manual-share-recovery">
                     <p role="status">
                       <strong>Share blocked.</strong> Select this text, copy it, then paste it into WhatsApp or Messages.
