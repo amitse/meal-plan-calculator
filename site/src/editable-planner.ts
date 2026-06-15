@@ -71,7 +71,7 @@ export const grainOptions = [
   { id: "raw-oats", label: "Oats" },
   { id: "raw-poha", label: "Poha" },
   { id: "dosa", label: "Dosa" },
-  { id: "raw-rice", label: "Rice" },
+  { id: "raw-rice", label: "Raw rice" },
 ];
 
 export const proteinOptions = [

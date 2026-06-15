@@ -31,6 +31,13 @@ describe("editable planner workflows", () => {
     expect(initialFormState.preferredProteins).toEqual(proteinOptions.map((option) => option.id));
   });
 
+  it("distinguishes raw rice from cooked rice in grain choices", () => {
+    expect(grainOptions).toEqual(expect.arrayContaining([
+      { id: "cooked-rice", label: "Cooked rice" },
+      { id: "raw-rice", label: "Raw rice" },
+    ]));
+  });
+
   it("keeps protein and optional macro limits off for fresh and omitted shared states", () => {
     expect(initialFormState.protein).toBe("");
     expect(initialFormState.carbs.mode).toBe("none");
@@ -336,7 +343,7 @@ describe("editable planner workflows", () => {
       preferredProteins: ["whey-30g", "tofu-100g"],
     };
 
-    expect(unusedFoodPreferenceLabels(plan, form)).toEqual(["rice", "whey"]);
+    expect(unusedFoodPreferenceLabels(plan, form)).toEqual(["raw rice", "whey"]);
   });
 
   it("does not report automatic or fully represented liked foods", () => {

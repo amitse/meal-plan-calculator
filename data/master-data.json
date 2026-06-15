@@ -1035,7 +1035,7 @@
       "options": [
         {
           "id": "raw-rice",
-          "displayName": "Rice",
+          "displayName": "Raw rice",
           "quantity": {
             "amount": 50,
             "unit": "g"
