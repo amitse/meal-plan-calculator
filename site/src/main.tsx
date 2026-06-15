@@ -207,6 +207,7 @@ function App() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(() => isStandaloneApp());
   const resultRef = useRef<HTMLElement>(null);
+  const generationFeedbackRef = useRef<HTMLDivElement>(null);
   const mealCardRefs = useRef<Map<string, HTMLDetailsElement>>(new Map());
   const addedMealFeedbackKey = useRef(0);
   const revealedAddedMealKey = useRef<number | undefined>(undefined);
@@ -230,6 +231,21 @@ function App() {
       resultRef.current?.focus();
     }
   }, [activeView, plan]);
+
+  useEffect(() => {
+    if (generationBlockers.length === 0) {
+      return;
+    }
+
+    const feedbackPanel = generationFeedbackRef.current;
+    if (!feedbackPanel) {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    feedbackPanel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
+    feedbackPanel.focus({ preventScroll: true });
+  }, [generationBlockers]);
 
   useEffect(() => {
     if (!addedMealFeedback || activeView !== "plan" || revealedAddedMealKey.current === addedMealFeedback.key) {
@@ -811,7 +827,13 @@ function App() {
           </details>
 
           {generationBlockers.length > 0 && (
-            <div className="generation-feedback" role="alert" aria-label="Generation blockers">
+            <div
+              className="generation-feedback"
+              ref={generationFeedbackRef}
+              role="alert"
+              aria-label="Generation blockers"
+              tabIndex={-1}
+            >
               <p><strong>Plan blocked.</strong> Adjust these before regenerating:</p>
               <ul>
                 {generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
