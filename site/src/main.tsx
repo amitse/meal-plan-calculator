@@ -168,6 +168,7 @@ function App() {
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
   const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
   const activeCustomizationChips = useMemo(() => activeCustomizationLabels(form), [form]);
+  const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
 
   useEffect(() => {
@@ -602,6 +603,11 @@ function App() {
                 {form.dietaryLevel !== "vegetarian" && <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />}
                 {form.dietaryLevel === "nonVegetarian" && <CheckChip label="Chicken / fish" checked={form.avoidChickenFish} onChange={(checked) => update("avoidChickenFish", checked)} />}
               </fieldset>
+              {likedProteinAvoidConflicts.length > 0 && (
+                <p className="food-rule-conflict" role="note">
+                  <strong>Avoid wins:</strong> {formatFoodRuleConflictList(likedProteinAvoidConflicts)} {likedProteinAvoidConflicts.length === 1 ? "is" : "are"} liked and avoided, so {likedProteinAvoidConflicts.length === 1 ? "it" : "they"} will be excluded when generating.
+                </p>
+              )}
             </details>
 
             <details className="nested-drawer">
@@ -898,6 +904,25 @@ function avoidLabels(form: EditableFormState) {
     form.dietaryLevel !== "vegetarian" && form.avoidEggs ? "eggs" : undefined,
     form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish ? "chicken/fish" : undefined,
   ].filter((label): label is string => Boolean(label));
+}
+
+function foodRuleConflictLabels(form: EditableFormState) {
+  return [
+    hasLikedAvoidedProtein(form, "paneer-50g", form.avoidPaneer) ? "Paneer" : undefined,
+    hasLikedAvoidedProtein(form, "whey-30g", form.avoidWhey) ? "Whey" : undefined,
+    hasLikedAvoidedProtein(form, "two-whole-eggs", form.dietaryLevel !== "vegetarian" && form.avoidEggs) ? "Eggs" : undefined,
+    hasLikedAvoidedProtein(form, "chicken-fish-100g", form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish) ? "Chicken / fish" : undefined,
+  ].filter((label): label is string => Boolean(label));
+}
+
+function hasLikedAvoidedProtein(form: EditableFormState, optionId: string, avoided: boolean) {
+  return avoided && form.preferredProteins.includes(optionId) && isProteinVisible(optionId, form.dietaryLevel);
+}
+
+function formatFoodRuleConflictList(labels: string[]) {
+  if (labels.length <= 1) return labels[0] ?? "";
+  if (labels.length === 2) return labels.join(" and ");
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
 }
 
 function activeMacroCount(form: EditableFormState) {

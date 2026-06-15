@@ -530,6 +530,19 @@ small {
   text-transform: none;
 }
 
+.food-rule-conflict {
+  margin: var(--space-sm) 0 0;
+  border-left: 2px solid var(--warning);
+  color: var(--muted);
+  padding-left: var(--space-sm);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.food-rule-conflict strong {
+  color: var(--warning);
+}
+
 .field > span,
 legend {
   color: var(--ink);
