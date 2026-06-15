@@ -1952,28 +1952,37 @@ function PlanItemRow({
         </small>
       </div>
       <div className={`item-actions ${item.kind === "exchange" ? "has-swap" : "no-swap"}`}>
-        <label className="amount-control">
-          <span className="sr-only">Amount in grams</span>
-          <input
-            aria-describedby={servingValidationMessage ? servingErrorId : undefined}
-            aria-invalid={servingValidationMessage ? "true" : undefined}
-            inputMode="numeric"
-            value={servingDraft}
-            onChange={(event) => updateServingDraft(event.target.value)}
-            min="0"
-            step={amountStep(item, quantity.unit)}
-            type="number"
-          />
-        </label>
-        <span className="unit-label" title="grams">gm</span>
-        <button className="lock-toggle with-icon" type="button" aria-pressed={locked} onClick={onLock}><Icon name={locked ? "unlock" : "lock"} />{locked ? "Unlock" : "Lock"}</button>
-        <button className="delete-toggle with-icon" type="button" aria-label={`Delete ${label}`} onClick={onDelete}><Icon name="delete" />Del</button>
+        <div className="amount-line">
+          <label className="amount-control">
+            <span className="sr-only">Amount in grams</span>
+            <input
+              aria-describedby={servingValidationMessage ? servingErrorId : undefined}
+              aria-invalid={servingValidationMessage ? "true" : undefined}
+              inputMode="numeric"
+              value={servingDraft}
+              onChange={(event) => updateServingDraft(event.target.value)}
+              min="0"
+              step={amountStep(item, quantity.unit)}
+              type="number"
+            />
+          </label>
+          <span className="unit-label" title="grams">gm</span>
+        </div>
+        <div className="item-button-row">
+          <button className="lock-toggle icon-button" type="button" aria-label={`${locked ? "Unlock" : "Lock"} ${label}`} aria-pressed={locked} onClick={onLock}>
+            <Icon name={locked ? "unlock" : "lock"} />
+            <span className="control-label">{locked ? "Unlock" : "Lock"}</span>
+          </button>
+          <button className="delete-toggle icon-button" type="button" aria-label={`Delete ${label}`} onClick={onDelete}>
+            <Icon name="delete" />
+            <span className="control-label">Delete</span>
+          </button>
+        </div>
         {servingValidationMessage && (
           <span
             className="randomize-feedback-inline is-notice"
             id={servingErrorId}
             role="alert"
-            style={{ gridColumn: "1 / -1" }}
           >
             {servingValidationMessage}
           </span>

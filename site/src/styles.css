@@ -590,14 +590,16 @@ small {
   margin: 10px 0 2px;
   border-top: 1px solid var(--border-soft);
   border-bottom: 1px solid var(--border-soft);
+  background: rgba(240, 239, 235, 0.025);
 }
 
 .options-drawer > summary {
-  min-height: var(--control-height);
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
+  padding: 0 var(--space-sm);
   color: var(--ink);
   font-weight: 700;
   cursor: pointer;
@@ -606,6 +608,10 @@ small {
 
 .options-drawer[open] > summary {
   border-bottom: 1px solid var(--border-soft);
+}
+
+.options-drawer > summary .summary-label {
+  font-size: 1rem;
 }
 
 .options-drawer > summary::after,
@@ -635,19 +641,24 @@ small {
 }
 
 .nested-drawer {
-  margin-left: var(--space-sm);
+  margin: 8px 0 0 var(--space-sm);
   border-top: 0;
   border-left: 1px solid var(--border-soft);
   border-bottom: 1px solid var(--border-soft);
+  background: rgba(12, 10, 8, 0.16);
+}
+
+.nested-drawer + .nested-drawer {
+  margin-top: 6px;
 }
 
 .nested-drawer > summary {
-  min-height: 42px;
+  min-height: 46px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  padding-left: var(--space-sm);
+  padding: 0 var(--space-sm);
   color: var(--muted);
   font-size: 0.92rem;
   font-weight: 600;
@@ -657,6 +668,7 @@ small {
 
 .nested-drawer[open] > summary {
   color: var(--body);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .nested-drawer[open] {
@@ -689,7 +701,7 @@ small {
 .nested-drawer > .avoid-list,
 .nested-drawer > .macro-grid,
 .nested-drawer > .food-rule-conflict {
-  padding-inline: var(--space-sm) 0;
+  padding-inline: var(--space-sm);
 }
 
 .preference-grid {
@@ -1262,7 +1274,7 @@ fieldset {
 
 .meal-list {
   display: grid;
-  gap: 0;
+  gap: 6px;
   margin-top: var(--space-sm);
 }
 
@@ -1278,16 +1290,13 @@ fieldset {
 
 .meal-card {
   border-top: 1px solid var(--border);
-  background: transparent;
+  border-bottom: 1px solid var(--border-soft);
+  background: rgba(240, 239, 235, 0.018);
   scroll-margin-top: var(--space-sm);
 }
 
 .meal-card.is-newly-added {
   background: rgba(159, 189, 143, 0.07);
-}
-
-.meal-card:last-child {
-  border-bottom: 1px solid var(--border);
 }
 
 .meal-card > summary {
@@ -1296,14 +1305,14 @@ fieldset {
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--space-sm);
   align-items: center;
-  padding: var(--space-lg) 0 var(--space-md);
+  padding: var(--space-md) var(--space-sm);
   cursor: pointer;
 }
 
 .meal-title {
   color: var(--ink);
   font-family: var(--serif);
-  font-size: 1.55rem;
+  font-size: 1.68rem;
   font-weight: 300;
   letter-spacing: -0.01em;
   line-height: 1;
@@ -1344,7 +1353,7 @@ fieldset {
 
 .meal-summary {
   display: grid;
-  gap: 2px;
+  gap: 4px;
   min-width: 92px;
   text-align: right;
 }
@@ -1359,7 +1368,7 @@ fieldset {
 
 .meal-summary strong {
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -1379,7 +1388,7 @@ fieldset {
 }
 
 .meal-affordance {
-  color: var(--accent);
+  color: var(--faint);
   font-size: 0.74rem;
   font-weight: 700;
   line-height: 1;
@@ -1388,6 +1397,7 @@ fieldset {
 
 .meal-card[open] > summary {
   border-bottom: 1px solid var(--border-soft);
+  background: rgba(240, 239, 235, 0.035);
 }
 
 .meal-card[open] .meal-affordance {
@@ -1405,19 +1415,25 @@ fieldset {
 }
 
 .meal-items {
-  padding: var(--space-sm) 0 var(--space-md);
+  display: grid;
+  gap: 2px;
+  padding: 8px var(--space-sm) var(--space-sm);
 }
 
 .meal-tools {
-  margin-top: var(--space-sm);
+  margin: 0 var(--space-sm) var(--space-md);
   border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  background: rgba(12, 10, 8, 0.18);
 }
 
 .meal-tools > summary {
-  padding: var(--space-sm) 0;
+  min-height: 44px;
+  padding: 0 var(--space-sm);
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
+  font-weight: 650;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1429,7 +1445,7 @@ fieldset {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-sm);
-  padding: 0 0 var(--space-md);
+  padding: var(--space-sm);
 }
 
 .meal-target-helper {
@@ -1518,39 +1534,82 @@ fieldset {
 }
 
 .plan-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(164px, 46%);
-  gap: var(--space-xs);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px var(--space-sm);
   align-items: start;
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border-soft);
 }
 
+.plan-row > div:first-child {
+  flex: 1 1 174px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
 .item-actions {
+  flex: 0 0 116px;
   display: grid;
-  grid-template-columns: minmax(44px, 0.7fr) min-content min-content min-content;
+  grid-template-columns: 1fr;
   gap: 6px;
-  align-items: center;
-  justify-content: end;
+  justify-items: end;
   min-width: 0;
 }
 
-.item-actions.has-swap {
-  grid-template-columns: minmax(44px, 0.7fr) min-content min-content min-content;
+.amount-line {
+  display: grid;
+  grid-template-columns: minmax(62px, 1fr) min-content;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
 }
 
-.item-actions.no-swap {
-  grid-template-columns: minmax(44px, 0.7fr) min-content min-content min-content;
+.item-button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
 }
 
 .item-actions input,
 .item-actions select {
-  min-height: 40px;
+  min-height: 36px;
+  border-color: rgba(172, 163, 148, 0.28);
+  background: rgba(240, 239, 235, 0.035);
+  font-size: 0.88rem;
 }
 
 .item-actions input {
-  padding-inline: 8px;
+  padding-inline: 7px;
   text-align: center;
+}
+
+.item-actions .icon-button {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-color: rgba(172, 163, 148, 0.24);
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+}
+
+.item-actions .icon-button[aria-pressed="true"] {
+  border-color: rgba(159, 189, 143, 0.58);
+  background: rgba(159, 189, 143, 0.11);
+  color: var(--success);
+}
+
+.item-actions .icon-button .control-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .amount-control {
@@ -1558,19 +1617,22 @@ fieldset {
 }
 
 .unit-label {
-  min-width: 28px;
-  color: var(--muted);
-  font-size: 0.78rem;
+  min-width: 24px;
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 650;
   text-align: left;
 }
 
 .swap-button {
-  grid-column: 1 / -1;
   width: 100%;
-  min-height: 40px;
+  min-height: 36px;
+  border-color: rgba(210, 160, 87, 0.28);
+  background: rgba(210, 160, 87, 0.06);
   color: var(--accent);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
+  padding-inline: var(--space-sm);
 }
 
 .swap-sheet {
