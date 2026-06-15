@@ -90,6 +90,15 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
+const calorieTargetMin = 800;
+const calorieTargetMax = 5000;
+const calorieValidationMessage = `Enter a calorie target from ${calorieTargetMin}-${calorieTargetMax} kcal.`;
+
+function isValidCalorieTarget(value: string) {
+  const calories = Number(value);
+  return value.trim() !== "" && Number.isFinite(calories) && calories >= calorieTargetMin && calories <= calorieTargetMax;
+}
+
 type IconName =
   | "add"
   | "alert"
@@ -240,8 +249,10 @@ function App() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(() => isStandaloneApp());
   const [isGenerating, setIsGenerating] = useState(false);
+  const [calorieInputError, setCalorieInputError] = useState("");
   const resultRef = useRef<HTMLElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
+  const calorieInputRef = useRef<HTMLInputElement>(null);
   const generationInFlight = useRef(false);
   const mealCardRefs = useRef<Map<string, HTMLDetailsElement>>(new Map());
   const addedMealFeedbackKey = useRef(0);
@@ -352,6 +363,9 @@ function App() {
 
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
     setGenerationBlockers([]);
+    if (key === "calories" && typeof value === "string" && isValidCalorieTarget(value)) {
+      setCalorieInputError("");
+    }
     setMealToolMessages({});
     setAddMealBlocker("");
     clearRandomizeFeedback();
@@ -406,7 +420,20 @@ function App() {
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!isValidCalorieTarget(form.calories)) {
+      setCalorieInputError(calorieValidationMessage);
+      calorieInputRef.current?.focus();
+      return;
+    }
+
+    setCalorieInputError("");
     void generateWithProgress();
+  }
+
+  function showCalorieInputError(event: React.InvalidEvent<HTMLInputElement>) {
+    event.preventDefault();
+    setCalorieInputError(calorieValidationMessage);
+    event.currentTarget.focus();
   }
 
   function applyQuickStartPreset(preset: QuickStartPreset) {
@@ -843,11 +870,28 @@ function App() {
             <label className="field calorie-field">
               <span className="label-with-icon"><Icon name="calories" />Calories (kcal)</span>
               <div className="target-stepper">
-                <button type="button" aria-label="Decrease calories by 50" onClick={() => stepTarget("calories", -50, 800, 5000)}>−</button>
-                <input aria-describedby="calories-helper" inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="50" type="number" />
-                <button type="button" aria-label="Increase calories by 50" onClick={() => stepTarget("calories", 50, 800, 5000)}>+</button>
+                <button type="button" aria-label="Decrease calories by 50" onClick={() => stepTarget("calories", -50, calorieTargetMin, calorieTargetMax)}>−</button>
+                <input
+                  ref={calorieInputRef}
+                  aria-describedby={`calories-helper${calorieInputError ? " calories-error" : ""}`}
+                  aria-invalid={calorieInputError ? "true" : undefined}
+                  aria-errormessage={calorieInputError ? "calories-error" : undefined}
+                  inputMode="numeric"
+                  value={form.calories}
+                  onChange={(event) => update("calories", event.target.value)}
+                  onInvalid={showCalorieInputError}
+                  required
+                  min={calorieTargetMin}
+                  max={calorieTargetMax}
+                  step="50"
+                  type="number"
+                />
+                <button type="button" aria-label="Increase calories by 50" onClick={() => stepTarget("calories", 50, calorieTargetMin, calorieTargetMax)}>+</button>
               </div>
               <small id="calories-helper" className="field-hint">Target band: plans can pass within about 50 kcal.</small>
+              {calorieInputError && (
+                <small id="calories-error" className="field-error" role="alert">{calorieInputError}</small>
+              )}
             </label>
             <label className="field">
               <span className="label-with-icon"><Icon name="protein" />Protein (gm)</span>
