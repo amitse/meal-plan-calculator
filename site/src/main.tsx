@@ -1230,7 +1230,7 @@ function App() {
                     <span className="drawer-summary">{status.length > 0 ? status.join(" · ") : "Targets + add items"}</span>
                   </summary>
                   <div className="meal-targets">
-                    <p className="meal-target-helper">Per-meal targets for this meal only. The current meal is compared below; Randomize meal tries to meet them.</p>
+                    <p className="meal-target-helper">Per-meal targets for this meal only. The current meal is compared below when a target is active.</p>
                     <label>
                       <span>Meal kcal target</span>
                       <NumberStepper
@@ -1275,7 +1275,7 @@ function App() {
                         {mealToolMessage.message}
                       </span>
                     )}
-                    {status.length > 0 && <span>Current meal: {status.join(" · ")}. Tap Randomize meal to try meeting the target.</span>}
+                    {status.length > 0 && <span>Current meal: {status.join(" · ")}. This target will be used when you tap Randomize meal.</span>}
                   </div>
                 </details>
               </details>
