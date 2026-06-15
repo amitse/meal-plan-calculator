@@ -413,7 +413,7 @@ small {
   margin-top: 0;
 }
 
-.target-stepper {
+.number-stepper {
   display: grid;
   grid-template-columns: 36px minmax(58px, 1fr) 36px;
   align-items: stretch;
@@ -425,13 +425,13 @@ small {
   overflow: hidden;
 }
 
-.target-stepper:focus-within {
+.number-stepper:focus-within {
   border-color: var(--focus);
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-.target-stepper button {
+.number-stepper button {
   min-height: 100%;
   min-width: 0;
   border: 0;
@@ -446,24 +446,39 @@ small {
   padding: 0;
 }
 
-.target-stepper button:first-child {
+.number-stepper button:first-child {
   border-right: 1px solid var(--border-soft);
 }
 
-.target-stepper button:last-child {
+.number-stepper button:last-child {
   border-left: 1px solid var(--border-soft);
 }
 
-.target-stepper button:hover {
+.number-stepper button:hover {
   background: rgba(240, 239, 235, 0.06);
   color: var(--ink);
 }
 
-.target-stepper button:active {
+.number-stepper button:active {
   transform: scale(0.96);
 }
 
-.quick-fields .target-stepper input {
+.number-stepper button:disabled {
+  color: var(--faint);
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.number-stepper input {
+  height: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.quick-fields .number-stepper input {
   height: 100%;
   min-height: 54px;
   border: 0;
@@ -481,9 +496,29 @@ small {
   transform: translateY(-1px);
 }
 
-.quick-fields .target-stepper input:focus,
-.quick-fields .target-stepper input:focus-visible {
+.number-stepper input:focus,
+.number-stepper input:focus-visible {
   outline: 0;
+}
+
+.number-stepper.is-compact {
+  grid-template-columns: 32px minmax(38px, 1fr) 32px;
+  min-height: 40px;
+  border-color: rgba(172, 163, 148, 0.3);
+  background: rgba(240, 239, 235, 0.035);
+}
+
+.number-stepper.is-compact button {
+  font-size: 0.95rem;
+}
+
+.number-stepper.is-compact input {
+  min-height: 40px;
+  padding: 0 3px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .quick-start-presets {
@@ -1456,11 +1491,11 @@ fieldset {
   line-height: 1.35;
 }
 
-.meal-targets button {
+.meal-targets > button {
   width: 100%;
 }
 
-.meal-targets button:first-of-type {
+.meal-targets > button:first-of-type {
   grid-column: 1 / -1;
 }
 
@@ -1549,7 +1584,7 @@ fieldset {
 }
 
 .item-actions {
-  flex: 0 0 116px;
+  flex: 0 0 122px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 6px;
@@ -1559,7 +1594,7 @@ fieldset {
 
 .amount-line {
   display: grid;
-  grid-template-columns: minmax(62px, 1fr) min-content;
+  grid-template-columns: minmax(0, 1fr) min-content;
   gap: 6px;
   align-items: center;
   width: 100%;
@@ -1572,17 +1607,9 @@ fieldset {
   width: 100%;
 }
 
-.item-actions input,
-.item-actions select {
-  min-height: 36px;
-  border-color: rgba(172, 163, 148, 0.28);
-  background: rgba(240, 239, 235, 0.035);
-  font-size: 0.88rem;
-}
-
-.item-actions input {
-  padding-inline: 7px;
-  text-align: center;
+.amount-line .number-stepper.is-compact {
+  grid-template-columns: 28px minmax(30px, 1fr) 28px;
+  min-height: 40px;
 }
 
 .item-actions .icon-button {

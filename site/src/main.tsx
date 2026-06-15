@@ -410,12 +410,6 @@ function App() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function stepTarget(key: "calories" | "protein", delta: number, min = 0, max = Number.POSITIVE_INFINITY) {
-    const current = Number(form[key] || 0);
-    const next = Math.min(max, Math.max(min, current + delta));
-    update(key, String(next));
-  }
-
   function generate(sourceForm = form, options: GenerateOptions = {}) {
     const seed = options.seed ?? Date.now();
     const useExistingLocks = options.useExistingLocks ?? true;
@@ -906,25 +900,22 @@ function App() {
           <div className="quick-fields">
             <label className="field calorie-field">
               <span className="label-with-icon"><Icon name="calories" />Calories (kcal)</span>
-              <div className="target-stepper">
-                <button type="button" aria-label="Decrease calories by 50" onClick={() => stepTarget("calories", -50, calorieTargetMin, calorieTargetMax)}>−</button>
-                <input
-                  ref={calorieInputRef}
-                  aria-describedby={`calories-helper${calorieInputError ? " calories-error" : ""}`}
-                  aria-invalid={calorieInputError ? "true" : undefined}
-                  aria-errormessage={calorieInputError ? "calories-error" : undefined}
-                  inputMode="numeric"
-                  value={form.calories}
-                  onChange={(event) => update("calories", event.target.value)}
-                  onInvalid={showCalorieInputError}
-                  required
-                  min={calorieTargetMin}
-                  max={calorieTargetMax}
-                  step="50"
-                  type="number"
-                />
-                <button type="button" aria-label="Increase calories by 50" onClick={() => stepTarget("calories", 50, calorieTargetMin, calorieTargetMax)}>+</button>
-              </div>
+              <NumberStepper
+                ariaDescribedBy={`calories-helper${calorieInputError ? " calories-error" : ""}`}
+                ariaErrorMessage={calorieInputError ? "calories-error" : undefined}
+                ariaInvalid={Boolean(calorieInputError)}
+                ariaLabel="Calories"
+                decrementLabel="Decrease calories by 50"
+                incrementLabel="Increase calories by 50"
+                inputRef={calorieInputRef}
+                max={calorieTargetMax}
+                min={calorieTargetMin}
+                onChange={(value) => update("calories", value)}
+                onInvalid={showCalorieInputError}
+                required
+                step={50}
+                value={form.calories}
+              />
               <small id="calories-helper" className="field-hint">Target band: plans can pass within about 50 kcal.</small>
               {calorieInputError && (
                 <small id="calories-error" className="field-error" role="alert">{calorieInputError}</small>
@@ -932,11 +923,15 @@ function App() {
             </label>
             <label className="field">
               <span className="label-with-icon"><Icon name="protein" />Protein (gm)</span>
-              <div className="target-stepper">
-                <button type="button" aria-label="Decrease protein by 5 grams" onClick={() => stepTarget("protein", -5)}>−</button>
-                <input aria-describedby="protein-helper" inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" step="5" type="number" />
-                <button type="button" aria-label="Increase protein by 5 grams" onClick={() => stepTarget("protein", 5)}>+</button>
-              </div>
+              <NumberStepper
+                ariaDescribedBy="protein-helper"
+                ariaLabel="Protein"
+                decrementLabel="Decrease protein by 5 grams"
+                incrementLabel="Increase protein by 5 grams"
+                onChange={(value) => update("protein", value)}
+                step={5}
+                value={form.protein}
+              />
               <small id="protein-helper" className="field-hint">Target band: plans can pass within about 5gm.</small>
             </label>
           </div>
@@ -1217,8 +1212,31 @@ function App() {
                   </summary>
                   <div className="meal-targets">
                     <p className="meal-target-helper">Per-meal targets for this meal only. The current meal is compared below; Randomize meal tries to meet them.</p>
-                    <label><span>Meal kcal target</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => updateMealTarget(meal.id, "calories", event.target.value)} min="0" max="5000" step="25" type="number" /></label>
-                    <label><span>Meal protein target</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => updateMealTarget(meal.id, "protein", event.target.value)} min="0" step="5" type="number" /></label>
+                    <label>
+                      <span>Meal kcal target</span>
+                      <NumberStepper
+                        ariaLabel={`${meal.displayName} calorie target`}
+                        decrementLabel={`Decrease ${meal.displayName} calorie target by 25`}
+                        incrementLabel={`Increase ${meal.displayName} calorie target by 25`}
+                        max={5000}
+                        onChange={(value) => updateMealTarget(meal.id, "calories", value)}
+                        size="compact"
+                        step={25}
+                        value={mealTargets[meal.id]?.calories ?? ""}
+                      />
+                    </label>
+                    <label>
+                      <span>Meal protein target</span>
+                      <NumberStepper
+                        ariaLabel={`${meal.displayName} protein target`}
+                        decrementLabel={`Decrease ${meal.displayName} protein target by 5 grams`}
+                        incrementLabel={`Increase ${meal.displayName} protein target by 5 grams`}
+                        onChange={(value) => updateMealTarget(meal.id, "protein", value)}
+                        size="compact"
+                        step={5}
+                        value={mealTargets[meal.id]?.protein ?? ""}
+                      />
+                    </label>
                     <button className="with-icon" type="button" onClick={() => randomizeSingleMeal(meal.id)}><Icon name="randomize" />Randomize meal</button>
                     <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "protein-serving")}><Icon name="protein" />Add protein</button>
                     <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "grain")}><Icon name="carb" />Add grain</button>
@@ -1296,6 +1314,92 @@ function restoreDeletedItem(plan: DailyPlan, deletedItem: DeletedItemUndo): Dail
   };
 }
 
+function NumberStepper({
+  ariaDescribedBy,
+  ariaErrorMessage,
+  ariaInvalid,
+  ariaLabel,
+  className = "",
+  decrementLabel,
+  disabled = false,
+  inputRef,
+  incrementLabel,
+  max,
+  min = 0,
+  onChange,
+  onInvalid,
+  required = false,
+  size = "default",
+  step,
+  value,
+}: {
+  ariaDescribedBy?: string;
+  ariaErrorMessage?: string;
+  ariaInvalid?: boolean;
+  ariaLabel: string;
+  className?: string;
+  decrementLabel?: string;
+  disabled?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
+  incrementLabel?: string;
+  max?: number;
+  min?: number;
+  onChange: (value: string) => void;
+  onInvalid?: React.FormEventHandler<HTMLInputElement>;
+  required?: boolean;
+  size?: "default" | "compact";
+  step: number;
+  value: string;
+}) {
+  const minValue = min;
+  const maxValue = max ?? Number.POSITIVE_INFINITY;
+
+  function stepValue(delta: number) {
+    const parsed = Number.parseFloat(value);
+    const current = Number.isFinite(parsed) ? parsed : 0;
+    const next = Math.min(maxValue, Math.max(minValue, current + delta));
+    onChange(formatNumberInputValue(next, step));
+  }
+
+  return (
+    <div className={`number-stepper${size === "compact" ? " is-compact" : ""}${className ? ` ${className}` : ""}`}>
+      <button
+        type="button"
+        aria-label={decrementLabel ?? `Decrease ${ariaLabel} by ${step}`}
+        disabled={disabled}
+        onClick={() => stepValue(-step)}
+      >
+        −
+      </button>
+      <input
+        ref={inputRef}
+        aria-describedby={ariaDescribedBy}
+        aria-errormessage={ariaErrorMessage}
+        aria-invalid={ariaInvalid ? "true" : undefined}
+        aria-label={ariaLabel}
+        disabled={disabled}
+        inputMode="numeric"
+        max={max}
+        min={min}
+        onChange={(event) => onChange(event.target.value)}
+        onInvalid={onInvalid}
+        required={required}
+        step={step}
+        type="number"
+        value={value}
+      />
+      <button
+        type="button"
+        aria-label={incrementLabel ?? `Increase ${ariaLabel} by ${step}`}
+        disabled={disabled}
+        onClick={() => stepValue(step)}
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: string; value: MacroField; onChange: (value: MacroField) => void }) {
   return (
     <label className="field compact">
@@ -1307,7 +1411,14 @@ function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: s
           <option value="max">Max</option>
           <option value="target">Target</option>
         </select>
-        <input aria-label={`${label} value`} inputMode="numeric" value={value.value} onChange={(event) => onChange({ ...value, value: event.target.value })} type="number" disabled={value.mode === "none"} />
+        <NumberStepper
+          ariaLabel={`${label} value`}
+          disabled={value.mode === "none"}
+          onChange={(nextValue) => onChange({ ...value, value: nextValue })}
+          size="compact"
+          step={1}
+          value={value.value}
+        />
       </div>
     </label>
   );
@@ -1622,6 +1733,18 @@ function amountStep(item: DailyPlanItem, unit: string) {
   return "1";
 }
 
+function formatNumberInputValue(value: number, step: number) {
+  const precision = decimalPlaces(step);
+  const formatted = precision > 0 ? value.toFixed(precision) : String(Math.round(value));
+  return formatted.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+}
+
+function decimalPlaces(value: number) {
+  const text = String(value);
+  if (!text.includes(".")) return 0;
+  return text.split(".")[1]?.length ?? 0;
+}
+
 function SummaryMetric({ icon, label, value, suffix }: { icon: IconName; label: string; value: number; suffix: string }) {
   return (
     <div className="metric">
@@ -1782,6 +1905,7 @@ function PlanItemRow({
   const swapTitleId = useId();
   const swapDescriptionId = useId();
   const isExchangeItem = item.kind === "exchange";
+  const servingStep = Number(amountStep(item, quantity.unit));
 
   useEffect(() => {
     setServingDraft(String(quantity.amount));
@@ -1834,19 +1958,18 @@ function PlanItemRow({
       </div>
       <div className={`item-actions ${item.kind === "exchange" ? "has-swap" : "no-swap"}`}>
         <div className="amount-line">
-          <label className="amount-control">
-            <span className="sr-only">Amount in grams</span>
-            <input
-              aria-describedby={servingValidationMessage ? servingErrorId : undefined}
-              aria-invalid={servingValidationMessage ? "true" : undefined}
-              inputMode="numeric"
-              value={servingDraft}
-              onChange={(event) => updateServingDraft(event.target.value)}
-              min="0"
-              step={amountStep(item, quantity.unit)}
-              type="number"
-            />
-          </label>
+          <NumberStepper
+            ariaDescribedBy={servingValidationMessage ? servingErrorId : undefined}
+            ariaInvalid={Boolean(servingValidationMessage)}
+            ariaLabel={`${label} amount`}
+            className="amount-control"
+            decrementLabel={`Decrease ${label} amount by ${servingStep} ${quantity.unit}`}
+            incrementLabel={`Increase ${label} amount by ${servingStep} ${quantity.unit}`}
+            onChange={updateServingDraft}
+            size="compact"
+            step={servingStep}
+            value={servingDraft}
+          />
           <span className="unit-label" title="grams">gm</span>
         </div>
         <div className="item-button-row">
