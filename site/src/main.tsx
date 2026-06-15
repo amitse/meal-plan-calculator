@@ -899,9 +899,6 @@ function App() {
               <h2 id="result-title">Daily plan</h2>
               <span className={`result-status is-${evaluation.status}`}>{evaluation.status === "pass" ? "Within targets" : "Needs adjustment"}</span>
             </div>
-            <button className="with-icon" type="button" onClick={() => setActiveView("targets")}><Icon name="targets" />Targets</button>
-            <button className="with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
-            <button className="with-icon" type="button" onClick={share}><Icon name="share" />Share</button>
           </div>
           {planRandomizeFeedback && (
             <p className={`randomize-feedback ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}`} role="status">
