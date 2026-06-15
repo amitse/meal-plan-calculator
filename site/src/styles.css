@@ -752,6 +752,18 @@ small {
   margin-top: 10px;
 }
 
+.preference-auto-helper {
+  width: 100%;
+  margin: 0 0 2px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--control-radius);
+  background: rgba(210, 160, 87, 0.08);
+  color: var(--body);
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .nested-drawer > .avoid-list {
   margin-top: 10px;
   margin-bottom: 4px;

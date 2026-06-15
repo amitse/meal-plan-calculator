@@ -965,8 +965,22 @@ function App() {
                 <span className="summary-label"><Icon name="food" />Food</span>
                 <span className="drawer-summary">{foodDrawerSummary(form)}</span>
               </summary>
-              <PreferenceGroup iconFor={grainOptionIcon} label="Choose carbs" options={grainOptions} values={form.preferredGrains} onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)} />
-              <PreferenceGroup iconFor={proteinOptionIcon} label="Choose proteins" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} values={form.preferredProteins} onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)} />
+              <PreferenceGroup
+                automaticHelper="All carb choices are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
+                iconFor={grainOptionIcon}
+                label="Choose carbs"
+                options={grainOptions}
+                values={form.preferredGrains}
+                onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)}
+              />
+              <PreferenceGroup
+                automaticHelper="All visible proteins are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
+                iconFor={proteinOptionIcon}
+                label="Choose proteins"
+                options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))}
+                values={form.preferredProteins}
+                onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)}
+              />
               <fieldset className="avoid-list">
                 <legend>Leave out</legend>
                 <CheckChip icon="dairy" label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
@@ -1465,10 +1479,15 @@ function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: s
   );
 }
 
-function PreferenceGroup({ iconFor, label, options, values, onChange }: { iconFor: (optionId: string) => IconName; label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
+function PreferenceGroup({ automaticHelper, iconFor, label, options, values, onChange }: { automaticHelper?: string; iconFor: (optionId: string) => IconName; label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
+  const optionIds = options.map((option) => option.id);
+  const selectedIds = selectedOptionIds(values, optionIds);
+  const showAutomaticHelper = Boolean(automaticHelper) && selectedIds.length === optionIds.length && optionIds.length > 0;
+
   return (
     <fieldset className="choice-group preference-group">
       <legend>{label}</legend>
+      {showAutomaticHelper && <p className="preference-auto-helper">{automaticHelper}</p>}
       {options.map((option) => (
         <label key={option.id}>
           <input type="checkbox" checked={values.includes(option.id)} onChange={(event) => onChange(option.id, event.target.checked)} />
