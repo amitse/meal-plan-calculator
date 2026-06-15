@@ -3036,6 +3036,51 @@ fieldset {
   line-height: 1.45;
 }
 
+.locked-copy {
+  min-width: 0;
+}
+
+.locked-food-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-6);
+  margin: var(--space-xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.locked-food-list li {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: baseline;
+  gap: var(--size-5);
+  border: var(--size-px) solid var(--alpha-accent-42);
+  border-radius: var(--radius-pill);
+  background: var(--alpha-dark-surface);
+  padding: var(--size-4) var(--size-9);
+  line-height: 1.25;
+}
+
+.locked-food-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.locked-food-meal {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.locked-notice .locked-guidance {
+  margin-top: var(--space-xs);
+}
+
 .locked-notice strong {
   color: var(--ink);
 }

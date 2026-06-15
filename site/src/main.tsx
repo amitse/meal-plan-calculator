@@ -123,6 +123,11 @@ type LockConfirmation = {
   message: string;
   tone: "notice" | "success";
 };
+type LockedItemSummary = {
+  itemId: string;
+  label: string;
+  mealName: string;
+};
 type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
@@ -464,7 +469,20 @@ function App() {
   const incompleteMacroRuleLabels = incompleteMacroLabels(form);
   const incompleteMacroRuleCount = incompleteMacroRuleLabels.length;
   const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
-  const lockedItemCount = lockedIds.size;
+  const lockedItemSummaries = useMemo<LockedItemSummary[]>(() => {
+    if (!plan) return [];
+
+    return plan.meals.flatMap((meal) => meal.items.flatMap((item) => {
+      if (!item.id || !lockedIds.has(item.id)) return [];
+
+      return [{
+        itemId: item.id,
+        label: planItemLabel(item),
+        mealName: meal.displayName,
+      }];
+    }));
+  }, [lockedIds, plan]);
+  const lockedItemCount = lockedItemSummaries.length;
   const currentShareableState = useMemo<ShareablePlannerState>(() => ({
     form,
     plan,
@@ -1712,11 +1730,19 @@ function App() {
             </div>
           )}
           {lockedItemCount > 0 && (
-            <div className="locked-notice" role="status">
-              <p>
-                <strong>{lockedItemCount} {lockedItemCount === 1 ? "item" : "items"} locked.</strong>{" "}
-                Generate and Randomize keep locked items fixed.
-              </p>
+            <div className="locked-notice" role="status" aria-live="polite">
+              <div className="locked-copy">
+                <p><strong>{lockedItemCount === 1 ? "Locked food" : "Locked foods"}:</strong></p>
+                <ul className="locked-food-list" aria-label="Locked foods">
+                  {lockedItemSummaries.map((item) => (
+                    <li key={item.itemId}>
+                      <span className="locked-food-name">{item.label}</span>
+                      <span className="locked-food-meal">in {item.mealName}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="locked-guidance">Generate and Randomize keep {lockedItemCount === 1 ? "this food" : "these foods"} fixed.</p>
+              </div>
               <button type="button" onClick={clearLocks}>Clear locks</button>
             </div>
           )}
