@@ -1,4 +1,4 @@
-const CACHE_NAME = "meal-plan-calculator-v1";
+const CACHE_NAME = "meal-plan-calculator-v2";
 const BASE_PATH = "/meal-plan-calculator/";
 const CORE_ASSETS = [
   BASE_PATH,
