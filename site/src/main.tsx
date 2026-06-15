@@ -99,6 +99,11 @@ type MealToolMessage = {
   message: string;
   tone: "notice" | "success";
 };
+type SwapConfirmation = {
+  itemId: string;
+  mealId: string;
+  message: string;
+};
 type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
@@ -275,6 +280,7 @@ function App() {
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, MealToolMessage>>({});
+  const [swapConfirmation, setSwapConfirmation] = useState<SwapConfirmation | undefined>();
   const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
   const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
   const [randomizeUndo, setRandomizeUndo] = useState<RandomizeUndo | undefined>();
@@ -406,6 +412,7 @@ function App() {
       setCalorieInputError("");
     }
     setMealToolMessages({});
+    setSwapConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
@@ -420,6 +427,7 @@ function App() {
     setAddMealBlocker("");
     setGenerationBlockers([]);
     setMealToolMessages({});
+    setSwapConfirmation(undefined);
     clearRandomizeFeedback();
     const result = generateEditablePlanResult(sourceForm, useExistingLocks ? plan : undefined, useExistingLocks ? lockedIds : new Set<string>(), seed);
 
@@ -475,6 +483,7 @@ function App() {
     setLockedIds(new Set());
     setMealTargets({});
     setMealToolMessages({});
+    setSwapConfirmation(undefined);
     setAddMealBlocker("");
     setShareState(undefined);
 
@@ -495,6 +504,7 @@ function App() {
     setAddedMealFeedback(undefined);
     setAddMealBlocker("");
     setMealRandomizeFeedback({});
+    setSwapConfirmation(undefined);
     const next = randomizePlan(plan, form, lockedIds);
     const changed = JSON.stringify(next) !== JSON.stringify(plan);
     setPlan(next);
@@ -511,6 +521,7 @@ function App() {
   function updateDietaryLevel(level: DietaryLevel) {
     setGenerationBlockers([]);
     setMealToolMessages({});
+    setSwapConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
@@ -526,6 +537,7 @@ function App() {
   function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
     setGenerationBlockers([]);
     setMealToolMessages({});
+    setSwapConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
@@ -541,6 +553,7 @@ function App() {
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
+    setSwapConfirmation(undefined);
     setLockedIds((current) => {
       const next = new Set(current);
       if (next.has(itemId)) {
@@ -562,6 +575,7 @@ function App() {
 
     clearRandomizeFeedback();
     clearMealToolMessage(meal.id);
+    setSwapConfirmation(undefined);
     setDeletedItemUndo({
       item,
       itemIndex,
@@ -581,6 +595,7 @@ function App() {
     if (!deletedItemUndo) return;
 
     clearRandomizeFeedback();
+    setSwapConfirmation(undefined);
     setPlan((current) => current ? restoreDeletedItem(current, deletedItemUndo) : current);
     setLockedIds((current) => {
       const next = new Set(current);
@@ -603,6 +618,7 @@ function App() {
     if (!plan) return;
 
     clearRandomizeFeedback();
+    setSwapConfirmation(undefined);
     const next = addItemToMeal(plan, mealId, groupId, groupId === "protein-serving" ? form : undefined);
     if (next === plan && groupId === "protein-serving") {
       setMealToolMessages((current) => ({
@@ -635,6 +651,7 @@ function App() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
+    setSwapConfirmation(undefined);
     const next = addMeal(plan, form);
     if (next === plan) {
       setAddedMealFeedback(undefined);
@@ -663,15 +680,30 @@ function App() {
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
+    setSwapConfirmation(undefined);
     setPlan(updateItemAmount(plan, itemId, amount));
   }
 
   function swapPlanItem(itemId: string, optionId: string) {
     if (!plan) return;
+    const meal = plan.meals.find((candidate) => candidate.items.some((item) => item.id === itemId));
+    const item = meal?.items.find((candidate) => candidate.id === itemId);
+    const optionName = item?.kind === "exchange"
+      ? getExchangeOption(item.exchangeGroupId, optionId).displayName
+      : undefined;
+
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
+    setSwapConfirmation(undefined);
     setPlan(swapExchangeOption(plan, itemId, optionId));
+    if (meal && optionName) {
+      setSwapConfirmation({
+        itemId,
+        mealId: meal.id,
+        message: `Swapped to ${optionName}; totals updated.`,
+      });
+    }
   }
 
   function randomizeSingleMeal(mealId: string) {
@@ -682,6 +714,7 @@ function App() {
     setDeletedItemUndo(undefined);
     setPlanRandomizeFeedback(undefined);
     clearMealToolMessage(mealId);
+    setSwapConfirmation(undefined);
     const next = randomizePlan(plan, form, lockedIds, mealId, Date.now(), mealTargets[mealId]);
     const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
     const changed = JSON.stringify(nextMeal) !== JSON.stringify(meal);
@@ -702,18 +735,21 @@ function App() {
 
     setPlan(randomizeUndo.plan);
     setIsPlanStale(randomizeUndo.wasPlanStale);
+    setSwapConfirmation(undefined);
     clearRandomizeFeedback();
   }
 
   function clearLocks() {
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
+    setSwapConfirmation(undefined);
     setLockedIds(new Set());
   }
 
   function updateMealTarget(mealId: string, key: keyof MealMacroTarget, value: string) {
     clearRandomizeFeedback();
     clearMealToolMessage(mealId);
+    setSwapConfirmation(undefined);
     setMealTargets((current) => ({ ...current, [mealId]: { ...current[mealId], [key]: value } }));
   }
 
@@ -736,6 +772,10 @@ function App() {
     if (meal) {
       clearMealToolMessage(meal.id);
     }
+  }
+
+  function openSwapSheetForItem(itemId: string) {
+    setSwapConfirmation((current) => current && current.itemId !== itemId ? undefined : current);
   }
 
   function toggleMealExpanded(mealId: string, open: boolean) {
@@ -797,6 +837,7 @@ function App() {
     setGenerationBlockers([]);
     setIsPlanStale(false);
     setMealToolMessages({});
+    setSwapConfirmation(undefined);
     clearRandomizeFeedback();
     setDeletedItemUndo(undefined);
     setAddedMealFeedback(undefined);
@@ -1246,7 +1287,9 @@ function App() {
                         onAmount={(amount) => item.id && updatePlanItemServing(item.id, amount)}
                         onDelete={() => item.id && deleteItem(item.id)}
                         onLock={() => item.id && toggleLock(item.id)}
+                        onSwapOpen={() => item.id && openSwapSheetForItem(item.id)}
                         onSwap={(optionId) => item.id && swapPlanItem(item.id, optionId)}
+                        swapConfirmation={item.id && swapConfirmation?.itemId === item.id ? swapConfirmation.message : undefined}
                       />
                     ))
                   ) : (
@@ -1943,7 +1986,9 @@ function PlanItemRow({
   onAmount,
   onDelete,
   onLock,
+  onSwapOpen,
   onSwap,
+  swapConfirmation,
 }: {
   form: EditableFormState;
   item: DailyPlanItem;
@@ -1953,7 +1998,9 @@ function PlanItemRow({
   onAmount: (amount: number) => void;
   onDelete: () => void;
   onLock: () => void;
+  onSwapOpen: () => void;
   onSwap: (optionId: string) => void;
+  swapConfirmation?: string;
 }) {
   const label = planItemLabel(item);
   const quantity = planItemDisplayQuantity(item);
@@ -2018,6 +2065,11 @@ function PlanItemRow({
           <span>{Math.round(nutrition.calories ?? 0)} kcal</span>
           <span>{Math.round(nutrition.protein ?? 0)}gm protein</span>
         </small>
+        {swapConfirmation && (
+          <p className="item-swap-confirmation" role="status">
+            {swapConfirmation}
+          </p>
+        )}
       </div>
       <div className={`item-actions ${item.kind === "exchange" ? "has-swap" : "no-swap"}`}>
         <div className="amount-line">
@@ -2061,7 +2113,10 @@ function PlanItemRow({
               type="button"
               aria-haspopup="dialog"
               aria-expanded={swapSheetOpen}
-              onClick={() => setSwapSheetOpen(true)}
+              onClick={() => {
+                onSwapOpen();
+                setSwapSheetOpen(true);
+              }}
             >
               <Icon name="swap" />
               Swap
