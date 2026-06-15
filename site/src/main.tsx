@@ -694,10 +694,10 @@ function App() {
                 <span>Food</span>
                 <span className="drawer-summary">{foodDrawerSummary(form)}</span>
               </summary>
-              <PreferenceGroup label="Like grains" options={grainOptions} values={form.preferredGrains} onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)} />
-              <PreferenceGroup label="Like protein" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} values={form.preferredProteins} onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)} />
+              <PreferenceGroup label="Choose carbs" options={grainOptions} values={form.preferredGrains} onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)} />
+              <PreferenceGroup label="Choose proteins" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} values={form.preferredProteins} onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)} />
               <fieldset className="avoid-list">
-                <legend>Avoid</legend>
+                <legend>Leave out</legend>
                 <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
                 <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
                 {form.dietaryLevel !== "vegetarian" && <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />}
@@ -705,7 +705,7 @@ function App() {
               </fieldset>
               {likedProteinAvoidConflicts.length > 0 && (
                 <p className="food-rule-conflict" role="note">
-                  <strong>Avoid wins:</strong> {formatFoodRuleConflictList(likedProteinAvoidConflicts)} {likedProteinAvoidConflicts.length === 1 ? "is" : "are"} liked and avoided, so {likedProteinAvoidConflicts.length === 1 ? "it" : "they"} will be excluded when generating.
+                  <strong>Leave out takes priority:</strong> {formatFoodRuleConflictList(likedProteinAvoidConflicts)} {likedProteinAvoidConflicts.length === 1 ? "is" : "are"} also selected above, so {likedProteinAvoidConflicts.length === 1 ? "it" : "they"} will stay out of the plan.
                 </p>
               )}
             </details>
@@ -1005,28 +1005,28 @@ function customizeDrawerSummary(form: EditableFormState) {
   const activeMacros = activeMacroCount(form);
   const labels = [
     ...activeFoodLabels,
-    activeMacros > 0 ? `${activeMacros} macro${activeMacros === 1 ? "" : "s"}` : undefined,
+    activeMacros > 0 ? `${activeMacros} macro limit${activeMacros === 1 ? "" : "s"}` : undefined,
   ].filter((label): label is string => Boolean(label));
 
-  return labels.length > 0 ? labels.join(" · ") : "Food + macros";
+  return labels.length > 0 ? labels.join(" · ") : "Foods + macro limits";
 }
 
 function foodDrawerSummary(form: EditableFormState) {
   const labels = activeFoodCustomizationLabels(form);
-  return labels.length > 0 ? labels.join(" · ") : "Automatic foods";
+  return labels.length > 0 ? labels.join(" · ") : "All foods allowed";
 }
 
 function macroDrawerSummary(form: EditableFormState) {
   const activeMacros = activeMacroCount(form);
 
-  return activeMacros > 0 ? `${activeMacros} rules` : "Optional limits";
+  return activeMacros > 0 ? `${activeMacros} macro limit${activeMacros === 1 ? "" : "s"}` : "No macro limits";
 }
 
 function activeFoodCustomizationLabels(form: EditableFormState) {
   return [
     narrowedGrainPreferenceLabel(form),
     narrowedProteinPreferenceLabel(form),
-    ...avoidLabels(form).map((label) => `Avoid ${label}`),
+    ...avoidLabels(form).map((label) => `No ${label}`),
   ].filter((label): label is string => Boolean(label));
 }
 
@@ -1034,16 +1034,23 @@ function narrowedGrainPreferenceLabel(form: EditableFormState) {
   const allGrainIds = grainOptions.map((option) => option.id);
   const selectedGrainIds = selectedOptionIds(form.preferredGrains, allGrainIds);
 
-  return isAutomaticOptionSet(selectedGrainIds, allGrainIds) ? undefined : `Grains ${selectedGrainIds.length} selected`;
+  return isAutomaticOptionSet(selectedGrainIds, allGrainIds) ? undefined : `Carbs: ${selectedOptionSummary(selectedGrainIds, grainOptions)}`;
 }
 
 function narrowedProteinPreferenceLabel(form: EditableFormState) {
-  const visibleProteinIds = proteinOptions
-    .filter((option) => isProteinVisible(option.id, form.dietaryLevel))
-    .map((option) => option.id);
+  const visibleProteinOptions = proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel));
+  const visibleProteinIds = visibleProteinOptions.map((option) => option.id);
   const selectedProteinIds = selectedOptionIds(form.preferredProteins, visibleProteinIds);
 
-  return isAutomaticOptionSet(selectedProteinIds, visibleProteinIds) ? undefined : `Protein ${selectedProteinIds.length} selected`;
+  return isAutomaticOptionSet(selectedProteinIds, visibleProteinIds) ? undefined : `Protein: ${selectedOptionSummary(selectedProteinIds, visibleProteinOptions)}`;
+}
+
+function selectedOptionSummary(selectedIds: string[], options: { id: string; label: string }[]) {
+  const selectedLabels = options
+    .filter((option) => selectedIds.includes(option.id))
+    .map((option) => option.label);
+
+  return selectedLabels.length === 1 ? selectedLabels[0] : `${selectedLabels.length} choices`;
 }
 
 function selectedOptionIds(values: string[], allowedValues: string[]) {
