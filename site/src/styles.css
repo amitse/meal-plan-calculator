@@ -897,6 +897,44 @@ input:disabled {
   padding-inline: 10px;
 }
 
+.active-macro-rules {
+  display: grid;
+  gap: 6px;
+  margin: var(--space-xs) 0 0;
+}
+
+.active-macro-rules > span {
+  color: var(--faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.active-macro-rules ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.active-macro-rules li {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(210, 160, 87, 0.46);
+  border-radius: 999px;
+  background: rgba(210, 160, 87, 0.1);
+  color: var(--body);
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
 fieldset {
   min-width: 0;
   margin: var(--space-md) 0 0;

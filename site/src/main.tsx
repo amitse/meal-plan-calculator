@@ -299,7 +299,8 @@ function App() {
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
   const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
   const proteinTarget = Number(form.protein || 0);
-  const activeMacroRuleCount = activeMacroCount(form);
+  const activeMacroRuleLabels = activeMacroLabels(form);
+  const activeMacroRuleCount = activeMacroRuleLabels.length;
   const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
   const currentShareableState = useMemo<ShareablePlannerState>(() => ({
@@ -994,6 +995,15 @@ function App() {
             </details>
 
           </details>
+
+          {activeMacroRuleLabels.length > 0 && (
+            <div className="active-macro-rules" aria-label="Active macro rules">
+              <span>Macro rules</span>
+              <ul>
+                {activeMacroRuleLabels.map((label) => <li key={label}>{label}</li>)}
+              </ul>
+            </div>
+          )}
 
           <details className={`quick-start-presets example-drawer${plan ? " is-compact" : ""}`}>
             <summary>
