@@ -45,6 +45,20 @@ describe("MasterData read API", () => {
     expect(soyChunks.cost?.currency).toBe("INR");
   });
 
+  it("stores cow milk by gram weight with density-adjusted macros", () => {
+    const milk = getFoodItem("milk");
+
+    expect(milk.referenceQuantity).toEqual({ amount: 150, unit: "g" });
+    expect(milk.nutrition).toMatchObject({
+      protein: 4.66,
+      carbs: 6.41,
+      fat: 4.81,
+      calories: 87.6,
+      fiber: 0,
+      saturatedFat: 2.88,
+    });
+  });
+
   it("includes provided FYI protein-cost rows without making cost a target", () => {
     const costFoodIds = [
       "soy-chunks",
@@ -126,6 +140,8 @@ describe("MasterData read API", () => {
       maxAmount: 180,
       unit: "g",
     });
+    expect(getExchangeGroup("milk-alternative").exchangeUnit.displayName).toBe("100g cow milk equivalent");
+    expect(getExchangeOption("milk-alternative", "cow-milk").quantity).toEqual({ amount: 100, unit: "g" });
   });
 
   it("calculates raw oats exchange nutrition from known food facts", () => {
@@ -140,6 +156,21 @@ describe("MasterData read API", () => {
     expect(oats.carbs).toBeCloseTo(33.15);
     expect(oats.fat).toBeCloseTo(3.45);
     expect(oats.fiber).toBeCloseTo(5.3);
+  });
+
+  it("calculates cow milk exchange nutrition from 100g milk facts", () => {
+    const milk = calculateExchangeSelectionNutrition({
+      kind: "exchange",
+      exchangeGroupId: "milk-alternative",
+      exchangeOptionId: "cow-milk",
+      exchangeUnits: 1,
+    });
+
+    expect(milk.calories).toBeCloseTo(58.4);
+    expect(milk.protein).toBeCloseTo(3.11);
+    expect(milk.carbs).toBeCloseTo(4.27);
+    expect(milk.fat).toBeCloseTo(3.21);
+    expect(milk.saturatedFat).toBeCloseTo(1.92);
   });
 
   it("reads optional ReferenceFormula data", () => {

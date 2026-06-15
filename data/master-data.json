@@ -39,18 +39,19 @@
       "displayName": "Milk",
       "referenceQuantity": {
         "amount": 150,
-        "unit": "ml"
+        "unit": "g"
       },
       "nutrition": {
-        "protein": 4.8,
-        "carbs": 6.6,
-        "fat": 4.95,
-        "calories": 90.2,
+        "protein": 4.66,
+        "carbs": 6.41,
+        "fat": 4.81,
+        "calories": 87.6,
         "fiber": 0,
-        "saturatedFat": 2.97
+        "saturatedFat": 2.88
       },
       "proteinQuality": "complete",
-      "dietaryLevel": "vegetarian"
+      "dietaryLevel": "vegetarian",
+      "note": "Converted from the previous 150ml serving using milk density of about 1.03g/ml."
     },
     {
       "id": "egg-whole",
@@ -1420,7 +1421,7 @@
           "foodItemId": "milk",
           "quantity": {
             "amount": 100,
-            "unit": "ml"
+            "unit": "g"
           }
         },
         {
@@ -1438,8 +1439,8 @@
       "id": "milk-alternative",
       "displayName": "Milk alternative",
       "exchangeUnit": {
-        "id": "cow-milk-100ml-equivalent",
-        "displayName": "100ml cow milk equivalent"
+        "id": "cow-milk-100g-equivalent",
+        "displayName": "100g cow milk equivalent"
       },
       "options": [
         {
@@ -1448,7 +1449,7 @@
           "foodItemId": "milk",
           "quantity": {
             "amount": 100,
-            "unit": "ml"
+            "unit": "g"
           }
         },
         {
