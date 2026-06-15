@@ -114,6 +114,7 @@ type ServingEditConfirmation = {
   itemId: string;
   mealId: string;
   message: string;
+  previousAmount?: number;
   tone: "notice" | "success";
 };
 type LockConfirmation = {
@@ -853,7 +854,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
-    clearServingEditConfirmationForItem(itemId);
+    setServingEditConfirmation(undefined);
     setLockConfirmation(meal && itemLabel
       ? {
           itemId,
@@ -886,7 +887,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessage(meal.id);
     setSwapConfirmation(undefined);
-    clearServingEditConfirmationForItem(itemId);
+    setServingEditConfirmation(undefined);
     setLockConfirmation(undefined);
     setDeletedItemUndo({
       item,
@@ -995,6 +996,10 @@ function App() {
 
   function updatePlanItemServing(itemId: string, amount: number) {
     if (!plan) return;
+    const currentMeal = plan.meals.find((meal) => meal.items.some((item) => item.id === itemId));
+    const currentItem = currentMeal?.items.find((item) => item.id === itemId);
+    const previousAmount = currentItem ? planItemDisplayQuantity(currentItem).amount : undefined;
+
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
@@ -1013,8 +1018,38 @@ function App() {
         itemId,
         mealId: updatedMeal.id,
         message: servingEditConfirmationMessage(servingAmount, nextEvaluation.status),
+        previousAmount,
         tone: nextEvaluation.status === "fail" ? "notice" : "success",
       });
+    }
+  }
+
+  function undoServingEdit() {
+    if (!plan || !servingEditConfirmation || servingEditConfirmation.previousAmount === undefined) return;
+
+    const { itemId, previousAmount } = servingEditConfirmation;
+    const next = updateItemAmount(plan, itemId, previousAmount);
+    const restoredMeal = next.meals.find((meal) => meal.items.some((item) => item.id === itemId));
+    const restoredItem = restoredMeal?.items.find((item) => item.id === itemId);
+    const nextEvaluation = planEvaluation(next, form);
+
+    setDeletedItemUndo(undefined);
+    clearRandomizeFeedback();
+    clearMealToolMessageForItem(itemId);
+    setSwapConfirmation(undefined);
+    setLockConfirmation(undefined);
+    setPlan(next);
+
+    if (restoredMeal && restoredItem) {
+      const servingAmount = planItemDisplayQuantity(restoredItem).amount;
+      setServingEditConfirmation({
+        itemId,
+        mealId: restoredMeal.id,
+        message: servingRestoredConfirmationMessage(servingAmount, nextEvaluation.status),
+        tone: nextEvaluation.status === "fail" ? "notice" : "success",
+      });
+    } else {
+      setServingEditConfirmation(undefined);
     }
   }
 
@@ -1031,7 +1066,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
-    clearServingEditConfirmationForItem(itemId);
+    setServingEditConfirmation(undefined);
     setLockConfirmation(undefined);
     setPlan(swapExchangeOption(plan, itemId, optionId));
     if (meal && optionName) {
@@ -1052,7 +1087,7 @@ function App() {
     setPlanRandomizeFeedback(undefined);
     clearMealToolMessage(mealId);
     setSwapConfirmation(undefined);
-    clearServingEditConfirmationForMeal(mealId);
+    setServingEditConfirmation(undefined);
     setLockConfirmation(undefined);
     const next = randomizePlan(plan, form, lockedIds, mealId, Date.now(), mealTargets[mealId]);
     const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
@@ -1831,6 +1866,7 @@ function App() {
                         onLock={() => item.id && toggleLock(item.id)}
                         onSwapOpen={() => item.id && openSwapSheetForItem(item.id)}
                         onSwap={(optionId) => item.id && swapPlanItem(item.id, optionId)}
+                        onServingUndo={undoServingEdit}
                         lockConfirmation={item.id && lockConfirmation?.itemId === item.id ? lockConfirmation : undefined}
                         servingConfirmation={item.id && servingEditConfirmation?.itemId === item.id ? servingEditConfirmation : undefined}
                         swapConfirmation={item.id && swapConfirmation?.itemId === item.id ? swapConfirmation.message : undefined}
@@ -2448,6 +2484,13 @@ function servingEditConfirmationMessage(servingAmount: number, status: "pass" | 
   return status === "pass"
     ? `Serving updated to ${amount}; meal and daily totals recalculated.`
     : `Serving updated to ${amount}; totals recalculated. Daily targets need attention.`;
+}
+
+function servingRestoredConfirmationMessage(servingAmount: number, status: "pass" | "fail") {
+  const amount = `${Math.round(servingAmount)}gm`;
+  return status === "pass"
+    ? `Serving restored to ${amount}; meal and daily totals recalculated.`
+    : `Serving restored to ${amount}; totals recalculated. Daily targets need attention.`;
 }
 
 function quickStartFoodCue(form: EditableFormState) {
@@ -3125,6 +3168,7 @@ function PlanItemRow({
   onLock,
   onSwapOpen,
   onSwap,
+  onServingUndo,
   lockConfirmation,
   servingConfirmation,
   swapConfirmation,
@@ -3139,6 +3183,7 @@ function PlanItemRow({
   onLock: () => void;
   onSwapOpen: () => void;
   onSwap: (optionId: string) => void;
+  onServingUndo: () => void;
   lockConfirmation?: LockConfirmation;
   servingConfirmation?: ServingEditConfirmation;
   swapConfirmation?: string;
@@ -3227,8 +3272,11 @@ function PlanItemRow({
           </p>
         )}
         {servingConfirmation && (
-          <p className={`item-serving-confirmation is-${servingConfirmation.tone}`} role="status">
-            {servingConfirmation.message}
+          <p className={`item-serving-confirmation randomize-feedback-inline is-${servingConfirmation.tone}${servingConfirmation.previousAmount === undefined ? "" : " has-action"}`} role="status">
+            <span>{servingConfirmation.message}</span>
+            {servingConfirmation.previousAmount !== undefined && (
+              <button type="button" onClick={onServingUndo}>Undo</button>
+            )}
           </p>
         )}
       </div>

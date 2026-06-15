@@ -350,6 +350,20 @@ describe("editable planner workflows", () => {
     expect(lunchCarb ? planItemDisplayQuantity(lunchCarb).amount : 0).toBe(125);
   });
 
+  it("restores a previous serving amount and recalculates meal totals", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const previousItem = plan.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb");
+    const previousAmount = previousItem ? planItemDisplayQuantity(previousItem).amount : 0;
+    const edited = updateItemAmount(plan, "lunch-carb", previousAmount + 50);
+    const restored = updateItemAmount(edited, "lunch-carb", previousAmount);
+    const restoredItem = restored.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb");
+
+    expect(restoredItem ? planItemDisplayQuantity(restoredItem).amount : 0).toBe(previousAmount);
+    expect(calculateMealTotals(restored.meals.find((meal) => meal.id === "lunch")!)).toEqual(
+      calculateMealTotals(plan.meals.find((meal) => meal.id === "lunch")!),
+    );
+  });
+
   it("treats empty, zero, or invalid serving drafts as uncommitted edits", () => {
     expect(parseServingAmountInput("")).toEqual({ status: "empty" });
     expect(parseServingAmountInput("   ")).toEqual({ status: "empty" });
