@@ -1041,6 +1041,10 @@ input:disabled {
   margin-top: 0;
 }
 
+.macro-grid .field.compact.is-incomplete {
+  align-items: start;
+}
+
 .macro-grid .field.compact > span {
   color: var(--body);
   font-size: 0.74rem;
@@ -1058,6 +1062,32 @@ input:disabled {
 .macro-grid input {
   min-height: 44px;
   padding-inline: 10px;
+}
+
+.macro-grid .field.compact.is-incomplete input {
+  border-color: rgba(225, 189, 99, 0.78);
+}
+
+.macro-drawer-warning {
+  margin: var(--space-xs) var(--space-sm) 0;
+  border: 1px solid rgba(225, 189, 99, 0.5);
+  border-radius: var(--control-radius);
+  background: rgba(210, 160, 87, 0.08);
+  color: var(--body);
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.macro-drawer-warning strong,
+.macro-field-warning {
+  color: var(--warning);
+}
+
+.macro-field-warning {
+  grid-column: 2;
+  margin-top: -2px;
 }
 
 .active-macro-rules {

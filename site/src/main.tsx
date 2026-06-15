@@ -351,6 +351,8 @@ function App() {
   const proteinTarget = Number(form.protein || 0);
   const activeMacroRuleLabels = activeMacroLabels(form);
   const activeMacroRuleCount = activeMacroRuleLabels.length;
+  const incompleteMacroRuleLabels = incompleteMacroLabels(form);
+  const incompleteMacroRuleCount = incompleteMacroRuleLabels.length;
   const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
   const currentShareableState = useMemo<ShareablePlannerState>(() => ({
@@ -484,6 +486,13 @@ function App() {
     setMealToolMessages({});
     setSwapConfirmation(undefined);
     clearRandomizeFeedback();
+    const incompleteMacroBlockers = incompleteMacroRuleBlockers(sourceForm);
+    if (incompleteMacroBlockers.length > 0) {
+      setOptionsOpen(true);
+      setGenerationBlockers(incompleteMacroBlockers);
+      return false;
+    }
+
     const result = generateEditablePlanResult(sourceForm, useExistingLocks ? plan : undefined, useExistingLocks ? lockedIds : new Set<string>(), seed);
 
     if (result.plan) {
@@ -1205,6 +1214,11 @@ function App() {
                 <span className="summary-label"><Icon name="macros" />Macros</span>
                 <span className="drawer-summary">{macroDrawerSummary(form)}</span>
               </summary>
+              {incompleteMacroRuleCount > 0 && (
+                <p className="macro-drawer-warning" role="alert">
+                  <strong>{formatFoodRuleConflictList(incompleteMacroRuleLabels)}</strong> {incompleteMacroRuleCount === 1 ? "needs" : "need"} grams or Off before Generate.
+                </p>
+              )}
               <div className="macro-grid">
                 <MacroInput icon="carb" label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
                 <MacroInput icon="fat" label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
@@ -1819,8 +1833,11 @@ function NumberStepper({
 }
 
 function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: string; value: MacroField; onChange: (value: MacroField) => void }) {
+  const warningId = useId();
+  const isIncomplete = isIncompleteMacroField(value);
+
   return (
-    <label className="field compact">
+    <label className={`field compact${isIncomplete ? " is-incomplete" : ""}`}>
       <span><Icon name={icon} />{label}</span>
       <div className="inline-inputs">
         <select aria-label={`${label} bound type`} value={value.mode} onChange={(event) => onChange({ ...value, mode: event.target.value as BoundField })}>
@@ -1830,6 +1847,9 @@ function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: s
           <option value="target">Target</option>
         </select>
         <NumberStepper
+          ariaDescribedBy={isIncomplete ? warningId : undefined}
+          ariaErrorMessage={isIncomplete ? warningId : undefined}
+          ariaInvalid={isIncomplete}
           ariaLabel={`${label} value`}
           disabled={value.mode === "none"}
           onChange={(nextValue) => onChange({ ...value, value: nextValue })}
@@ -1838,6 +1858,11 @@ function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: s
           value={value.value}
         />
       </div>
+      {isIncomplete && (
+        <small id={warningId} className="field-error macro-field-warning" role="alert">
+          Enter grams or switch {label} Off.
+        </small>
+      )}
     </label>
   );
 }
@@ -1924,8 +1949,10 @@ function macroLabel(label: string, field: MacroField) {
 function customizeDrawerSummary(form: EditableFormState) {
   const activeFoodLabels = activeFoodCustomizationLabels(form);
   const activeMacros = activeMacroCount(form);
+  const incompleteMacros = incompleteMacroCount(form);
   const labels = [
     ...activeFoodLabels,
+    incompleteMacros > 0 ? `${incompleteMacros} incomplete macro rule${incompleteMacros === 1 ? "" : "s"}` : undefined,
     activeMacros > 0 ? `${activeMacros} macro limit${activeMacros === 1 ? "" : "s"}` : undefined,
   ].filter((label): label is string => Boolean(label));
 
@@ -1939,8 +1966,19 @@ function foodDrawerSummary(form: EditableFormState) {
 
 function macroDrawerSummary(form: EditableFormState) {
   const activeMacros = activeMacroCount(form);
+  const incompleteMacros = incompleteMacroCount(form);
+  const labels = [
+    incompleteMacros > 0 ? `${incompleteMacros} incomplete` : undefined,
+    activeMacros > 0 ? `${activeMacros} active` : undefined,
+  ].filter((label): label is string => Boolean(label));
 
-  return activeMacros > 0 ? `${activeMacros} macro limit${activeMacros === 1 ? "" : "s"}` : "No macro limits";
+  if (labels.length > 0) {
+    return incompleteMacros > 0 && activeMacros === 0
+      ? `${incompleteMacros} incomplete macro rule${incompleteMacros === 1 ? "" : "s"}`
+      : labels.join(" · ");
+  }
+
+  return "No macro limits";
 }
 
 function quickStartPresetPreview(form: EditableFormState) {
@@ -2124,12 +2162,38 @@ function activeMacroCount(form: EditableFormState) {
 }
 
 function activeMacroLabels(form: EditableFormState) {
+  return macroFieldEntries(form)
+    .map(({ label, field }) => macroLabel(label, field))
+    .filter((label): label is string => Boolean(label));
+}
+
+function incompleteMacroCount(form: EditableFormState) {
+  return incompleteMacroLabels(form).length;
+}
+
+function incompleteMacroLabels(form: EditableFormState) {
+  return macroFieldEntries(form)
+    .filter(({ field }) => isIncompleteMacroField(field))
+    .map(({ label }) => label);
+}
+
+function incompleteMacroRuleBlockers(form: EditableFormState) {
+  return macroFieldEntries(form)
+    .filter(({ field }) => isIncompleteMacroField(field))
+    .map(({ label, field }) => `${label} ${field.mode} needs grams. Enter a value or switch it Off.`);
+}
+
+function isIncompleteMacroField(field: MacroField) {
+  return field.mode !== "none" && field.value.trim() === "";
+}
+
+function macroFieldEntries(form: EditableFormState) {
   return [
-    macroLabel("Carbs", form.carbs),
-    macroLabel("Fat", form.fat),
-    macroLabel("Fiber", form.fiber),
-    macroLabel("Saturated fat", form.saturatedFat),
-  ].filter((label): label is string => Boolean(label));
+    { label: "Carbs", field: form.carbs },
+    { label: "Fat", field: form.fat },
+    { label: "Fiber", field: form.fiber },
+    { label: "Saturated fat", field: form.saturatedFat },
+  ];
 }
 
 function visibleProteinPreferences(preferredProteins: string[], dietaryLevel: DietaryLevel) {
