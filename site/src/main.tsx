@@ -315,6 +315,7 @@ function App() {
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState<ShareState | undefined>();
+  const [showSharedPlanOrientation, setShowSharedPlanOrientation] = useState(Boolean(urlState?.plan));
   const [manualShareText, setManualShareText] = useState("");
   const [shareLoadFailed, setShareLoadFailed] = useState(loadedUrlState.shareLoadFailed);
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
@@ -518,7 +519,7 @@ function App() {
   function regenerateStalePlan() {
     if (!isValidCalorieTarget(form.calories)) {
       setCalorieInputError(calorieValidationMessage);
-      setActiveView("targets");
+      openTargetsView();
       window.requestAnimationFrame(() => calorieInputRef.current?.focus());
       return;
     }
@@ -578,6 +579,11 @@ function App() {
     if (plan) {
       setIsPlanStale(true);
     }
+  }
+
+  function openTargetsView() {
+    setShowSharedPlanOrientation(false);
+    setActiveView("targets");
   }
 
   function randomizeVisiblePlan() {
@@ -888,6 +894,7 @@ function App() {
     const shareKey = currentShareKey;
     const url = shareUrlForState(state);
     window.history.replaceState(null, "", `?s=${shareKey}`);
+    setShowSharedPlanOrientation(false);
 
     const showManualShareRecovery = () => setShareState({
       message: "Copy blocked. Copy this share link manually.",
@@ -935,6 +942,7 @@ function App() {
     setMealTargets({});
     setOptionsOpen(false);
     setShareState(undefined);
+    setShowSharedPlanOrientation(false);
     setManualShareText("");
     setGenerationBlockers([]);
     setIsPlanStale(false);
@@ -1341,6 +1349,11 @@ function App() {
               )}
             </div>
           )}
+          {showSharedPlanOrientation && (
+            <div className="shared-plan-orientation" role="status">
+              <p><strong>Shared plan opened.</strong> Edits stay here until you Share a new link.</p>
+            </div>
+          )}
           {isPlanStale && (
             <div className="stale-plan-notice has-action" role="status">
               <span>Inputs changed. Regenerate to apply.</span>
@@ -1583,7 +1596,7 @@ function App() {
           )}
           <nav className="bottom-action result-action-bar" aria-label="Plan actions">
             {shareState?.stale && <p className="share-action-status" role="status">{shareState.message}</p>}
-            <button className="plan-action-button with-icon" type="button" onClick={() => setActiveView("targets")}><Icon name="targets" />Targets</button>
+            <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
             <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
             <button className="primary-action with-icon" type="button" onClick={share}><Icon name="share" />Share</button>
           </nav>

@@ -2189,6 +2189,25 @@ fieldset {
   margin: 0;
 }
 
+.shared-plan-orientation {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(210, 160, 87, 0.38);
+  border-radius: var(--control-radius);
+  background: rgba(210, 160, 87, 0.09);
+  color: var(--body);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.shared-plan-orientation p {
+  margin: 0;
+}
+
+.shared-plan-orientation strong {
+  color: var(--ink);
+}
+
 .share-state.stale-share {
   color: var(--warning);
 }
