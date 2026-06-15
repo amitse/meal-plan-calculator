@@ -191,6 +191,7 @@ const quickStartPresets: QuickStartPreset[] = [
   },
 ];
 const staleShareMessage = "Plan changed - share again for an updated link.";
+const staleShareBlockedMessage = "Regenerate before sharing updated targets.";
 
 function App() {
   const loadedUrlState = useMemo(loadStateFromUrl, []);
@@ -653,6 +654,11 @@ function App() {
   }
 
   function share() {
+    if (isPlanStale) {
+      setShareState({ message: staleShareBlockedMessage, stale: true });
+      return;
+    }
+
     const state = currentShareableState;
     const shareKey = currentShareKey;
     const url = shareUrlForState(state);
@@ -925,10 +931,10 @@ function App() {
               )}
             </div>
           )}
-          {shareState && (
-            <div className={`share-state${shareState.manualUrl && !shareState.stale ? " manual-share" : ""}${shareState.stale ? " stale-share" : ""}`} role="status">
+          {shareState && !shareState.stale && (
+            <div className={`share-state${shareState.manualUrl ? " manual-share" : ""}`} role="status">
               <p>{shareState.message}</p>
-              {shareState.manualUrl && !shareState.stale && (
+              {shareState.manualUrl && (
                 <label className="manual-share-link">
                   <span>Share link</span>
                   <input readOnly value={shareState.manualUrl} onFocus={(event) => event.currentTarget.select()} />
@@ -1112,6 +1118,7 @@ function App() {
             </div>
           )}
           <nav className="bottom-action result-action-bar" aria-label="Plan actions">
+            {shareState?.stale && <p className="share-action-status" role="status">{shareState.message}</p>}
             <button className="plan-action-button with-icon" type="button" onClick={() => setActiveView("targets")}><Icon name="targets" />Targets</button>
             <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
             <button className="primary-action with-icon" type="button" onClick={share}><Icon name="share" />Share</button>

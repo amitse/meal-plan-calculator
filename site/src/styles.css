@@ -1001,6 +1001,16 @@ fieldset {
   gap: var(--space-xs);
 }
 
+.share-action-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--warning);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .result-action-bar button {
   min-width: 0;
   min-height: 48px;
