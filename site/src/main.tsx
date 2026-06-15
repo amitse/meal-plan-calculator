@@ -617,7 +617,18 @@ function App() {
   }, []);
 
   useEffect(() => {
-    setIsInstalledView(isStandaloneApp());
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const fullscreenQuery = window.matchMedia("(display-mode: fullscreen)");
+    const syncInstalledView = () => {
+      const installedView = isStandaloneApp();
+      setIsInstalledView(installedView);
+      if (installedView) {
+        setInstallPrompt(undefined);
+        setInstallState("");
+      }
+    };
+
+    syncInstalledView();
 
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
@@ -631,9 +642,13 @@ function App() {
       setIsInstalledView(true);
     }
 
+    standaloneQuery.addEventListener("change", syncInstalledView);
+    fullscreenQuery.addEventListener("change", syncInstalledView);
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
     return () => {
+      standaloneQuery.removeEventListener("change", syncInstalledView);
+      fullscreenQuery.removeEventListener("change", syncInstalledView);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
@@ -1464,7 +1479,12 @@ function App() {
           )}
         </div>
       </header>
-      {!isInstalledView && installState && <p className="install-state" role="status">{installState}</p>}
+      {!isInstalledView && installState && (
+        <p className="install-state" role="status">
+          <strong>Install tip</strong>
+          <span>{installState}</span>
+        </p>
+      )}
       {shareLoadFailed && (
         <div className="share-load-warning" role="alert">
           <p><strong>Shared plan could not be opened.</strong> Start a new plan or ask for a fresh link.</p>
