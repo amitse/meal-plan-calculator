@@ -5,6 +5,7 @@ import {
   addMeal,
   buildNutritionInput,
   buildDynamicTemplate,
+  createManualDailyPlan,
   decodeShareState,
   encodeShareState,
   exchangeOptionsForItem,
@@ -231,6 +232,28 @@ describe("editable planner workflows", () => {
     });
     expect(lunchCarb ? planItemDisplayQuantity(lunchCarb).amount : 0).toBe(300);
     expect(withItem.meals.find((meal) => meal.id === "meal-6")?.items.some((item) => item.kind === "exchange" && item.exchangeGroupId === "fruit")).toBe(true);
+  });
+
+  it("starts a manual daily plan without generated foods and keeps edit tools usable", () => {
+    const plan = createManualDailyPlan();
+    const withMeal = addMeal(plan, initialFormState);
+    const withProtein = addItemToMeal(withMeal, "meal-1", "protein-serving", initialFormState);
+    const withGrain = addItemToMeal(withProtein, "meal-1", "grain", initialFormState);
+    const firstMeal = withGrain.meals.find((meal) => meal.id === "meal-1");
+    const secondMeal = withGrain.meals.find((meal) => meal.id === "meal-2");
+    const evaluation = planEvaluation(withGrain, initialFormState);
+
+    expect(plan).toMatchObject({
+      id: "manual-daily-plan",
+      displayName: "Manual daily plan",
+      meals: [{ id: "meal-1", displayName: "Meal 1", items: [] }],
+    });
+    expect(secondMeal?.items).toEqual([]);
+    expect(firstMeal?.items.map((item) => item.kind === "exchange" ? item.exchangeGroupId : item.kind)).toEqual([
+      "protein-serving",
+      "grain",
+    ]);
+    expect(evaluation.totals.values.calories).toBeGreaterThan(0);
   });
 
   it("filters protein swaps by active diet and avoid rules", () => {

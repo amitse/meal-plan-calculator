@@ -10,7 +10,7 @@ import {
   type ShareablePlannerState,
 } from "./editable-planner.js";
 
-type StoryVariant = "default" | "adjust" | "share" | "swap" | "add-meal-blocked";
+type StoryVariant = "default" | "manual-start" | "adjust" | "share" | "swap" | "add-meal-blocked";
 type StoryTheme = "dark" | "light";
 
 type AppStoryProps = {
@@ -106,6 +106,26 @@ function clickButton(label: string) {
 }
 
 function runStoryVariant(variant: StoryVariant) {
+  if (variant === "manual-start") {
+    clickButton("Start manually");
+    window.setTimeout(() => {
+      const manualMeal = document.querySelector<HTMLDetailsElement>(".meal-card");
+      const manualMealSummary = manualMeal?.querySelector("summary");
+      const mealTools = document.querySelector<HTMLDetailsElement>(".meal-tools");
+      const mealToolsSummary = mealTools?.querySelector("summary");
+
+      if (manualMeal && !manualMeal.open && manualMealSummary instanceof HTMLElement) {
+        manualMealSummary.click();
+      }
+
+      window.setTimeout(() => {
+        if (mealTools && !mealTools.open && mealToolsSummary instanceof HTMLElement) {
+          mealToolsSummary.click();
+        }
+      }, 80);
+    }, 80);
+  }
+
   if (variant === "adjust") {
     clickButton("Adjust");
   }
@@ -131,7 +151,7 @@ function runStoryVariant(variant: StoryVariant) {
       document.activeElement.blur();
     }
     document.body.dataset.storyReady = "true";
-  }, variant === "swap" ? 260 : 180);
+  }, variant === "swap" || variant === "manual-start" ? 320 : 180);
 }
 
 function AppStory({ search = "", theme = "dark", variant = "default" }: AppStoryProps) {
@@ -165,6 +185,12 @@ export const FirstRun: Story = {
 export const FirstRunWithActiveSettings: Story = {
   args: {
     search: storySearch(activeSettingsForm),
+  },
+};
+
+export const ManualPlan: Story = {
+  args: {
+    variant: "manual-start",
   },
 };
 

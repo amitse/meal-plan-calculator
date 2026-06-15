@@ -269,6 +269,7 @@ body {
 }
 
 :root[data-theme="light"] .shared-plan-orientation,
+:root[data-theme="light"] .manual-plan-orientation,
 :root[data-theme="light"] .meal-list-helper {
   border-color: var(--border-soft);
   background: var(--alpha-ink-025);
@@ -454,6 +455,10 @@ summary:focus-visible {
 
 .app-shell.has-bottom-status {
   padding-bottom: max(var(--size-184), calc(var(--size-176) + env(safe-area-inset-bottom)));
+}
+
+.app-shell.has-manual-start {
+  padding-bottom: max(var(--size-176), calc(var(--size-176) + env(safe-area-inset-bottom)));
 }
 
 .app-shell.has-share-recovery {
@@ -1645,6 +1650,11 @@ fieldset {
   transform: translateX(-50%);
 }
 
+.bottom-action:not(.result-action-bar) {
+  display: grid;
+  gap: var(--size-8);
+}
+
 .primary-action {
   min-height: var(--size-54);
   width: 100%;
@@ -1675,6 +1685,33 @@ fieldset {
 
 .primary-action:disabled:active {
   transform: none;
+}
+
+.manual-start-action {
+  min-height: var(--size-44);
+  width: 100%;
+  border: var(--size-px) solid var(--border);
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--body);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.manual-start-action:hover:not(:disabled) {
+  border-color: var(--muted);
+  background: var(--alpha-ink-04);
+  color: var(--ink);
+}
+
+.manual-start-action:active:not(:disabled) {
+  transform: translateY(var(--size-px)) scale(0.995);
+}
+
+.manual-start-action:disabled {
+  cursor: wait;
+  opacity: 0.58;
 }
 
 .result-action-bar {
@@ -3177,7 +3214,8 @@ fieldset {
   margin: 0;
 }
 
-.shared-plan-orientation {
+.shared-plan-orientation,
+.manual-plan-orientation {
   margin: 0 0 var(--space-sm);
   padding: var(--size-10) var(--space-sm);
   border: var(--size-px) solid var(--border-soft);
@@ -3188,11 +3226,18 @@ fieldset {
   line-height: 1.45;
 }
 
-.shared-plan-orientation p {
+.manual-plan-orientation {
+  border-color: var(--alpha-accent-42);
+  background: var(--alpha-accent-08);
+}
+
+.shared-plan-orientation p,
+.manual-plan-orientation p {
   margin: 0;
 }
 
-.shared-plan-orientation strong {
+.shared-plan-orientation strong,
+.manual-plan-orientation strong {
   color: var(--ink);
 }
 

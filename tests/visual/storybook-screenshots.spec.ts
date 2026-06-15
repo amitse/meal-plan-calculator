@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const stories = [
   "app-screens--first-run",
   "app-screens--first-run-with-active-settings",
+  "app-screens--manual-plan",
   "app-screens--generated-plan",
   "app-screens--adjust-drawer",
   "app-screens--share-drawer",

@@ -44,6 +44,7 @@ import {
   buildNutritionInput,
   calculateEditableMealTotals,
   calculateEditablePlanItemNutrition,
+  createManualDailyPlan,
   decodeShareState,
   encodeShareState,
   dietRuleChangeNotice,
@@ -517,12 +518,14 @@ export function App() {
   }), [form, plan, lockedIds, mealTargets]);
   const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
   const generationActionLabel = isGenerating ? "Generating..." : plan ? "Regenerate plan" : "Generate";
+  const isManualPlan = plan?.id === "manual-daily-plan";
   const canUndoPlanRandomize = Boolean(randomizeUndo && !randomizeUndo.mealId);
   const hasActiveMealTargets = useMemo(() => Object.values(mealTargets).some(hasActiveMealTarget), [mealTargets]);
   const randomizePlanActionLabel = hasActiveMealTargets ? "Randomize plan" : "Randomize";
   const shareActionFeedback = shareState && (shareState.stale || shareState.shareKey || shareState.manualUrl) ? shareState : undefined;
   const topShareState = shareState && !shareActionFeedback ? shareState : undefined;
   const hasResultActionStatus = Boolean(activeView === "plan" && (isPlanStale || planRandomizeFeedback || shareActionFeedback));
+  const showsManualStartAction = activeView === "targets" && !plan;
   const exportActionDescriptionId = isPlanStale ? exportStaleNoticeId : undefined;
   const generationProgressMessage = generationProgressMessages[generationProgressStep] ?? generationProgressMessages[0];
   const resolvedTheme = resolveTheme(themePreference, systemTheme);
@@ -704,9 +707,7 @@ export function App() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function generate(sourceForm = form, options: GenerateOptions = {}) {
-    const seed = options.seed ?? Date.now();
-    const useExistingLocks = options.useExistingLocks ?? true;
+  function resetPlanEditFeedback() {
     setDeletedItemUndo(undefined);
     setAddedMealFeedback(undefined);
     setAddMealBlocker("");
@@ -716,6 +717,12 @@ export function App() {
     setServingEditConfirmation(undefined);
     setLockConfirmation(undefined);
     clearRandomizeFeedback();
+  }
+
+  function generate(sourceForm = form, options: GenerateOptions = {}) {
+    const seed = options.seed ?? Date.now();
+    const useExistingLocks = options.useExistingLocks ?? true;
+    resetPlanEditFeedback();
     const incompleteMacroBlockers = incompleteMacroRuleBlockers(sourceForm);
     if (incompleteMacroBlockers.length > 0) {
       setOptionsOpen(true);
@@ -805,6 +812,36 @@ export function App() {
         setAdjustSheetOpen(false);
       }
     });
+  }
+
+  function startManualPlan() {
+    if (!isValidCalorieTarget(form.calories)) {
+      setCalorieInputError(calorieValidationMessage);
+      calorieInputRef.current?.focus();
+      return;
+    }
+
+    const incompleteMacroBlockers = incompleteMacroRuleBlockers(form);
+    if (incompleteMacroBlockers.length > 0) {
+      setOptionsOpen(true);
+      setGenerationBlockers(incompleteMacroBlockers);
+      return;
+    }
+
+    const manualPlan = createManualDailyPlan();
+    setCalorieInputError("");
+    resetPlanEditFeedback();
+    setLockedIds(new Set());
+    setMealTargets({});
+    setManualShareText("");
+    setShareState(undefined);
+    setGeneratedTargetConfirmation("");
+    setIsPlanStale(false);
+    setShowSharedPlanOrientation(false);
+    setPlan(manualPlan);
+    setExpandedMealIds(new Set([manualPlan.meals[0]?.id ?? "meal-1"]));
+    setActiveView("plan");
+    setDietRuleNotice("");
   }
 
   function showCalorieInputError(event: React.InvalidEvent<HTMLInputElement>) {
@@ -1747,7 +1784,7 @@ export function App() {
   }
 
   return (
-    <main className={`app-shell${hasResultActionStatus ? " has-bottom-status" : ""}${shareActionFeedback?.manualUrl ? " has-share-recovery" : ""}`}>
+    <main className={`app-shell${hasResultActionStatus ? " has-bottom-status" : ""}${shareActionFeedback?.manualUrl ? " has-share-recovery" : ""}${showsManualStartAction ? " has-manual-start" : ""}`}>
       <header className="mobile-header">
         <h1>Meal plan</h1>
         <div className="header-actions">
@@ -1788,6 +1825,7 @@ export function App() {
             generationProgressId={generationProgressId}
             generationProgressMessage={generationProgressMessage}
             isGenerating={isGenerating}
+            onStartManualPlan={startManualPlan}
             showStaleNotice={Boolean(isPlanStale && plan)}
           />
         </div>
@@ -1818,6 +1856,11 @@ export function App() {
           {showSharedPlanOrientation && (
             <div className="shared-plan-orientation" role="status">
               <p><strong>Shared plan opened.</strong> Edits stay here until you Share a new link.</p>
+            </div>
+          )}
+          {isManualPlan && (
+            <div className="manual-plan-orientation" role="status">
+              <p><strong>Manual plan.</strong> Add foods from Meal tools; totals update as you build.</p>
             </div>
           )}
           {generatedTargetConfirmation && !isPlanStale && (
@@ -2609,12 +2652,14 @@ function GenerationActionControls({
   generationProgressId,
   generationProgressMessage,
   isGenerating,
+  onStartManualPlan,
   showStaleNotice,
 }: {
   generationActionLabel: string;
   generationProgressId: string;
   generationProgressMessage: string;
   isGenerating: boolean;
+  onStartManualPlan?: () => void;
   showStaleNotice: boolean;
 }) {
   return (
@@ -2635,6 +2680,12 @@ function GenerationActionControls({
         <Icon name="plate" />
         {generationActionLabel}
       </button>
+      {onStartManualPlan && !showStaleNotice && (
+        <button className="manual-start-action with-icon" type="button" onClick={onStartManualPlan} disabled={isGenerating}>
+          <Icon name="add" />
+          Start manually
+        </button>
+      )}
     </>
   );
 }

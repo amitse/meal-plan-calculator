@@ -590,8 +590,24 @@ export function removePlanItem(plan: DailyPlan, itemId: string): DailyPlan {
   };
 }
 
+export function createManualDailyPlan(): DailyPlan {
+  return {
+    id: "manual-daily-plan",
+    displayName: "Manual daily plan",
+    meals: [createManualMeal(1)],
+  };
+}
+
 export function addMeal(plan: DailyPlan, form?: EditableFormState): DailyPlan {
   const next = plan.meals.length + 1;
+
+  if (isManualDailyPlan(plan)) {
+    return {
+      ...plan,
+      meals: [...plan.meals, createManualMeal(next)],
+    };
+  }
+
   const proteinOptionId = firstAllowedProteinOption(form);
 
   if (!proteinOptionId) {
@@ -618,6 +634,19 @@ export function addMeal(plan: DailyPlan, form?: EditableFormState): DailyPlan {
         ],
       },
     ],
+  };
+}
+
+function isManualDailyPlan(plan: DailyPlan) {
+  return plan.id === "manual-daily-plan";
+}
+
+function createManualMeal(index: number) {
+  return {
+    id: `meal-${index}`,
+    displayName: `Meal ${index}`,
+    patternId: "snack",
+    items: [],
   };
 }
 
