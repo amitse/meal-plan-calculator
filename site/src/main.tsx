@@ -1290,6 +1290,7 @@ function App() {
               </summary>
               <PreferenceGroup
                 automaticHelper="All carb choices are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
+                emptyHelper="No specific choices selected - the planner will choose automatically."
                 iconFor={grainOptionIcon}
                 label="Choose carbs"
                 options={grainOptions}
@@ -1298,6 +1299,7 @@ function App() {
               />
               <PreferenceGroup
                 automaticHelper="All visible proteins are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
+                emptyHelper="No specific choices selected - the planner will choose automatically."
                 iconFor={proteinOptionIcon}
                 label="Choose proteins"
                 options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))}
@@ -2048,15 +2050,17 @@ function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: s
   );
 }
 
-function PreferenceGroup({ automaticHelper, iconFor, label, options, values, onChange }: { automaticHelper?: string; iconFor: (optionId: string) => IconName; label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
+function PreferenceGroup({ automaticHelper, emptyHelper, iconFor, label, options, values, onChange }: { automaticHelper?: string; emptyHelper?: string; iconFor: (optionId: string) => IconName; label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
   const optionIds = options.map((option) => option.id);
   const selectedIds = selectedOptionIds(values, optionIds);
   const showAutomaticHelper = Boolean(automaticHelper) && selectedIds.length === optionIds.length && optionIds.length > 0;
+  const showEmptyHelper = Boolean(emptyHelper) && selectedIds.length === 0 && optionIds.length > 0;
 
   return (
     <fieldset className="choice-group preference-group">
       <legend>{label}</legend>
       {showAutomaticHelper && <p className="preference-auto-helper">{automaticHelper}</p>}
+      {showEmptyHelper && <p className="preference-auto-helper">{emptyHelper}</p>}
       {options.map((option) => (
         <label key={option.id}>
           <input type="checkbox" checked={values.includes(option.id)} onChange={(event) => onChange(option.id, event.target.checked)} />
@@ -2201,10 +2205,19 @@ function quickStartFoodCue(form: EditableFormState) {
 
 function activeFoodCustomizationLabels(form: EditableFormState) {
   return [
+    emptyGrainPreferenceLabel(form),
     narrowedGrainPreferenceLabel(form),
+    emptyProteinPreferenceLabel(form),
     narrowedProteinPreferenceLabel(form),
     ...avoidLabels(form).map((label) => `No ${label}`),
   ].filter((label): label is string => Boolean(label));
+}
+
+function emptyGrainPreferenceLabel(form: EditableFormState) {
+  const allGrainIds = grainOptions.map((option) => option.id);
+  const selectedGrainIds = selectedOptionIds(form.preferredGrains, allGrainIds);
+
+  return selectedGrainIds.length === 0 ? "Carbs: automatic" : undefined;
 }
 
 function narrowedGrainPreferenceLabel(form: EditableFormState) {
@@ -2212,6 +2225,14 @@ function narrowedGrainPreferenceLabel(form: EditableFormState) {
   const selectedGrainIds = selectedOptionIds(form.preferredGrains, allGrainIds);
 
   return isAutomaticOptionSet(selectedGrainIds, allGrainIds) ? undefined : `Carbs: ${selectedOptionSummary(selectedGrainIds, grainOptions)}`;
+}
+
+function emptyProteinPreferenceLabel(form: EditableFormState) {
+  const visibleProteinOptions = proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel));
+  const visibleProteinIds = visibleProteinOptions.map((option) => option.id);
+  const selectedProteinIds = selectedOptionIds(form.preferredProteins, visibleProteinIds);
+
+  return selectedProteinIds.length === 0 && visibleProteinIds.length > 0 ? "Protein: automatic" : undefined;
 }
 
 function narrowedProteinPreferenceLabel(form: EditableFormState) {
