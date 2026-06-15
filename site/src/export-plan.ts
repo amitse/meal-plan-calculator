@@ -81,7 +81,7 @@ export function planShareText(plan: DailyPlan, options?: PlanExportOptions) {
   return lines.join("\n").trim();
 }
 
-export function planExportHtmlTable(plan: DailyPlan, options?: PlanExportOptions) {
+function planExportHtmlTable(plan: DailyPlan, options?: PlanExportOptions) {
   const rows = tableRows(plan, options);
   const [header, ...body] = rows;
 

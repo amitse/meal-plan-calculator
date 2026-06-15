@@ -55,6 +55,7 @@ import {
   generateEditablePlanResult,
   grainOptions,
   initialFormState,
+  isAutomaticOptionSet,
   isProteinVisible,
   mealTargetStatus,
   mealRoleTags,
@@ -68,6 +69,7 @@ import {
   proteinOptions,
   randomizePlan,
   removePlanItem,
+  selectedOptionIds,
   shareUrlForState,
   swapOptionPreviewNutrition,
   swapExchangeOption,
@@ -1781,22 +1783,13 @@ export function App() {
         </section>
 
         <div className="bottom-action">
-          {isPlanStale && plan && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
-          {isGenerating && (
-            <p className="generation-progress" id={generationProgressId} role="status" aria-live="polite">
-              {generationProgressMessage}
-            </p>
-          )}
-          <button
-            className="primary-action with-icon"
-            type="submit"
-            disabled={isGenerating}
-            aria-busy={isGenerating}
-            aria-describedby={isGenerating ? generationProgressId : undefined}
-          >
-            <Icon name="plate" />
-            {generationActionLabel}
-          </button>
+          <GenerationActionControls
+            generationActionLabel={generationActionLabel}
+            generationProgressId={generationProgressId}
+            generationProgressMessage={generationProgressMessage}
+            isGenerating={isGenerating}
+            showStaleNotice={Boolean(isPlanStale && plan)}
+          />
         </div>
       </form>
       )}
@@ -2189,22 +2182,13 @@ export function App() {
                 {renderTargetControls("sheet")}
               </div>
               <div className="adjust-sheet-actions">
-                {isPlanStale && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
-                {isGenerating && (
-                  <p className="generation-progress" id={generationProgressId} role="status" aria-live="polite">
-                    {generationProgressMessage}
-                  </p>
-                )}
-                <button
-                  className="primary-action with-icon"
-                  type="submit"
-                  disabled={isGenerating}
-                  aria-busy={isGenerating}
-                  aria-describedby={isGenerating ? generationProgressId : undefined}
-                >
-                  <Icon name="plate" />
-                  {generationActionLabel}
-                </button>
+                <GenerationActionControls
+                  generationActionLabel={generationActionLabel}
+                  generationProgressId={generationProgressId}
+                  generationProgressMessage={generationProgressMessage}
+                  isGenerating={isGenerating}
+                  showStaleNotice={isPlanStale}
+                />
               </div>
             </form>
           </dialog>
@@ -2620,6 +2604,41 @@ function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: s
   );
 }
 
+function GenerationActionControls({
+  generationActionLabel,
+  generationProgressId,
+  generationProgressMessage,
+  isGenerating,
+  showStaleNotice,
+}: {
+  generationActionLabel: string;
+  generationProgressId: string;
+  generationProgressMessage: string;
+  isGenerating: boolean;
+  showStaleNotice: boolean;
+}) {
+  return (
+    <>
+      {showStaleNotice && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
+      {isGenerating && (
+        <p className="generation-progress" id={generationProgressId} role="status" aria-live="polite">
+          {generationProgressMessage}
+        </p>
+      )}
+      <button
+        className="primary-action with-icon"
+        type="submit"
+        disabled={isGenerating}
+        aria-busy={isGenerating}
+        aria-describedby={isGenerating ? generationProgressId : undefined}
+      >
+        <Icon name="plate" />
+        {generationActionLabel}
+      </button>
+    </>
+  );
+}
+
 function PreferenceGroup({ automaticHelper, emptyHelper, iconFor, label, options, values, onChange }: { automaticHelper?: string; emptyHelper?: string; iconFor: (optionId: string) => IconName; label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
   const optionIds = options.map((option) => option.id);
   const selectedIds = selectedOptionIds(values, optionIds);
@@ -2841,19 +2860,23 @@ function narrowedGrainPreferenceLabel(form: EditableFormState) {
 }
 
 function emptyProteinPreferenceLabel(form: EditableFormState) {
-  const visibleProteinOptions = proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel));
-  const visibleProteinIds = visibleProteinOptions.map((option) => option.id);
-  const selectedProteinIds = selectedOptionIds(form.preferredProteins, visibleProteinIds);
+  const { visibleProteinIds, selectedProteinIds } = visibleProteinPreferenceContext(form);
 
   return selectedProteinIds.length === 0 && visibleProteinIds.length > 0 ? "Protein: automatic" : undefined;
 }
 
 function narrowedProteinPreferenceLabel(form: EditableFormState) {
+  const { visibleProteinOptions, visibleProteinIds, selectedProteinIds } = visibleProteinPreferenceContext(form);
+
+  return isAutomaticOptionSet(selectedProteinIds, visibleProteinIds) ? undefined : `Protein: ${selectedOptionSummary(selectedProteinIds, visibleProteinOptions)}`;
+}
+
+function visibleProteinPreferenceContext(form: EditableFormState) {
   const visibleProteinOptions = proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel));
   const visibleProteinIds = visibleProteinOptions.map((option) => option.id);
   const selectedProteinIds = selectedOptionIds(form.preferredProteins, visibleProteinIds);
 
-  return isAutomaticOptionSet(selectedProteinIds, visibleProteinIds) ? undefined : `Protein: ${selectedOptionSummary(selectedProteinIds, visibleProteinOptions)}`;
+  return { selectedProteinIds, visibleProteinIds, visibleProteinOptions };
 }
 
 function selectedOptionSummary(selectedIds: string[], options: { id: string; label: string }[]) {
@@ -2877,15 +2900,6 @@ function selectedOptionLabelList(selectedIds: string[], options: { id: string; l
   return options
     .filter((option) => selected.has(option.id))
     .map((option) => option.label);
-}
-
-function selectedOptionIds(values: string[], allowedValues: string[]) {
-  const allowed = new Set(allowedValues);
-  return [...new Set(values.filter((value) => allowed.has(value)))];
-}
-
-function isAutomaticOptionSet(selectedValues: string[], allValues: string[]) {
-  return selectedValues.length === 0 || (selectedValues.length === allValues.length && allValues.every((value) => selectedValues.includes(value)));
 }
 
 function avoidLabels(form: EditableFormState) {

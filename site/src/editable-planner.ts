@@ -203,7 +203,7 @@ export function buildNutritionInput(form: EditableFormState): GenerateMealPlanIn
   return input;
 }
 
-export function createTargetFromForm(form: EditableFormState): NutritionTarget {
+function createTargetFromForm(form: EditableFormState): NutritionTarget {
   return createNutritionTarget(buildNutritionInput(form));
 }
 
@@ -709,7 +709,7 @@ export function planItemDisplayAmountLabel(item: DailyPlanItem) {
   return `${formatDisplayQuantityAmount(quantity.amount)}${spacer}${planItemDisplayUnitLabel(item, quantity.amount)}`;
 }
 
-export function exchangeOptionDisplayQuantity(groupId: string, optionId: string): DisplayQuantity {
+function exchangeOptionDisplayQuantity(groupId: string, optionId: string): DisplayQuantity {
   const option = getExchangeOption(groupId, optionId);
   const optionUnits = option.exchangeUnits ?? 1;
 
@@ -1139,7 +1139,7 @@ function exchangeUnitsForDisplayAmount(groupId: string, optionId: string, amount
     : 0;
 }
 
-export function exchangeOptionGramAmount(groupId: string, optionId: string) {
+function exchangeOptionGramAmount(groupId: string, optionId: string) {
   const option = getExchangeOption(groupId, optionId);
   const optionUnits = option.exchangeUnits ?? 1;
 
@@ -1206,7 +1206,7 @@ function proteinChoicePool(form: EditableFormState) {
   return preferred.length > 0 ? preferred : options;
 }
 
-export function proteinOptionsForFoodRules(form: EditableFormState) {
+function proteinOptionsForFoodRules(form: EditableFormState) {
   return proteinOptionsForDiet(form.dietaryLevel).filter((option) => isProteinOptionAllowedByFoodRules(option, form));
 }
 
@@ -1261,7 +1261,7 @@ function planUsesExchangeOption(plan: DailyPlan, groupId: "grain" | "protein-ser
   }));
 }
 
-function selectedOptionIds(values: string[], allowedValues: string[]) {
+export function selectedOptionIds(values: string[], allowedValues: string[]) {
   const allowed = new Set(allowedValues);
   return [...new Set(values.filter((value) => allowed.has(value)))];
 }
@@ -1321,7 +1321,7 @@ function joinWithAnd(values: string[]) {
   return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
 }
 
-function isAutomaticOptionSet(selectedValues: string[], allValues: string[]) {
+export function isAutomaticOptionSet(selectedValues: string[], allValues: string[]) {
   return selectedValues.length === 0 || (selectedValues.length === allValues.length && allValues.every((value) => selectedValues.includes(value)));
 }
 

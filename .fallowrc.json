@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "ignorePatterns": [
+    "storybook-static/**",
+    "test-results/**",
+    "playwright-report/**",
+    "www/**",
+    "site/public/sw.js"
+  ],
+  "duplicates": {
+    "ignore": [
+      "tests/**",
+      "scripts/**"
+    ],
+    "minLines": 10
+  },
+  "health": {
+    "ignore": [
+      "tests/**",
+      "scripts/**"
+    ],
+    "maxCyclomatic": 35,
+    "maxCognitive": 45,
+    "maxCrap": 1000,
+    "thresholdOverrides": [
+      {
+        "files": [
+          "site/src/main.tsx"
+        ],
+        "functions": [
+          "App"
+        ],
+        "maxCyclomatic": 100,
+        "maxCognitive": 100,
+        "maxCrap": 9000,
+        "reason": "The current mobile planner shell is intentionally tracked as a legacy decomposition hotspot while Fallow still gates new extreme growth."
+      }
+    ]
+  }
+}
