@@ -369,6 +369,7 @@ function App() {
   const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
   const unusedFoodPreferences = useMemo(() => (plan ? unusedFoodPreferenceLabels(plan, form) : []), [form, plan]);
   const proteinTarget = Number(form.protein || 0);
+  const proteinTargetSummary = proteinTarget > 0 ? `${Math.round(proteinTarget)} gm` : "Not set";
   const activeMacroRuleLabels = activeMacroLabels(form);
   const activeMacroRuleCount = activeMacroRuleLabels.length;
   const incompleteMacroRuleLabels = incompleteMacroLabels(form);
@@ -1261,7 +1262,7 @@ function App() {
                 step={5}
                 value={form.protein}
               />
-              <small id="protein-helper" className="field-hint">Target band: plans can pass within about 5gm.</small>
+              <small id="protein-helper" className="field-hint">Optional: leave blank to generate from calories only. When set, plans can pass within about 5gm.</small>
             </label>
           </div>
 
@@ -1509,7 +1510,7 @@ function App() {
             </div>
             <div>
               <dt>Protein target</dt>
-              <dd><span className="notranslate" translate="no">{Math.round(proteinTarget)} gm</span></dd>
+              <dd><span className="notranslate" translate="no">{proteinTargetSummary}</span></dd>
             </div>
             <div>
               <dt>Diet</dt>

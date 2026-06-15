@@ -83,7 +83,7 @@ export const proteinOptions = [
 
 export const initialFormState: EditableFormState = {
   calories: "2000",
-  protein: "75",
+  protein: "",
   carbs: { mode: "none", value: "100" },
   fat: { mode: "none", value: "120" },
   fiber: { mode: "none", value: "10" },
@@ -132,7 +132,6 @@ export function buildNutritionInput(form: EditableFormState): GenerateMealPlanIn
   const input: GenerateMealPlanInput = {
     calories: Number(form.calories || 0),
     dietaryLevel: form.dietaryLevel,
-    protein: Number(form.protein || 0) || undefined,
     preferences: {
       ...preferredProtein,
       preferredExchangeOptionIds: {
@@ -148,6 +147,10 @@ export function buildNutritionInput(form: EditableFormState): GenerateMealPlanIn
       ].filter((item): item is string => Boolean(item)),
     },
   };
+  const proteinTarget = Number(form.protein || 0);
+  if (proteinTarget > 0) {
+    input.protein = proteinTarget;
+  }
 
   addMacro(input, "carbs", form.carbs);
   addMacro(input, "fat", form.fat);

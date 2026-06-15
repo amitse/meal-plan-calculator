@@ -31,13 +31,15 @@ describe("editable planner workflows", () => {
     expect(initialFormState.preferredProteins).toEqual(proteinOptions.map((option) => option.id));
   });
 
-  it("keeps optional macro limits off for fresh and omitted shared states", () => {
+  it("keeps protein and optional macro limits off for fresh and omitted shared states", () => {
+    expect(initialFormState.protein).toBe("");
     expect(initialFormState.carbs.mode).toBe("none");
     expect(initialFormState.fat.mode).toBe("none");
     expect(initialFormState.fiber.mode).toBe("none");
     expect(initialFormState.saturatedFat.mode).toBe("none");
 
     const input = buildNutritionInput(initialFormState);
+    expect(input).not.toHaveProperty("protein");
     expect(input).not.toHaveProperty("carbs");
     expect(input).not.toHaveProperty("fat");
     expect(input).not.toHaveProperty("fiber");
@@ -54,6 +56,19 @@ describe("editable planner workflows", () => {
     expect(decoded?.form.fat.mode).toBe("none");
     expect(decoded?.form.fiber.mode).toBe("none");
     expect(decoded?.form.saturatedFat.mode).toBe("none");
+  });
+
+  it("preserves explicit protein targets from decoded shared states", () => {
+    const encoded = encodeShareState({
+      form: { ...initialFormState, protein: "80" },
+      lockedItemIds: [],
+      mealTargets: {},
+    });
+    const decoded = decodeShareState(encoded);
+    const input = decoded ? buildNutritionInput(decoded.form) : undefined;
+
+    expect(decoded?.form.protein).toBe("80");
+    expect(input).toMatchObject({ protein: 80 });
   });
 
   it("preserves explicit optional macro rules from decoded shared states", () => {
