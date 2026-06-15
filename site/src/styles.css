@@ -1172,6 +1172,15 @@ fieldset {
   font-weight: 500;
 }
 
+.meal-lock-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .meal-affordance {
   color: var(--accent);
   font-size: 0.74rem;

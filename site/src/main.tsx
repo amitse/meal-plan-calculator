@@ -847,6 +847,7 @@ function App() {
               const mealTotals = calculateMealTotals(meal);
               const status = mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {});
               const roleTags = mealRoleTags(meal);
+              const lockedItemsInMeal = meal.items.filter((item) => item.id && lockedIds.has(item.id)).length;
               const mealFeedback = mealRandomizeFeedback[meal.id];
               const addedFeedback = addedMealFeedback?.mealId === meal.id ? addedMealFeedback : undefined;
               return (
@@ -882,7 +883,12 @@ function App() {
                   </span>
                   <span className="meal-summary">
                     <strong>{Math.round(mealTotals.values.calories)} kcal</strong>
-                    <small>{Math.round(mealTotals.values.protein)}gm protein · {meal.items.length} items</small>
+                    <small>
+                      {Math.round(mealTotals.values.protein)}gm protein · {meal.items.length} items
+                      {lockedItemsInMeal > 0 && (
+                        <span className="meal-lock-count">{lockedItemsInMeal} locked</span>
+                      )}
+                    </small>
                     <span className="meal-affordance">Tap to edit</span>
                   </span>
                 </summary>
