@@ -196,7 +196,7 @@ export function generateEditablePlanResult(
   return {
     blockers: bestEvaluation
       ? failureRecoveryMessages(bestEvaluation).slice(0, 2)
-      : generationRejectionMessages(generation.result.rejected, form).slice(0, 2),
+      : generationRejectionMessages(generation.result.rejected, form, lockedPlan, lockedItemIds).slice(0, 2),
   };
 }
 
@@ -713,8 +713,13 @@ export function failureRecoveryMessages(evaluation: PlanEvaluation): string[] {
     });
 }
 
-function generationRejectionMessages(rejected: string[], form: EditableFormState): string[] {
-  const messages = rejected.map((reason) => rejectionRecoveryMessage(reason, form));
+function generationRejectionMessages(
+  rejected: string[],
+  form: EditableFormState,
+  lockedPlan: DailyPlan | undefined,
+  lockedItemIds: ReadonlySet<string>,
+): string[] {
+  const messages = rejected.map((reason) => rejectionRecoveryMessage(reason, form, lockedPlan, lockedItemIds));
   const uniqueMessages = [...new Set(messages)];
 
   return uniqueMessages.length > 0
@@ -722,10 +727,15 @@ function generationRejectionMessages(rejected: string[], form: EditableFormState
     : ["Required food choices are blocked. Relax a food rule or reset preferences before regenerating."];
 }
 
-function rejectionRecoveryMessage(reason: string, form: EditableFormState) {
+function rejectionRecoveryMessage(
+  reason: string,
+  form: EditableFormState,
+  lockedPlan: DailyPlan | undefined,
+  lockedItemIds: ReadonlySet<string>,
+) {
   const noOptionsPrefix = "No allowed exchange options for template item ";
   if (reason.startsWith(noOptionsPrefix)) {
-    return noAllowedExchangeOptionsMessage(reason.slice(noOptionsPrefix.length), form);
+    return noAllowedExchangeOptionsMessage(reason.slice(noOptionsPrefix.length), form, lockedPlan, lockedItemIds);
   }
 
   const excludedFoodMatch = reason.match(/^FoodItem (.+) is excluded for template item /);
@@ -747,11 +757,23 @@ function rejectionRecoveryMessage(reason: string, form: EditableFormState) {
   return `${reason}. Relax the related food rule before regenerating.`;
 }
 
-function noAllowedExchangeOptionsMessage(templateItemId: string, form: EditableFormState) {
+function noAllowedExchangeOptionsMessage(
+  templateItemId: string,
+  form: EditableFormState,
+  lockedPlan: DailyPlan | undefined,
+  lockedItemIds: ReadonlySet<string>,
+) {
   if (templateItemId.includes("protein")) {
+    const lockedMessage = lockedProteinRecoveryMessage(templateItemId, form, lockedPlan, lockedItemIds);
+    if (lockedMessage) {
+      return lockedMessage;
+    }
+
     const proteinRules = activeProteinRuleLabels(form);
     const ruleCopy = proteinRules.length > 0 ? ` (${proteinRules.join(", ")})` : "";
-    return `Protein is blocked by your diet or food rules${ruleCopy}. Unlock the fixed protein, remove an exclusion, or change dietary level before regenerating.`;
+    const firstStep = proteinRuleRecoveryAction(form);
+    const firstStepCopy = firstStep ? ` ${firstStep}` : "";
+    return `Protein is blocked by your diet or food rules${ruleCopy}.${firstStepCopy} Unlock the fixed protein, remove an exclusion, or change dietary level before regenerating.`;
   }
 
   if (templateItemId.includes("grain") || templateItemId.includes("carb")) {
@@ -773,6 +795,124 @@ function activeProteinRuleLabels(form: EditableFormState) {
     form.dietaryLevel !== "vegetarian" && form.avoidEggs ? "avoid eggs" : undefined,
     form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish ? "avoid chicken/fish" : undefined,
   ].filter((label): label is string => Boolean(label));
+}
+
+function lockedProteinRecoveryMessage(
+  templateItemId: string,
+  form: EditableFormState,
+  lockedPlan: DailyPlan | undefined,
+  lockedItemIds: ReadonlySet<string>,
+) {
+  const lockedItem = lockedExchangeItem(templateItemId, lockedPlan, lockedItemIds);
+  if (!lockedItem || lockedItem.exchangeGroupId !== "protein-serving") {
+    return undefined;
+  }
+
+  const blocker = lockedProteinBlocker(lockedItem.exchangeOptionId, form);
+  if (!blocker) {
+    return undefined;
+  }
+
+  const label = proteinOptionLabel(lockedItem.exchangeOptionId);
+  return `${label} is locked, but ${blocker.reason}. Unlock that fixed protein first, or ${blocker.action} before regenerating.`;
+}
+
+function lockedExchangeItem(templateItemId: string, lockedPlan: DailyPlan | undefined, lockedItemIds: ReadonlySet<string>) {
+  if (!lockedPlan || !lockedItemIds.has(templateItemId)) {
+    return undefined;
+  }
+
+  return lockedPlan.meals
+    .flatMap((meal) => meal.items)
+    .find((item): item is Extract<DailyPlanItem, { kind: "exchange" }> => item.kind === "exchange" && item.id === templateItemId);
+}
+
+function lockedProteinBlocker(optionId: string, form: EditableFormState) {
+  const option = getExchangeOption("protein-serving", optionId);
+  const optionLevel = proteinOptionDietaryLevel(optionId);
+  if (!isDietaryLevelAllowed(optionLevel, form.dietaryLevel)) {
+    return {
+      reason: `the ${dietaryLevelLabels[form.dietaryLevel]} diet excludes it`,
+      action: "change dietary level",
+    };
+  }
+
+  if (form.avoidPaneer && option.foodItemId === "paneer") {
+    return { reason: "avoid paneer excludes it", action: "allow paneer" };
+  }
+
+  if (form.avoidWhey && option.foodItemId === "whey") {
+    return { reason: "avoid whey excludes it", action: "allow whey" };
+  }
+
+  if (form.avoidEggs && option.foodItemId === "egg-whole") {
+    return { reason: "avoid eggs excludes it", action: "allow eggs" };
+  }
+
+  if (form.avoidChickenFish && optionId === "chicken-fish-100g") {
+    return { reason: "avoid chicken/fish excludes it", action: "allow chicken/fish" };
+  }
+
+  return undefined;
+}
+
+function proteinRuleRecoveryAction(form: EditableFormState) {
+  if (form.dietaryLevel === "vegetarian") {
+    const blocked = [form.avoidPaneer ? "paneer" : undefined, form.avoidWhey ? "whey" : undefined]
+      .filter((label): label is string => Boolean(label));
+    return blocked.length > 0 ? `Try allowing ${joinWithOr(blocked)} first.` : undefined;
+  }
+
+  if (form.dietaryLevel === "eggetarian" && form.avoidEggs) {
+    return "Try allowing eggs first.";
+  }
+
+  if (form.dietaryLevel === "nonVegetarian" && form.avoidChickenFish) {
+    return "Try allowing chicken/fish first.";
+  }
+
+  if (form.avoidPaneer) return "Try allowing paneer first.";
+  if (form.avoidWhey) return "Try allowing whey first.";
+  if (form.avoidEggs) return "Try allowing eggs first.";
+
+  return undefined;
+}
+
+function joinWithOr(values: string[]) {
+  if (values.length <= 2) {
+    return values.join(" or ");
+  }
+
+  return `${values.slice(0, -1).join(", ")}, or ${values[values.length - 1]}`;
+}
+
+function proteinOptionLabel(optionId: string) {
+  return proteinOptions.find((option) => option.id === optionId)?.label ?? getExchangeOption("protein-serving", optionId).displayName;
+}
+
+function proteinOptionDietaryLevel(optionId: string): DietaryLevel {
+  const option = getExchangeOption("protein-serving", optionId);
+  if (option.dietaryLevel) {
+    return option.dietaryLevel;
+  }
+
+  if (option.foodItemId) {
+    return getFoodItem(option.foodItemId).dietaryLevel;
+  }
+
+  throw new Error(`Protein option ${optionId} is missing dietaryLevel`);
+}
+
+function isDietaryLevelAllowed(foodLevel: DietaryLevel, preferenceLevel: DietaryLevel) {
+  if (preferenceLevel === "nonVegetarian") {
+    return true;
+  }
+
+  if (preferenceLevel === "eggetarian") {
+    return foodLevel === "vegetarian" || foodLevel === "eggetarian";
+  }
+
+  return foodLevel === "vegetarian";
 }
 
 function isDietaryLevel(value: string | undefined): value is DietaryLevel {

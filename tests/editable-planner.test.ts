@@ -455,7 +455,43 @@ describe("editable planner workflows", () => {
     );
 
     expect(result.plan).toBeUndefined();
-    expect(result.blockers[0]).toMatch(/Protein is blocked/);
+    expect(result.blockers[0]).toMatch(/Chicken \/ fish is locked/);
+    expect(result.blockers[0]).toMatch(/vegetarian diet excludes it/);
+    expect(result.blockers[0]).toMatch(/Unlock that fixed protein first/);
     expect(result.blockers[0]).toMatch(/change dietary level/);
+  });
+
+  it("names the avoid rule to relax when a locked protein is excluded", () => {
+    const lockedPaneerPlan: DailyPlan = {
+      id: "locked-paneer-plan",
+      displayName: "Locked paneer plan",
+      meals: [
+        {
+          id: "lunch",
+          displayName: "Lunch",
+          items: [
+            {
+              kind: "exchange",
+              id: "lunch-protein",
+              exchangeGroupId: "protein-serving",
+              exchangeOptionId: "paneer-50g",
+              exchangeUnits: 1,
+              roles: ["protein"],
+            },
+          ],
+        },
+      ],
+    };
+    const result = generateEditablePlanResult(
+      { ...initialFormState, avoidPaneer: true },
+      lockedPaneerPlan,
+      new Set(["lunch-protein"]),
+      8,
+    );
+
+    expect(result.plan).toBeUndefined();
+    expect(result.blockers[0]).toMatch(/Paneer is locked/);
+    expect(result.blockers[0]).toMatch(/avoid paneer excludes it/);
+    expect(result.blockers[0]).toMatch(/allow paneer/);
   });
 });
