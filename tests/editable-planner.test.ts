@@ -125,6 +125,36 @@ describe("editable planner workflows", () => {
     }));
   });
 
+  it("adds the first valid preferred grain to a meal", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const edited = addItemToMeal(plan, "lunch", "grain", {
+      ...initialFormState,
+      preferredGrains: ["cooked-rice", "roti"],
+    });
+    const addedItem = edited.meals.find((meal) => meal.id === "lunch")?.items.at(-1);
+
+    expect(addedItem).toMatchObject({
+      kind: "exchange",
+      exchangeGroupId: "grain",
+      exchangeOptionId: "cooked-rice",
+    });
+  });
+
+  it("falls back to a valid grain when preferred grains do not fit the meal", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const edited = addItemToMeal(plan, "lunch", "grain", {
+      ...initialFormState,
+      preferredGrains: ["raw-oats"],
+    });
+    const addedItem = edited.meals.find((meal) => meal.id === "lunch")?.items.at(-1);
+
+    expect(addedItem).toMatchObject({
+      kind: "exchange",
+      exchangeGroupId: "grain",
+      exchangeOptionId: "roti",
+    });
+  });
+
   it("varies unlocked generated choices across seeds", () => {
     const first = generateEditablePlan(initialFormState, undefined, new Set(), 1);
     const second = generateEditablePlan(initialFormState, undefined, new Set(), 2);

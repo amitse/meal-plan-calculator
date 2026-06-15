@@ -954,7 +954,7 @@ function App() {
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
     setLockConfirmation(undefined);
-    const next = addItemToMeal(plan, mealId, groupId, groupId === "protein-serving" ? form : undefined);
+    const next = addItemToMeal(plan, mealId, groupId, groupId === "protein-serving" || groupId === "grain" ? form : undefined);
     if (next === plan && groupId === "protein-serving") {
       setMealToolMessages((current) => ({
         ...current,

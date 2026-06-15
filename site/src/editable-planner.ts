@@ -618,7 +618,7 @@ export function addItemToMeal(
   const item: DailyPlanItem =
     groupId === "fruit"
       ? { kind: "exchange", id, exchangeGroupId: "fruit", exchangeOptionId: "banana", exchangeUnits: 1, roles: ["fruit"] }
-      : { kind: "exchange", id, exchangeGroupId: "grain", exchangeOptionId: "roti", exchangeUnits: 1, roles: ["carb"] };
+      : { kind: "exchange", id, exchangeGroupId: "grain", exchangeOptionId: firstAllowedGrainOption(mealId, form), exchangeUnits: 1, roles: ["carb"] };
 
   return {
     ...plan,
@@ -1027,6 +1027,15 @@ function pickAllowedProtein(form: EditableFormState, seed: number) {
 
 function firstAllowedProteinOption(form: EditableFormState | undefined) {
   return form ? proteinChoicePool(form)[0] : "paneer-50g";
+}
+
+function firstAllowedGrainOption(mealId: string, form: EditableFormState | undefined) {
+  if (!form) {
+    return "roti";
+  }
+
+  const options = grainOptionsForMeal(mealId);
+  return grainPreferences(form).find((option) => options.includes(option)) ?? "roti";
 }
 
 function proteinChoicePool(form: EditableFormState) {
