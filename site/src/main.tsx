@@ -13,6 +13,7 @@ import { DeviceMobile } from "@phosphor-icons/react/DeviceMobile";
 import { DownloadSimple } from "@phosphor-icons/react/DownloadSimple";
 import { Drop } from "@phosphor-icons/react/Drop";
 import { Egg } from "@phosphor-icons/react/Egg";
+import { FileImage } from "@phosphor-icons/react/FileImage";
 import { FileArrowDown } from "@phosphor-icons/react/FileArrowDown";
 import { Fire } from "@phosphor-icons/react/Fire";
 import { Fish } from "@phosphor-icons/react/Fish";
@@ -75,7 +76,7 @@ import {
   type MealMacroTarget,
   type ShareablePlannerState,
 } from "./editable-planner.js";
-import { planExportCsv, planExportExcelHtml, planExportHtmlTable, planExportTsv } from "./export-plan.js";
+import { planExportCsv, planExportExcelHtml, planShareText } from "./export-plan.js";
 import "./styles.css";
 
 type BoundField = "none" | "min" | "max" | "target";
@@ -174,6 +175,7 @@ type IconName =
   | "fish"
   | "food"
   | "fruit"
+  | "image"
   | "install"
   | "leaf"
   | "lock"
@@ -311,7 +313,7 @@ function App() {
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState<ShareState | undefined>();
-  const [showGoogleDocsManualCopy, setShowGoogleDocsManualCopy] = useState(false);
+  const [manualShareText, setManualShareText] = useState("");
   const [shareLoadFailed, setShareLoadFailed] = useState(loadedUrlState.shareLoadFailed);
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
@@ -353,7 +355,6 @@ function App() {
     mealTargets,
   }), [form, plan, lockedIds, mealTargets]);
   const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
-  const googleDocsManualCopyText = showGoogleDocsManualCopy && plan ? planExportTsv(plan) : "";
   const generationActionLabel = isGenerating ? "Generating..." : plan ? "Regenerate plan" : "Generate";
 
   useEffect(() => {
@@ -861,6 +862,24 @@ function App() {
       shareKey,
     });
 
+    if (typeof navigator.share === "function") {
+      void navigator.share({ title: "Meal plan", text: "Open this meal plan", url })
+        .then(() => setShareState({ message: "Share link opened", shareKey }))
+        .catch((error) => {
+          if (isAbortError(error)) {
+            setShareState({ message: "Share canceled", shareKey });
+            return;
+          }
+
+          copyShareLinkToClipboard(url, shareKey, showManualShareRecovery);
+        });
+      return;
+    }
+
+    copyShareLinkToClipboard(url, shareKey, showManualShareRecovery);
+  }
+
+  function copyShareLinkToClipboard(url: string, shareKey: string, showManualShareRecovery: () => void) {
     if (typeof navigator.clipboard?.writeText !== "function") {
       showManualShareRecovery();
       return;
@@ -883,7 +902,7 @@ function App() {
     setMealTargets({});
     setOptionsOpen(false);
     setShareState(undefined);
-    setShowGoogleDocsManualCopy(false);
+    setManualShareText("");
     setGenerationBlockers([]);
     setIsPlanStale(false);
     setMealToolMessages({});
@@ -902,40 +921,68 @@ function App() {
     setShareState({ message: "CSV downloaded" });
   }
 
-  function exportExcel() {
+  function exportSpreadsheet() {
     if (!plan) return;
     downloadTextFile(exportFilename("xls"), "application/vnd.ms-excel;charset=utf-8", planExportExcelHtml(plan));
-    setShareState({ message: "Excel file downloaded" });
+    setManualShareText("");
+    setShareState({ message: "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets." });
   }
 
-  async function copyForGoogleDocs() {
+  async function sharePlanText() {
     if (!plan) return;
-    const plainText = planExportTsv(plan);
-    const html = planExportHtmlTable(plan);
-    const showManualGoogleDocsCopy = () => {
-      setShowGoogleDocsManualCopy(true);
-      setShareState(undefined);
-    };
+    const text = planShareText(plan);
+    setManualShareText("");
 
     try {
-      if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([plainText], { type: "text/plain" }),
-          }),
-        ]);
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(plainText);
-      } else {
-        showManualGoogleDocsCopy();
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title: "Meal plan", text });
+        setShareState({ message: "Text share opened" });
         return;
       }
+    } catch (error) {
+      if (isAbortError(error)) {
+        setShareState({ message: "Text share canceled" });
+        return;
+      }
+    }
 
-      setShowGoogleDocsManualCopy(false);
-      setShareState({ message: "Copied for Google Docs" });
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setShareState({ message: "Text copied. Paste it into WhatsApp, Messages, or notes." });
+        return;
+      }
     } catch {
-      showManualGoogleDocsCopy();
+      // Manual recovery is shown below when clipboard access is unavailable or blocked.
+    }
+
+    setManualShareText(text);
+    setShareState(undefined);
+  }
+
+  async function sharePlanImage() {
+    if (!plan) return;
+    setManualShareText("");
+
+    try {
+      const file = await createPlanShareImageFile(plan);
+      if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ title: "Meal plan", text: "Meal plan image", files: [file] });
+          setShareState({ message: "Image share opened" });
+          return;
+        } catch (error) {
+          if (isAbortError(error)) {
+            setShareState({ message: "Image share canceled" });
+            return;
+          }
+        }
+      }
+
+      downloadBlob(file.name, file);
+      setShareState({ message: "Image downloaded. Attach it in WhatsApp or Messages." });
+    } catch {
+      setShareState({ message: "Image export failed. Use Share text instead." });
     }
   }
 
@@ -1211,24 +1258,26 @@ function App() {
           <details className="export-drawer">
             <summary>
               <span className="summary-label"><Icon name="export" />Export</span>
-              <span className="drawer-summary">CSV · Excel · Google Docs</span>
+              <span className="drawer-summary">Share · Image · Spreadsheet</span>
             </summary>
             <div className="export-actions" aria-label="Export meal plan">
+              <button className="with-icon" type="button" onClick={() => void sharePlanText()}><Icon name="share" />Share text</button>
+              <button className="with-icon" type="button" onClick={() => void sharePlanImage()}><Icon name="image" />Share image</button>
+              <button className="with-icon" type="button" onClick={exportSpreadsheet}><Icon name="export" />Spreadsheet</button>
               <button className="with-icon" type="button" onClick={exportCsv}><Icon name="download" />CSV</button>
-              <button className="with-icon" type="button" onClick={exportExcel}><Icon name="export" />Excel</button>
-              <button className="with-icon" type="button" onClick={() => void copyForGoogleDocs()}><Icon name="copy" />Google Docs</button>
             </div>
-            {googleDocsManualCopyText && (
-              <div className="google-docs-recovery">
+            <p className="export-helper">Spreadsheet is one file for Excel or Google Sheets. Share text/image uses the phone share sheet when available.</p>
+            {manualShareText && (
+              <div className="manual-share-recovery">
                 <p role="status">
-                  <strong>Copy blocked.</strong> Select this table text, copy it, then paste it into Google Docs.
+                  <strong>Share blocked.</strong> Select this text, copy it, then paste it into WhatsApp or Messages.
                 </p>
-                <label className="google-docs-copy-field">
-                  <span>Google Docs table text</span>
+                <label className="manual-share-copy-field">
+                  <span>Share text</span>
                   <textarea
                     readOnly
                     rows={8}
-                    value={googleDocsManualCopyText}
+                    value={manualShareText}
                     onFocus={(event) => event.currentTarget.select()}
                   />
                 </label>
@@ -1736,6 +1785,7 @@ const iconMap = {
   fish: Fish,
   food: ForkKnife,
   fruit: Orange,
+  image: FileImage,
   install: DeviceMobile,
   leaf: Leaf,
   lock: Lock,
@@ -2027,13 +2077,17 @@ function statusIcon(status: BoundEvaluation["status"] | "unknown"): IconName {
   return "alert";
 }
 
-function exportFilename(extension: "csv" | "xls") {
+function exportFilename(extension: "csv" | "xls" | "png") {
   const date = new Date().toISOString().slice(0, 10);
   return `meal-plan-${date}.${extension}`;
 }
 
 function downloadTextFile(filename: string, type: string, contents: string) {
   const blob = new Blob([contents], { type });
+  downloadBlob(filename, blob);
+}
+
+function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -2042,6 +2096,80 @@ function downloadTextFile(filename: string, type: string, contents: string) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+async function createPlanShareImageFile(plan: DailyPlan) {
+  const lines = planShareText(plan).split("\n");
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas is unavailable.");
+  }
+
+  const width = 1080;
+  const padding = 64;
+  const lineHeight = 38;
+  const mealGap = 14;
+  const height = Math.max(760, padding * 2 + 128 + (lines.length * lineHeight) + (plan.meals.length * mealGap));
+  canvas.width = width;
+  canvas.height = height;
+
+  context.fillStyle = "#141414";
+  context.fillRect(0, 0, width, height);
+  context.fillStyle = "#1c1915";
+  context.fillRect(32, 32, width - 64, height - 64);
+  context.strokeStyle = "rgba(225, 189, 99, 0.48)";
+  context.lineWidth = 3;
+  context.strokeRect(32, 32, width - 64, height - 64);
+
+  context.fillStyle = "#f8f1e4";
+  context.font = '700 56px "DM Sans", system-ui, sans-serif';
+  context.fillText("Meal plan", padding, 118);
+  context.fillStyle = "#e1bd63";
+  context.font = '700 34px "DM Sans", system-ui, sans-serif';
+  context.fillText(plan.displayName, padding, 172);
+
+  let y = 240;
+  for (const line of lines.slice(1)) {
+    if (line === "") {
+      y += mealGap;
+      continue;
+    }
+
+    const isMealHeading = plan.meals.some((meal) => meal.displayName === line);
+    const isTotal = line.startsWith("Daily total:") || line.startsWith("Meal total:");
+    context.fillStyle = isMealHeading ? "#f8f1e4" : isTotal ? "#e1bd63" : "#cfc5b6";
+    context.font = isMealHeading || isTotal
+      ? '700 30px "DM Sans", system-ui, sans-serif'
+      : '500 27px "DM Sans", system-ui, sans-serif';
+    context.fillText(ellipsizeCanvasText(context, line, width - (padding * 2)), padding, y);
+    y += lineHeight;
+  }
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((result) => {
+      if (result) {
+        resolve(result);
+      } else {
+        reject(new Error("Image export failed."));
+      }
+    }, "image/png");
+  });
+
+  return new File([blob], exportFilename("png"), { type: "image/png" });
+}
+
+function ellipsizeCanvasText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  if (context.measureText(text).width <= maxWidth) return text;
+  let truncated = text;
+  while (truncated.length > 1 && context.measureText(`${truncated}...`).width > maxWidth) {
+    truncated = truncated.slice(0, -1);
+  }
+  return `${truncated}...`;
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }
 
 function amountStep(item: DailyPlanItem, unit: string) {

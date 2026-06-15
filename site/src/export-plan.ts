@@ -46,6 +46,30 @@ export function planExportTsv(plan: DailyPlan) {
   return tableRows(plan).map((row) => row.join("\t")).join("\n");
 }
 
+export function planShareText(plan: DailyPlan) {
+  const totals = calculateDailyPlanTotals(plan).values;
+  const lines = [
+    plan.displayName,
+    `Daily total: ${formatNumber(totals.calories)} kcal · ${formatNumber(totals.protein)}gm protein`,
+    "",
+  ];
+
+  for (const meal of plan.meals) {
+    const mealTotals = calculateMealTotals(meal).values;
+    lines.push(meal.displayName);
+
+    for (const item of meal.items) {
+      const amount = planItemAmount(item);
+      const nutrition = calculateDailyPlanItemNutrition(item);
+      lines.push(`- ${planItemLabel(item)}: ${formatNumber(amount.amount)}${amount.unit} · ${formatNumber(nutrition.calories)} kcal · ${formatNumber(nutrition.protein)}gm protein`);
+    }
+
+    lines.push(`Meal total: ${formatNumber(mealTotals.calories)} kcal · ${formatNumber(mealTotals.protein)}gm protein`, "");
+  }
+
+  return lines.join("\n").trim();
+}
+
 export function planExportHtmlTable(plan: DailyPlan) {
   const rows = tableRows(plan);
   const [header, ...body] = rows;

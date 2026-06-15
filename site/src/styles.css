@@ -1269,16 +1269,23 @@ fieldset {
 
 .export-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-xs);
-  padding: 0 0 var(--space-md);
+  padding: 0 0 var(--space-xs);
 }
 
 .export-actions button {
   width: 100%;
 }
 
-.google-docs-recovery {
+.export-helper {
+  margin: 0 0 var(--space-md);
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.manual-share-recovery {
   display: grid;
   gap: var(--space-sm);
   margin: 0 0 var(--space-md);
@@ -1290,20 +1297,20 @@ fieldset {
   line-height: 1.45;
 }
 
-.google-docs-recovery p {
+.manual-share-recovery p {
   margin: 0;
 }
 
-.google-docs-recovery strong {
+.manual-share-recovery strong {
   color: var(--ink);
 }
 
-.google-docs-copy-field {
+.manual-share-copy-field {
   display: grid;
   gap: 6px;
 }
 
-.google-docs-copy-field span {
+.manual-share-copy-field span {
   color: var(--ink);
   font-size: 0.78rem;
   font-weight: 600;
@@ -1311,7 +1318,7 @@ fieldset {
   text-transform: uppercase;
 }
 
-.google-docs-copy-field textarea {
+.manual-share-copy-field textarea {
   width: 100%;
   min-height: 176px;
   resize: vertical;

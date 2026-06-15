@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DailyPlan } from "../src/index.js";
-import { planExportCsv, planExportExcelHtml, planExportTsv } from "../site/src/export-plan.js";
+import { planExportCsv, planExportExcelHtml, planExportTsv, planShareText } from "../site/src/export-plan.js";
 
 describe("plan export formatting", () => {
   const plan: DailyPlan = {
@@ -52,5 +52,15 @@ describe("plan export formatting", () => {
     expect(workbook).toContain("urn:schemas-microsoft-com:office:excel");
     expect(workbook).toContain("<table>");
     expect(workbook).toContain("A &quot;quoted&quot; plan");
+  });
+
+  it("exports phone-friendly share text", () => {
+    const text = planShareText(plan);
+
+    expect(text).toContain("A \"quoted\" plan");
+    expect(text).toContain("Daily total:");
+    expect(text).toContain("Breakfast, hot");
+    expect(text).toContain("- Nuts: 15gm");
+    expect(text).toContain("Meal total:");
   });
 });
