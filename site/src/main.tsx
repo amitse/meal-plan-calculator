@@ -733,7 +733,8 @@ function App() {
             <div className="quick-start-row">
               {quickStartPresets.map((preset) => (
                 <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
-                  {preset.label}
+                  <span className="quick-start-label">{preset.label}</span>
+                  <span className="quick-start-preview">{quickStartPresetPreview(preset.form)}</span>
                 </button>
               ))}
             </div>
@@ -1022,6 +1023,32 @@ function macroDrawerSummary(form: EditableFormState) {
   return activeMacros > 0 ? `${activeMacros} macro limit${activeMacros === 1 ? "" : "s"}` : "No macro limits";
 }
 
+function quickStartPresetPreview(form: EditableFormState) {
+  return [
+    `${form.calories} kcal`,
+    `${form.protein}gm protein`,
+    dietLabel(form.dietaryLevel),
+    quickStartFoodCue(form),
+  ].filter((label): label is string => Boolean(label)).join(" · ");
+}
+
+function dietLabel(level: DietaryLevel) {
+  return dietOptions.find((option) => option.level === level)?.label ?? level;
+}
+
+function quickStartFoodCue(form: EditableFormState) {
+  const grainIds = grainOptions.map((option) => option.id);
+  const selectedGrainIds = selectedOptionIds(form.preferredGrains, grainIds);
+  const visibleProteinOptions = proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel));
+  const selectedProteinIds = selectedOptionIds(form.preferredProteins, visibleProteinOptions.map((option) => option.id));
+  const cues = [
+    isAutomaticOptionSet(selectedGrainIds, grainIds) ? undefined : selectedOptionLabels(selectedGrainIds, grainOptions),
+    selectedOptionLabels(selectedProteinIds, visibleProteinOptions),
+  ].filter((label): label is string => Boolean(label));
+
+  return cues.length > 0 ? cues.join(" + ") : undefined;
+}
+
 function activeFoodCustomizationLabels(form: EditableFormState) {
   return [
     narrowedGrainPreferenceLabel(form),
@@ -1046,11 +1073,26 @@ function narrowedProteinPreferenceLabel(form: EditableFormState) {
 }
 
 function selectedOptionSummary(selectedIds: string[], options: { id: string; label: string }[]) {
-  const selectedLabels = options
-    .filter((option) => selectedIds.includes(option.id))
-    .map((option) => option.label);
+  const selectedLabels = selectedOptionLabelList(selectedIds, options);
 
   return selectedLabels.length === 1 ? selectedLabels[0] : `${selectedLabels.length} choices`;
+}
+
+function selectedOptionLabels(selectedIds: string[], options: { id: string; label: string }[]) {
+  const selectedLabels = selectedOptionLabelList(selectedIds, options);
+
+  if (selectedLabels.length === 0) return undefined;
+  if (selectedLabels.length === 1) return selectedLabels[0];
+  if (selectedLabels.length === 2) return selectedLabels.join(" + ");
+  return selectedLabels.join(", ");
+}
+
+function selectedOptionLabelList(selectedIds: string[], options: { id: string; label: string }[]) {
+  const selected = new Set(selectedIds);
+
+  return options
+    .filter((option) => selected.has(option.id))
+    .map((option) => option.label);
 }
 
 function selectedOptionIds(values: string[], allowedValues: string[]) {
