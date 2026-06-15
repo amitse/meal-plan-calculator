@@ -394,6 +394,7 @@ small {
 .meal-targets button,
 .randomize-feedback button,
 .randomize-feedback-inline button,
+.meal-delete-undo button,
 .undo-delete-state button,
 .item-actions button {
   min-height: 44px;
@@ -416,6 +417,7 @@ small {
 .meal-targets button:hover,
 .randomize-feedback button:hover,
 .randomize-feedback-inline button:hover,
+.meal-delete-undo button:hover,
 .undo-delete-state button:hover,
 .item-actions button:hover {
   border-color: var(--muted);
@@ -429,6 +431,7 @@ small {
 .meal-targets button:active,
 .randomize-feedback button:active,
 .randomize-feedback-inline button:active,
+.meal-delete-undo button:active,
 .undo-delete-state button:active,
 .item-actions button:active {
   transform: translateY(1px) scale(0.99);
@@ -1803,6 +1806,40 @@ fieldset {
   color: var(--success);
   font-size: 0.88rem;
   line-height: 1.4;
+}
+
+.meal-delete-undo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-sm);
+  margin: var(--space-sm) var(--space-sm) 0;
+  padding: 10px var(--space-sm);
+  border: 1px solid rgba(223, 138, 120, 0.48);
+  border-radius: var(--control-radius);
+  background: rgba(223, 138, 120, 0.1);
+  color: var(--body);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.meal-delete-undo p {
+  min-width: 0;
+  margin: 0;
+}
+
+.meal-delete-undo strong {
+  color: var(--ink);
+}
+
+.meal-delete-undo button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  border-color: rgba(223, 138, 120, 0.62);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .meal-items {

@@ -1583,6 +1583,18 @@ function App() {
                     {addedFeedback.message}
                   </p>
                 )}
+                {mealUndo && (
+                  <div className="meal-delete-undo" role="status" aria-live="polite">
+                    <p><strong>{mealUndo.label}</strong> removed from {meal.displayName}.</p>
+                    <button
+                      type="button"
+                      onClick={undoDeletedItem}
+                      aria-label={`Undo removing ${mealUndo.label} from ${meal.displayName}`}
+                    >
+                      Undo
+                    </button>
+                  </div>
+                )}
                 <div className="meal-items">
                   {meal.items.length > 0 ? (
                     meal.items.map((item, index) => (
