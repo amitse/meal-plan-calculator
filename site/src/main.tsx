@@ -345,6 +345,7 @@ function App() {
   const [dietRuleNotice, setDietRuleNotice] = useState("");
   const [pendingQuickStartPreset, setPendingQuickStartPreset] = useState<QuickStartPreset | undefined>();
   const resultRef = useRef<HTMLElement>(null);
+  const exportDrawerRef = useRef<HTMLDetailsElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
   const calorieInputRef = useRef<HTMLInputElement>(null);
   const quickStartConfirmDialogRef = useRef<HTMLDialogElement>(null);
@@ -1023,6 +1024,20 @@ function App() {
     setShareState({ message: "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets." });
   }
 
+  function openExportDrawer() {
+    const exportDrawer = exportDrawerRef.current;
+    if (!exportDrawer) return;
+
+    exportDrawer.open = true;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    exportDrawer.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+
+    const firstExportAction = exportDrawer.querySelector(".export-actions button");
+    if (firstExportAction instanceof HTMLButtonElement) {
+      firstExportAction.focus({ preventScroll: true });
+    }
+  }
+
   async function sharePlanText() {
     if (!plan) return;
     const text = planShareText(plan, exportOptions());
@@ -1422,7 +1437,7 @@ function App() {
               </button>
             </div>
           )}
-          <details className="export-drawer">
+          <details className="export-drawer" ref={exportDrawerRef}>
             <summary>
               <span className="summary-label"><Icon name="export" />Export</span>
               <span className="drawer-summary">Share · Image · Spreadsheet</span>
@@ -1666,6 +1681,7 @@ function App() {
           <nav className="bottom-action result-action-bar" aria-label="Plan actions">
             {shareState?.stale && <p className="share-action-status" role="status">{shareState.message}</p>}
             <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
+            <button className="plan-action-button with-icon" type="button" onClick={openExportDrawer}><Icon name="export" />Export</button>
             <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
             <button className="primary-action with-icon" type="button" onClick={share}><Icon name="share" />Share</button>
           </nav>
