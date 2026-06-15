@@ -514,6 +514,7 @@ export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number
 export type ServingAmountInputResult =
   | { status: "valid"; amount: number }
   | { status: "empty" }
+  | { status: "zero" }
   | { status: "invalid" };
 
 export function parseServingAmountInput(value: string): ServingAmountInputResult {
@@ -527,6 +528,10 @@ export function parseServingAmountInput(value: string): ServingAmountInputResult
 
   if (!Number.isFinite(amount) || amount < 0) {
     return { status: "invalid" };
+  }
+
+  if (amount === 0) {
+    return { status: "zero" };
   }
 
   return { status: "valid", amount };

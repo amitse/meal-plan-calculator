@@ -3186,18 +3186,24 @@ function PlanItemRow({
   function updateServingDraft(value: string) {
     const parsed = parseServingAmountInput(value);
 
-    setServingDraft(value);
-
     if (parsed.status === "empty") {
+      setServingDraft(value);
       setServingValidationMessage("Enter a serving amount before totals update.");
       return;
     }
 
     if (parsed.status === "invalid") {
+      setServingDraft(value);
       setServingValidationMessage("Use a valid serving amount before totals update.");
       return;
     }
 
+    if (parsed.status === "zero") {
+      setServingValidationMessage("0gm is not a meaningful serving. Last amount kept; use Delete to remove this food, then Undo if needed.");
+      return;
+    }
+
+    setServingDraft(value);
     setServingValidationMessage("");
     onAmount(parsed.amount);
   }
