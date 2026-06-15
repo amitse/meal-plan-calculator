@@ -329,6 +329,7 @@ function App() {
   const [isInstalledView, setIsInstalledView] = useState(() => isStandaloneApp());
   const [isGenerating, setIsGenerating] = useState(false);
   const [calorieInputError, setCalorieInputError] = useState("");
+  const [dietRuleNotice, setDietRuleNotice] = useState("");
   const resultRef = useRef<HTMLElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
   const calorieInputRef = useRef<HTMLInputElement>(null);
@@ -451,6 +452,9 @@ function App() {
     setSwapConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
+    if (isFoodCustomizationField(key)) {
+      setDietRuleNotice("");
+    }
     markPlanStale();
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -471,6 +475,7 @@ function App() {
       setIsPlanStale(false);
       setPlan(result.plan);
       setActiveView("plan");
+      setDietRuleNotice("");
       return true;
     } else {
       setGenerationBlockers(result.blockers);
@@ -573,13 +578,9 @@ function App() {
     setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
-    setForm((current) => ({
-      ...current,
-      dietaryLevel: level,
-      preferredProteins: visibleProteinPreferences(current.preferredProteins, level),
-      avoidEggs: level === "vegetarian",
-      avoidChickenFish: level !== "nonVegetarian",
-    }));
+    const nextForm = applyDietaryLevel(form, level);
+    setDietRuleNotice(dietRuleChangeNotice(form, nextForm));
+    setForm(nextForm);
   }
 
   function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
@@ -588,6 +589,7 @@ function App() {
     setSwapConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
+    setDietRuleNotice("");
     markPlanStale();
     setForm((current) => {
       const next = checked
@@ -1036,7 +1038,7 @@ function App() {
             </label>
           </div>
 
-          <fieldset className="segmented diet-segments" aria-describedby="diet-helper">
+          <fieldset className="segmented diet-segments" aria-describedby={dietRuleNotice ? "diet-helper diet-rule-notice" : "diet-helper"}>
             <legend>Diet</legend>
             {dietOptions.map((option) => (
               <label key={option.level}>
@@ -1050,6 +1052,7 @@ function App() {
               </label>
             ))}
             <p id="diet-helper" className="helper diet-helper">{dietDescriptions[form.dietaryLevel]}</p>
+            {dietRuleNotice && <p id="diet-rule-notice" className="diet-rule-notice" role="status">{dietRuleNotice}</p>}
           </fieldset>
 
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
@@ -1883,6 +1886,69 @@ function formatFoodRuleConflictList(labels: string[]) {
   if (labels.length <= 1) return labels[0] ?? "";
   if (labels.length === 2) return labels.join(" and ");
   return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
+}
+
+function applyDietaryLevel(form: EditableFormState, dietaryLevel: DietaryLevel): EditableFormState {
+  return {
+    ...form,
+    dietaryLevel,
+    preferredProteins: visibleProteinPreferences(form.preferredProteins, dietaryLevel),
+    avoidEggs: dietaryLevel === "vegetarian",
+    avoidChickenFish: dietaryLevel !== "nonVegetarian",
+  };
+}
+
+function dietRuleChangeNotice(previous: EditableFormState, next: EditableFormState) {
+  const changes = [
+    proteinPreferenceChangeNotice(previous, next),
+    avoidRuleChangeNotice("eggs", previous.avoidEggs, next.avoidEggs),
+    avoidRuleChangeNotice("chicken/fish", previous.avoidChickenFish, next.avoidChickenFish),
+  ].filter((change): change is string => Boolean(change));
+
+  return changes.length > 0 ? `Diet updated for ${dietLabel(next.dietaryLevel)}: ${changes.join("; ")}.` : "";
+}
+
+function proteinPreferenceChangeNotice(previous: EditableFormState, next: EditableFormState) {
+  if (areSameStringValues(previous.preferredProteins, next.preferredProteins)) {
+    return undefined;
+  }
+
+  const removedProteinLikes = previous.preferredProteins.filter((optionId) => !next.preferredProteins.includes(optionId));
+  const hiddenRemovedLikes = removedProteinLikes.filter((optionId) => !isProteinVisible(optionId, next.dietaryLevel));
+  if (hiddenRemovedLikes.length > 0) {
+    return `${formatFoodRuleConflictList(foodRuleProteinLabels(hiddenRemovedLikes))} removed from protein likes`;
+  }
+
+  return `protein likes set to ${formatFoodRuleConflictList(foodRuleProteinLabels(next.preferredProteins))}`;
+}
+
+function avoidRuleChangeNotice(label: string, previous: boolean, next: boolean) {
+  if (previous === next) {
+    return undefined;
+  }
+
+  return `${label} ${next ? "set to Leave out" : "allowed"}`;
+}
+
+function foodRuleProteinLabels(optionIds: string[]) {
+  return optionIds.map((optionId) => {
+    if (optionId === "two-whole-eggs") return "eggs";
+    if (optionId === "chicken-fish-100g") return "chicken/fish";
+    return proteinOptions.find((option) => option.id === optionId)?.label.toLocaleLowerCase() ?? optionId;
+  });
+}
+
+function areSameStringValues(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function isFoodCustomizationField(key: keyof EditableFormState) {
+  return key === "preferredGrains"
+    || key === "preferredProteins"
+    || key === "avoidPaneer"
+    || key === "avoidWhey"
+    || key === "avoidEggs"
+    || key === "avoidChickenFish";
 }
 
 function activeMacroCount(form: EditableFormState) {

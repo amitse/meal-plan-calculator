@@ -1097,7 +1097,8 @@ fieldset {
 }
 
 .diet-segments legend,
-.diet-helper {
+.diet-helper,
+.diet-rule-notice {
   grid-column: 1 / -1;
 }
 
@@ -1121,6 +1122,18 @@ fieldset {
 
 .diet-helper {
   margin: 0;
+  line-height: 1.35;
+}
+
+.diet-rule-notice {
+  margin: 0;
+  border: 1px solid rgba(225, 189, 99, 0.42);
+  border-radius: var(--control-radius);
+  background: rgba(225, 189, 99, 0.1);
+  color: var(--body);
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
   line-height: 1.35;
 }
 
