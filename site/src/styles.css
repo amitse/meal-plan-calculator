@@ -601,9 +601,14 @@ small {
   line-height: 1.45;
 }
 
+.current-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
 .current-plan-return button {
   min-height: var(--size-42);
-  justify-self: start;
   border: var(--size-px) solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface-strong);
@@ -2066,6 +2071,26 @@ fieldset {
   color: var(--body);
   font-size: 0.88rem;
   line-height: 1.4;
+}
+
+.meal-collapse-cue {
+  margin: var(--space-xs) 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.meal-list-toolbar {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.meal-list-toolbar .secondary-action {
+  justify-self: start;
+  width: auto;
+  padding-inline: var(--space-md);
 }
 
 .meal-card {

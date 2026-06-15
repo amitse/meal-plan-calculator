@@ -158,6 +158,7 @@ type AddedMealFeedback = {
   mealId: string;
   message: string;
 };
+type AddMealBlockerLocation = "before-list" | "after-list";
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -302,7 +303,11 @@ const quickStartPresets: QuickStartPreset[] = [
 const staleShareMessage = "Plan changed - share again for an updated link.";
 const staleShareBlockedMessage = "Regenerate before sharing updated targets.";
 const staleExportBlockedMessage = "Regenerate before exporting updated targets.";
-const generationProgressMessage = "Generating plan...";
+const generationProgressMessages = [
+  "Checking diet and food rules...",
+  "Building plate roles...",
+  "Balancing calories and protein...",
+] as const;
 const googleTranslateElementId = "google_translate_element";
 const googleTranslateScriptId = "google-translate-script";
 const googleTranslateCookieName = "googtrans";
@@ -446,11 +451,13 @@ function App() {
   const [deletedItemUndo, setDeletedItemUndo] = useState<DeletedItemUndo | undefined>();
   const [addedMealFeedback, setAddedMealFeedback] = useState<AddedMealFeedback | undefined>();
   const [addMealBlocker, setAddMealBlocker] = useState("");
+  const [addMealBlockerLocation, setAddMealBlockerLocation] = useState<AddMealBlockerLocation>("after-list");
   const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set());
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(() => isStandaloneApp());
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgressStep, setGenerationProgressStep] = useState(0);
   const [calorieInputError, setCalorieInputError] = useState("");
   const [dietRuleNotice, setDietRuleNotice] = useState("");
   const [pendingQuickStartPreset, setPendingQuickStartPreset] = useState<QuickStartPreset | undefined>();
@@ -479,7 +486,9 @@ function App() {
   const unusedFoodPreferences = useMemo(() => (plan ? unusedFoodPreferenceLabels(plan, form) : []), [form, plan]);
   const proteinTarget = Number(form.protein || 0);
   const proteinTargetSummary = proteinTarget > 0 ? `${Math.round(proteinTarget)} gm` : "Not set";
+  const activeFoodRuleLabels = activeFoodCustomizationChipLabels(form);
   const activeMacroRuleLabels = activeMacroLabels(form);
+  const activeCustomizationRuleLabels = [...activeFoodRuleLabels, ...activeMacroRuleLabels];
   const activeMacroRuleCount = activeMacroRuleLabels.length;
   const incompleteMacroRuleLabels = incompleteMacroLabels(form);
   const incompleteMacroRuleCount = incompleteMacroRuleLabels.length;
@@ -513,6 +522,7 @@ function App() {
   const topShareState = shareState && !shareActionFeedback ? shareState : undefined;
   const hasResultActionStatus = Boolean(activeView === "plan" && (isPlanStale || planRandomizeFeedback || shareActionFeedback));
   const exportActionDescriptionId = isPlanStale ? exportStaleNoticeId : undefined;
+  const generationProgressMessage = generationProgressMessages[generationProgressStep] ?? generationProgressMessages[0];
   const resolvedTheme = resolveTheme(themePreference, systemTheme);
 
   useEffect(() => {
@@ -734,13 +744,18 @@ function App() {
 
     generationInFlight.current = true;
     setIsGenerating(true);
+    setGenerationProgressStep(0);
 
     try {
-      await waitForGenerationProgressFrame();
+      for (let index = 0; index < generationProgressMessages.length; index += 1) {
+        setGenerationProgressStep(index);
+        await waitForGenerationProgressFrame();
+      }
       return generate(sourceForm, options);
     } finally {
       generationInFlight.current = false;
       setIsGenerating(false);
+      setGenerationProgressStep(0);
     }
   }
 
@@ -1061,7 +1076,7 @@ function App() {
     setPlan(next);
   }
 
-  function addEmptyMeal() {
+  function addEmptyMeal(location: AddMealBlockerLocation = "after-list") {
     if (!plan) return;
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
@@ -1071,6 +1086,7 @@ function App() {
     const next = addMeal(plan, form);
     if (next === plan) {
       setAddedMealFeedback(undefined);
+      setAddMealBlockerLocation(location);
       setAddMealBlocker("No protein matches your active diet and avoid rules. Relax food rules before adding a meal.");
       return;
     }
@@ -1329,7 +1345,7 @@ function App() {
       .catch(showManualShareRecovery);
   }
 
-  function startCleanPlanFromBrokenShare() {
+  function startFreshPlan() {
     const url = new URL(window.location.href);
     url.searchParams.delete("s");
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
@@ -1344,18 +1360,26 @@ function App() {
     setShowSharedPlanOrientation(false);
     setManualShareText("");
     setExportSheetStatus(undefined);
+    setExportSheetOpen(false);
+    setAdjustSheetOpen(false);
     setGenerationBlockers([]);
     setIsPlanStale(false);
     setGeneratedTargetConfirmation("");
     setMealToolMessages({});
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     setLockConfirmation(undefined);
     clearRandomizeFeedback();
     setDeletedItemUndo(undefined);
     setAddedMealFeedback(undefined);
     setAddMealBlocker("");
+    setPendingQuickStartPreset(undefined);
     setExpandedMealIds(new Set());
     setShareLoadFailed(false);
+  }
+
+  function startCleanPlanFromBrokenShare() {
+    startFreshPlan();
   }
 
   function exportCsv() {
@@ -1518,16 +1542,20 @@ function App() {
   function renderTargetControls(surface: "page" | "sheet") {
     return (
       <>
-        {surface === "page" && plan && (
+        {plan && (
           <div className="current-plan-return" role="status">
             <p>Current plan stays unchanged unless you regenerate.</p>
-            <button type="button" onClick={() => setActiveView("plan")}>Back to current plan</button>
+            <div className="current-plan-actions">
+              {surface === "page" && <button type="button" onClick={() => setActiveView("plan")}>Back to current plan</button>}
+              {surface === "sheet" && <button type="button" onClick={() => setAdjustSheetOpen(false)}>Back to plan</button>}
+              <button type="button" onClick={startFreshPlan}>Start new plan</button>
+            </div>
           </div>
         )}
 
         {surface === "page" && !plan && (
           <p className="first-plan-helper">
-            Calories are required. Protein and Customize are optional for the first Generate.
+            Start with daily calories. Protein and macros are optional; use Customize for diet, food preferences, and Leave out rules before Generate.
           </p>
         )}
 
@@ -1665,11 +1693,11 @@ function App() {
 
         </details>
 
-        {activeMacroRuleLabels.length > 0 && (
-          <div className="active-macro-rules" aria-label="Active macro rules">
-            <span>Macro rules</span>
+        {activeCustomizationRuleLabels.length > 0 && (
+          <div className="active-macro-rules active-customization-rules" aria-label="Active customization rules">
+            <span>Active settings</span>
             <ul>
-              {activeMacroRuleLabels.map((label) => <li key={label}>{label}</li>)}
+              {activeCustomizationRuleLabels.map((label) => <li key={label}>{label}</li>)}
             </ul>
           </div>
         )}
@@ -1891,6 +1919,11 @@ function App() {
             </div>
           )}
           <p className="meal-list-helper">Tap any meal to view foods, edit servings, swap options, or lock items.</p>
+          <p className="meal-collapse-cue" role="note">{mealReviewCue(plan, expandedMealIds)}</p>
+          <div className="meal-list-toolbar">
+            <button className="secondary-action with-icon" type="button" onClick={() => addEmptyMeal("before-list")}><Icon name="add" />Add meal</button>
+            {addMealBlocker && addMealBlockerLocation === "before-list" && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
+          </div>
           <div className="meal-list">
             {plan.meals.map((meal) => {
               const mealTotals = calculateMealTotals(meal);
@@ -2065,8 +2098,8 @@ function App() {
             );
             })}
           </div>
-          {addMealBlocker && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
-          <button className="secondary-action with-icon" type="button" onClick={addEmptyMeal}><Icon name="add" />Add meal</button>
+          {addMealBlocker && addMealBlockerLocation === "after-list" && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
+          <button className="secondary-action with-icon" type="button" onClick={() => addEmptyMeal("after-list")}><Icon name="add" />Add meal</button>
           {deletedItemUndo && (
             <div className="undo-delete-state" role="status">
               <p><strong>{deletedItemUndo.label}</strong> removed</p>
@@ -2288,6 +2321,35 @@ function mealItemGroupLabel(groupId: "grain" | "protein-serving" | "fruit") {
   if (groupId === "protein-serving") return "Protein";
   if (groupId === "grain") return "Grain";
   return "Fruit";
+}
+
+function mealReviewCue(plan: DailyPlan, expandedMealIds: Set<string>) {
+  const expandedMeals = plan.meals.filter((meal) => expandedMealIds.has(meal.id));
+  const collapsedCount = Math.max(0, plan.meals.length - expandedMeals.length);
+  const mealWord = collapsedCount === 1 ? "meal is" : "meals are";
+
+  if (expandedMeals.length === 0) {
+    return `${plan.meals.length} meals are collapsed below. Tap each meal to review foods and edits.`;
+  }
+
+  if (expandedMeals.length === 1) {
+    const expandedMeal = expandedMeals[0];
+    if (!expandedMeal) {
+      return `${plan.meals.length} meals are collapsed below. Tap each meal to review foods and edits.`;
+    }
+
+    if (collapsedCount === 0) {
+      return `${expandedMeal.displayName} is open. No other meals are collapsed.`;
+    }
+
+    return `${expandedMeal.displayName} is open; ${collapsedCount} more ${mealWord} collapsed below. Tap each meal to review foods and edits.`;
+  }
+
+  if (collapsedCount === 0) {
+    return `${expandedMeals.length} meals are open. No other meals are collapsed.`;
+  }
+
+  return `${expandedMeals.length} meals are open; ${collapsedCount} more ${mealWord} collapsed below. Tap each meal to review foods and edits.`;
 }
 
 function restoreDeletedItem(plan: DailyPlan, deletedItem: DeletedItemUndo): DailyPlan {
@@ -2737,6 +2799,31 @@ function activeFoodCustomizationLabels(form: EditableFormState) {
     narrowedProteinPreferenceLabel(form),
     ...avoidLabels(form).map((label) => `No ${label}`),
   ].filter((label): label is string => Boolean(label));
+}
+
+function activeFoodCustomizationChipLabels(form: EditableFormState) {
+  return [
+    ...preferredFoodChipLabels("preferredGrains", form.preferredGrains, grainOptions),
+    ...preferredFoodChipLabels(
+      "preferredProteins",
+      form.preferredProteins,
+      proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel)),
+    ),
+    ...avoidLabels(form).map((label) => `Avoid ${label}`),
+  ];
+}
+
+function preferredFoodChipLabels(
+  key: "preferredGrains" | "preferredProteins",
+  values: string[],
+  options: { id: string; label: string }[],
+) {
+  const optionIds = options.map((option) => option.id);
+  const selectedIds = selectedOptionIds(values, optionIds);
+  if (isAutomaticOptionSet(selectedIds, optionIds)) return [];
+
+  const prefix = key === "preferredGrains" ? "Prefer carb" : "Prefer protein";
+  return selectedOptionLabelList(selectedIds, options).map((label) => `${prefix}: ${label}`);
 }
 
 function emptyGrainPreferenceLabel(form: EditableFormState) {
