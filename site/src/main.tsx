@@ -384,6 +384,9 @@ function App() {
   const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
   const generationActionLabel = isGenerating ? "Generating..." : plan ? "Regenerate plan" : "Generate";
   const canUndoPlanRandomize = Boolean(randomizeUndo && !randomizeUndo.mealId);
+  const shareActionFeedback = shareState && (shareState.stale || shareState.shareKey || shareState.manualUrl) ? shareState : undefined;
+  const topShareState = shareState && !shareActionFeedback ? shareState : undefined;
+  const hasResultActionStatus = Boolean(activeView === "plan" && (planRandomizeFeedback || shareActionFeedback));
 
   useEffect(() => {
     if (plan && activeView === "plan") {
@@ -999,6 +1002,7 @@ function App() {
 
   function share() {
     if (isPlanStale) {
+      setExportSheetOpen(false);
       setShareState({ message: staleShareBlockedMessage, stale: true });
       return;
     }
@@ -1007,6 +1011,7 @@ function App() {
     const shareKey = currentShareKey;
     const url = shareUrlForState(state);
     window.history.replaceState(null, "", `?s=${shareKey}`);
+    setExportSheetOpen(false);
     setShowSharedPlanOrientation(false);
 
     const showManualShareRecovery = () => setShareState({
@@ -1182,7 +1187,7 @@ function App() {
   }
 
   return (
-    <main className={`app-shell${activeView === "plan" && planRandomizeFeedback ? " has-bottom-status" : ""}`}>
+    <main className={`app-shell${hasResultActionStatus ? " has-bottom-status" : ""}${shareActionFeedback?.manualUrl ? " has-share-recovery" : ""}`}>
       <header className="mobile-header">
         <h1>Meal plan</h1>
         <div className="header-actions">
@@ -1463,15 +1468,9 @@ function App() {
               )}
             </div>
           )}
-          {shareState && !shareState.stale && (
-            <div className={`share-state${shareState.manualUrl ? " manual-share" : ""}`} role="status">
-              <p>{shareState.message}</p>
-              {shareState.manualUrl && (
-                <label className="manual-share-link">
-                  <span>Share link</span>
-                  <input readOnly value={shareState.manualUrl} onFocus={(event) => event.currentTarget.select()} />
-                </label>
-              )}
+          {topShareState && (
+            <div className="share-state" role="status">
+              <p>{topShareState.message}</p>
             </div>
           )}
           {showSharedPlanOrientation && (
@@ -1728,7 +1727,22 @@ function App() {
             </div>
           )}
           <nav className="bottom-action result-action-bar" aria-label="Plan actions">
-            {shareState?.stale && <p className="share-action-status" role="status">{shareState.message}</p>}
+            {shareActionFeedback && (
+              <div
+                className={`share-action-status${shareActionFeedback.manualUrl ? " manual-share" : ""}${shareActionFeedback.stale ? " is-stale" : ""}`}
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <p>{shareActionFeedback.message}</p>
+                {shareActionFeedback.manualUrl && (
+                  <label className="manual-share-link">
+                    <span>Share link</span>
+                    <input readOnly value={shareActionFeedback.manualUrl} onFocus={(event) => event.currentTarget.select()} />
+                  </label>
+                )}
+              </div>
+            )}
             {planRandomizeFeedback && (
               <div
                 className={`randomize-action-status ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}${canUndoPlanRandomize ? " has-action" : ""}`}
