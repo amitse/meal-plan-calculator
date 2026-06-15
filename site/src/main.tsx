@@ -38,34 +38,26 @@ import { Warning } from "@phosphor-icons/react/Warning";
 import { X } from "@phosphor-icons/react/X";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react/lib";
 import {
-  calculateDailyPlanItemNutrition,
-  calculateMealTotals,
-  evaluateMealPattern,
-  getExchangeOption,
-  getFoodItem,
-  type DailyPlan,
-  type DailyPlanItem,
-  type BoundEvaluation,
-  type DietaryLevel,
-  type MealRole,
-  type NutritionMetric,
-  type PlanEvaluation,
-} from "../../src/index.js";
-import {
   addItemToMeal,
   addMeal,
+  applyDietaryLevel,
   buildNutritionInput,
+  calculateEditableMealTotals,
+  calculateEditablePlanItemNutrition,
   decodeShareState,
   encodeShareState,
+  dietRuleChangeNotice,
   exchangeOptionDisplayAmountLabel,
-  exchangeOptionGramAmount,
+  exchangeOptionDisplayName,
   exchangeOptionsForItem,
   failureRecoveryMessages,
   generateEditablePlan,
   generateEditablePlanResult,
   grainOptions,
   initialFormState,
+  isProteinVisible,
   mealTargetStatus,
+  mealRoleTags,
   normalizeEditableFormState,
   parseServingAmountInput,
   planItemDisplayAmountLabel,
@@ -77,12 +69,20 @@ import {
   randomizePlan,
   removePlanItem,
   shareUrlForState,
+  swapOptionPreviewNutrition,
   swapExchangeOption,
   updateItemAmount,
   unusedFoodPreferenceLabels,
+  type BoundEvaluation,
+  type DailyPlan,
+  type DailyPlanItem,
+  type DietaryLevel,
   type EditableFormState,
   type MacroField,
+  type MealRole,
   type MealMacroTarget,
+  type NutritionMetric,
+  type PlanEvaluation,
   type ShareablePlannerState,
 } from "./editable-planner.js";
 import { planExportCsv, planExportExcelHtml, planShareText, type PlanExportOptions } from "./export-plan.js";
@@ -1170,7 +1170,7 @@ export function App() {
     const item = meal?.items.find((candidate) => candidate.id === itemId);
     if (item?.kind === "exchange" && item.exchangeOptionId === optionId) return;
     const optionName = item?.kind === "exchange"
-      ? getExchangeOption(item.exchangeGroupId, optionId).displayName
+      ? exchangeOptionDisplayName(item.exchangeGroupId, optionId)
       : undefined;
 
     setDeletedItemUndo(undefined);
@@ -1306,7 +1306,7 @@ export function App() {
 
     const state = currentShareableState;
     const shareKey = currentShareKey;
-    const url = shareUrlForState(state);
+    const url = shareUrlForState(state, window.location.href);
     window.history.replaceState(null, "", `?s=${shareKey}`);
     setExportSheetOpen(false);
     setShowSharedPlanOrientation(false);
@@ -1926,7 +1926,7 @@ export function App() {
           </div>
           <div className="meal-list">
             {plan.meals.map((meal) => {
-              const mealTotals = calculateMealTotals(meal);
+              const mealTotals = calculateEditableMealTotals(meal);
               const status = mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {});
               const roleTags = mealRoleTags(meal);
               const lockedItemsInMeal = meal.items.filter((item) => item.id && lockedIds.has(item.id)).length;
@@ -2916,60 +2916,6 @@ function formatFoodRuleConflictList(labels: string[]) {
   return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
 }
 
-function applyDietaryLevel(form: EditableFormState, dietaryLevel: DietaryLevel): EditableFormState {
-  return {
-    ...form,
-    dietaryLevel,
-    preferredProteins: visibleProteinPreferences(form.preferredProteins, dietaryLevel),
-    avoidEggs: dietaryLevel === "vegetarian",
-    avoidChickenFish: dietaryLevel !== "nonVegetarian",
-  };
-}
-
-function dietRuleChangeNotice(previous: EditableFormState, next: EditableFormState) {
-  const changes = [
-    proteinPreferenceChangeNotice(previous, next),
-    avoidRuleChangeNotice("eggs", previous.avoidEggs, next.avoidEggs),
-    avoidRuleChangeNotice("chicken/fish", previous.avoidChickenFish, next.avoidChickenFish),
-  ].filter((change): change is string => Boolean(change));
-
-  return changes.length > 0 ? `Diet updated for ${dietLabel(next.dietaryLevel)}: ${changes.join("; ")}.` : "";
-}
-
-function proteinPreferenceChangeNotice(previous: EditableFormState, next: EditableFormState) {
-  if (areSameStringValues(previous.preferredProteins, next.preferredProteins)) {
-    return undefined;
-  }
-
-  const removedProteinLikes = previous.preferredProteins.filter((optionId) => !next.preferredProteins.includes(optionId));
-  const hiddenRemovedLikes = removedProteinLikes.filter((optionId) => !isProteinVisible(optionId, next.dietaryLevel));
-  if (hiddenRemovedLikes.length > 0) {
-    return `${formatFoodRuleConflictList(foodRuleProteinLabels(hiddenRemovedLikes))} removed from protein likes`;
-  }
-
-  return `protein likes set to ${formatFoodRuleConflictList(foodRuleProteinLabels(next.preferredProteins))}`;
-}
-
-function avoidRuleChangeNotice(label: string, previous: boolean, next: boolean) {
-  if (previous === next) {
-    return undefined;
-  }
-
-  return `${label} ${next ? "set to Leave out" : "allowed"}`;
-}
-
-function foodRuleProteinLabels(optionIds: string[]) {
-  return optionIds.map((optionId) => {
-    if (optionId === "two-whole-eggs") return "eggs";
-    if (optionId === "chicken-fish-100g") return "chicken/fish";
-    return proteinOptions.find((option) => option.id === optionId)?.label.toLocaleLowerCase() ?? optionId;
-  });
-}
-
-function areSameStringValues(left: string[], right: string[]) {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-
 function isFoodCustomizationField(key: keyof EditableFormState) {
   return key === "preferredGrains"
     || key === "preferredProteins"
@@ -3016,17 +2962,6 @@ function macroFieldEntries(form: EditableFormState) {
     { label: "Fiber", field: form.fiber },
     { label: "Saturated fat", field: form.saturatedFat },
   ];
-}
-
-function visibleProteinPreferences(preferredProteins: string[], dietaryLevel: DietaryLevel) {
-  const visible = preferredProteins.filter((optionId) => isProteinVisible(optionId, dietaryLevel));
-  if (visible.length > 0) {
-    return visible;
-  }
-
-  if (dietaryLevel === "vegetarian") return ["paneer-50g"];
-  if (dietaryLevel === "eggetarian") return ["two-whole-eggs"];
-  return ["chicken-fish-100g"];
 }
 
 function dietIcon(level: DietaryLevel): IconName {
@@ -3399,50 +3334,6 @@ function formatSwapNutritionImpact(
   return metric === "calories" ? `${signedDelta} kcal` : `${signedDelta}gm protein`;
 }
 
-type RoleTag = {
-  role: MealRole;
-  label: string;
-  present: boolean;
-};
-
-const mealRoleDisplayNames: Record<MealRole, string> = {
-  cookingFat: "Cooking fat",
-  carb: "Carb",
-  protein: "Protein",
-  vegetables: "Vegetables",
-  fruit: "Fruit",
-  dairy: "Dairy",
-  snack: "Snack",
-};
-
-const mealRoleOrder: readonly MealRole[] = ["cookingFat", "carb", "protein", "vegetables", "fruit", "dairy", "snack"];
-
-function mealRoleTags(meal: DailyPlan["meals"][number]): RoleTag[] {
-  const pattern = evaluateMealPattern(meal);
-  const presentRoles = orderedMealRoles(meal.items.flatMap((item) => item.roles ?? []));
-
-  if (!pattern) {
-    return presentRoles.map((role) => ({ role, label: mealRoleDisplayNames[role], present: true }));
-  }
-
-  const expectedRoles = new Set(pattern.roles.map((item) => item.role));
-  const expectedTags = pattern.roles.map((item) => ({
-    role: item.role,
-    label: mealRoleDisplayNames[item.role],
-    present: item.present,
-  }));
-  const extraTags = presentRoles
-    .filter((role) => !expectedRoles.has(role))
-    .map((role) => ({ role, label: mealRoleDisplayNames[role], present: true }));
-
-  return [...expectedTags, ...extraTags];
-}
-
-function orderedMealRoles(roles: MealRole[]): MealRole[] {
-  const present = new Set(roles);
-  return mealRoleOrder.filter((role) => present.has(role));
-}
-
 const metricDisplayNames: Record<NutritionMetric, string> = {
   calories: "Calories",
   protein: "Protein",
@@ -3459,19 +3350,6 @@ const statusDisplayNames: Record<BoundEvaluation["status"] | "unknown", string> 
   fail: "Fail",
   unknown: "Unknown",
 };
-
-function swapOptionPreviewNutrition(item: Extract<DailyPlanItem, { kind: "exchange" }>, optionId: string) {
-  const currentOption = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
-  const currentUnits = item.exchangeUnits ?? currentOption.exchangeUnits ?? 1;
-  const servingAmount = exchangeOptionGramAmount(item.exchangeGroupId, item.exchangeOptionId) * currentUnits;
-  const optionServingAmount = exchangeOptionGramAmount(item.exchangeGroupId, optionId);
-
-  return calculateDailyPlanItemNutrition({
-    ...item,
-    exchangeOptionId: optionId,
-    exchangeUnits: optionServingAmount > 0 ? servingAmount / optionServingAmount : 0,
-  });
-}
 
 function PlanItemRow({
   form,
@@ -3507,7 +3385,7 @@ function PlanItemRow({
   const label = planItemLabel(item);
   const quantity = planItemDisplayQuantity(item);
   const quantityUnitLabel = planItemDisplayUnitLabel(item, quantity.amount);
-  const nutrition = calculateDailyPlanItemNutrition(item);
+  const nutrition = calculateEditablePlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, form, mealId);
   const hasSelectableSwapAlternative = item.kind === "exchange"
     ? exchangeOptions.some((option) => option.id !== item.exchangeOptionId)
@@ -3732,12 +3610,6 @@ function loadStateFromUrl(): LoadedUrlState {
 
   const state = decodeShareState(searchParams.get("s") ?? "");
   return { state, shareLoadFailed: !state };
-}
-
-function isProteinVisible(optionId: string, dietaryLevel: DietaryLevel) {
-  if (dietaryLevel === "vegetarian") return optionId !== "two-whole-eggs" && optionId !== "chicken-fish-100g";
-  if (dietaryLevel === "eggetarian") return optionId !== "chicken-fish-100g";
-  return true;
 }
 
 function isStandaloneApp() {

@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { DailyPlan } from "../../src/index.js";
 import { App } from "./main.js";
 import {
   encodeShareState,
   generateEditablePlan,
   initialFormState,
+  type DailyPlan,
   type EditableFormState,
   type ShareablePlannerState,
 } from "./editable-planner.js";

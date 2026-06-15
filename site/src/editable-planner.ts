@@ -1,11 +1,14 @@
 import {
+  calculateDailyPlanItemNutrition,
   calculateMealTotals,
   createNutritionTarget,
   evaluateDailyPlan,
+  evaluateMealPattern,
   generateDailyPlans,
   getExchangeGroup,
   getExchangeOption,
   getFoodItem,
+  type BoundEvaluation,
   type DailyPlan,
   type DailyPlanItem,
   type DailyPlanTemplate,
@@ -13,10 +16,23 @@ import {
   type DietaryLevel,
   type FoodPreference,
   type GenerateMealPlanInput,
+  type MealRole,
+  type NutritionFacts,
   type NutritionMetric,
   type NutritionTarget,
   type PlanEvaluation,
   type QuantityUnit,
+} from "../../src/index.js";
+
+export type {
+  BoundEvaluation,
+  DailyPlan,
+  DailyPlanItem,
+  DietaryLevel,
+  MealRole,
+  NutritionFacts,
+  NutritionMetric,
+  PlanEvaluation,
 } from "../../src/index.js";
 
 export interface EditableFormState {
@@ -62,6 +78,12 @@ export interface EditablePlanGenerationResult {
 export interface DisplayQuantity {
   amount: number;
   unit: QuantityUnit;
+}
+
+export interface RoleTag {
+  role: MealRole;
+  label: string;
+  present: boolean;
 }
 
 export const grainOptions = [
@@ -117,6 +139,26 @@ export function normalizeEditableFormState(form: LegacyEditableFormState | undef
     preferredGrains,
     preferredProteins,
   };
+}
+
+export function applyDietaryLevel(form: EditableFormState, dietaryLevel: DietaryLevel): EditableFormState {
+  return {
+    ...form,
+    dietaryLevel,
+    preferredProteins: visibleProteinPreferences(form.preferredProteins, dietaryLevel),
+    avoidEggs: dietaryLevel === "vegetarian",
+    avoidChickenFish: dietaryLevel !== "nonVegetarian",
+  };
+}
+
+export function dietRuleChangeNotice(previous: EditableFormState, next: EditableFormState) {
+  const changes = [
+    proteinPreferenceChangeNotice(previous, next),
+    avoidRuleChangeNotice("eggs", previous.avoidEggs, next.avoidEggs),
+    avoidRuleChangeNotice("chicken/fish", previous.avoidChickenFish, next.avoidChickenFish),
+  ].filter((change): change is string => Boolean(change));
+
+  return changes.length > 0 ? `Diet updated for ${dietaryLevelDisplayLabels[next.dietaryLevel]}: ${changes.join("; ")}.` : "";
 }
 
 export function buildNutritionInput(form: EditableFormState): GenerateMealPlanInput {
@@ -688,6 +730,52 @@ export function exchangeOptionDisplayAmountLabel(groupId: string, optionId: stri
   return `${formatDisplayQuantityAmount(quantity.amount)}${spacer}${displayUnitLabel(quantity.unit, quantity.amount, option.foodItemId)}`;
 }
 
+export function exchangeOptionDisplayName(groupId: string, optionId: string) {
+  return getExchangeOption(groupId, optionId).displayName;
+}
+
+export function calculateEditableMealTotals(meal: DailyPlan["meals"][number]) {
+  return calculateMealTotals(meal);
+}
+
+export function calculateEditablePlanItemNutrition(item: DailyPlanItem): NutritionFacts {
+  return calculateDailyPlanItemNutrition(item);
+}
+
+export function swapOptionPreviewNutrition(item: Extract<DailyPlanItem, { kind: "exchange" }>, optionId: string): NutritionFacts {
+  const currentOption = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId);
+  const currentUnits = item.exchangeUnits ?? currentOption.exchangeUnits ?? 1;
+  const servingAmount = exchangeOptionGramAmount(item.exchangeGroupId, item.exchangeOptionId) * currentUnits;
+  const optionServingAmount = exchangeOptionGramAmount(item.exchangeGroupId, optionId);
+
+  return calculateDailyPlanItemNutrition({
+    ...item,
+    exchangeOptionId: optionId,
+    exchangeUnits: optionServingAmount > 0 ? servingAmount / optionServingAmount : 0,
+  });
+}
+
+export function mealRoleTags(meal: DailyPlan["meals"][number]): RoleTag[] {
+  const pattern = evaluateMealPattern(meal);
+  const presentRoles = orderedMealRoles(meal.items.flatMap((item) => item.roles ?? []));
+
+  if (!pattern) {
+    return presentRoles.map((role) => ({ role, label: mealRoleDisplayNames[role], present: true }));
+  }
+
+  const expectedRoles = new Set(pattern.roles.map((item) => item.role));
+  const expectedTags = pattern.roles.map((item) => ({
+    role: item.role,
+    label: mealRoleDisplayNames[item.role],
+    present: item.present,
+  }));
+  const extraTags = presentRoles
+    .filter((role) => !expectedRoles.has(role))
+    .map((role) => ({ role, label: mealRoleDisplayNames[role], present: true }));
+
+  return [...expectedTags, ...extraTags];
+}
+
 export function mealTargetStatus(plan: DailyPlan, mealId: string, target: MealMacroTarget) {
   const meal = plan.meals.find((candidate) => candidate.id === mealId);
 
@@ -744,7 +832,7 @@ export function decodeShareState(encoded: string): ShareablePlannerState | undef
   }
 }
 
-export function shareUrlForState(state: ShareablePlannerState, base = window.location.href): string {
+export function shareUrlForState(state: ShareablePlannerState, base: string): string {
   const url = new URL(base);
   url.searchParams.set("s", encodeShareState(state));
   return url.toString();
@@ -1178,6 +1266,61 @@ function selectedOptionIds(values: string[], allowedValues: string[]) {
   return [...new Set(values.filter((value) => allowed.has(value)))];
 }
 
+function visibleProteinPreferences(preferredProteins: string[], dietaryLevel: DietaryLevel) {
+  const visible = preferredProteins.filter((optionId) => isProteinVisible(optionId, dietaryLevel));
+  if (visible.length > 0) {
+    return visible;
+  }
+
+  if (dietaryLevel === "vegetarian") return ["paneer-50g"];
+  if (dietaryLevel === "eggetarian") return ["two-whole-eggs"];
+  return ["chicken-fish-100g"];
+}
+
+export function isProteinVisible(optionId: string, dietaryLevel: DietaryLevel) {
+  return visibleProteinOptionIds(dietaryLevel).includes(optionId);
+}
+
+function proteinPreferenceChangeNotice(previous: EditableFormState, next: EditableFormState) {
+  if (areSameStringValues(previous.preferredProteins, next.preferredProteins)) {
+    return undefined;
+  }
+
+  const removedProteinLikes = previous.preferredProteins.filter((optionId) => !next.preferredProteins.includes(optionId));
+  const hiddenRemovedLikes = removedProteinLikes.filter((optionId) => !isProteinVisible(optionId, next.dietaryLevel));
+  if (hiddenRemovedLikes.length > 0) {
+    return `${joinWithAnd(foodRuleProteinLabels(hiddenRemovedLikes))} removed from protein likes`;
+  }
+
+  return `protein likes set to ${joinWithAnd(foodRuleProteinLabels(next.preferredProteins))}`;
+}
+
+function avoidRuleChangeNotice(label: string, previous: boolean, next: boolean) {
+  if (previous === next) {
+    return undefined;
+  }
+
+  return `${label} ${next ? "set to Leave out" : "allowed"}`;
+}
+
+function foodRuleProteinLabels(optionIds: string[]) {
+  return optionIds.map((optionId) => {
+    if (optionId === "two-whole-eggs") return "eggs";
+    if (optionId === "chicken-fish-100g") return "chicken/fish";
+    return proteinOptions.find((option) => option.id === optionId)?.label.toLocaleLowerCase() ?? optionId;
+  });
+}
+
+function areSameStringValues(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function joinWithAnd(values: string[]) {
+  if (values.length <= 1) return values[0] ?? "";
+  if (values.length === 2) return values.join(" and ");
+  return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
+}
+
 function isAutomaticOptionSet(selectedValues: string[], allValues: string[]) {
   return selectedValues.length === 0 || (selectedValues.length === allValues.length && allValues.every((value) => selectedValues.includes(value)));
 }
@@ -1235,6 +1378,24 @@ const dietaryLevelLabels: Record<DietaryLevel, string> = {
   nonVegetarian: "non-vegetarian",
 };
 
+const dietaryLevelDisplayLabels: Record<DietaryLevel, string> = {
+  vegetarian: "Vegetarian",
+  eggetarian: "Eggetarian",
+  nonVegetarian: "Non-vegetarian",
+};
+
+const mealRoleDisplayNames: Record<MealRole, string> = {
+  cookingFat: "Cooking fat",
+  carb: "Carb",
+  protein: "Protein",
+  vegetables: "Vegetables",
+  fruit: "Fruit",
+  dairy: "Dairy",
+  snack: "Snack",
+};
+
+const mealRoleOrder: readonly MealRole[] = ["cookingFat", "carb", "protein", "vegetables", "fruit", "dairy", "snack"];
+
 const metricWeights: Record<NutritionMetric, number> = {
   calories: 0.2,
   protein: 8,
@@ -1246,6 +1407,11 @@ const metricWeights: Record<NutritionMetric, number> = {
 
 function formatAmount(value: number, metric: NutritionMetric) {
   return `${Math.ceil(value)}${metric === "calories" ? " kcal" : "gm"}`;
+}
+
+function orderedMealRoles(roles: MealRole[]): MealRole[] {
+  const present = new Set(roles);
+  return mealRoleOrder.filter((role) => present.has(role));
 }
 
 function roundGramAmount(value: number) {
