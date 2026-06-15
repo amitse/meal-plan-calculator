@@ -802,7 +802,6 @@ small {
 }
 
 .options-drawer > summary::after,
-.export-drawer > summary::after,
 .example-drawer > summary::after,
 .nested-drawer > summary::after,
 .meal-tools > summary::after,
@@ -815,7 +814,6 @@ small {
 }
 
 .options-drawer[open] > summary::after,
-.export-drawer[open] > summary::after,
 .example-drawer[open] > summary::after,
 .nested-drawer[open] > summary::after,
 .meal-tools[open] > summary::after,
@@ -1176,7 +1174,6 @@ fieldset {
 .choice-group label:hover,
 .avoid-list label:hover,
 .options-drawer > summary:hover,
-.export-drawer > summary:hover,
 .nested-drawer > summary:hover,
 .meal-card > summary:hover,
 .meal-tools > summary:hover {
@@ -1435,28 +1432,10 @@ fieldset {
   border-bottom: 1px solid var(--border);
 }
 
-.export-drawer {
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.export-drawer > summary {
-  min-height: var(--control-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  color: var(--body);
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1;
-}
-
 .export-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-xs);
-  padding: 0 0 var(--space-xs);
 }
 
 .export-actions button {
@@ -1464,7 +1443,7 @@ fieldset {
 }
 
 .export-helper {
-  margin: 0 0 var(--space-md);
+  margin: 0;
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.35;
@@ -1473,7 +1452,7 @@ fieldset {
 .manual-share-recovery {
   display: grid;
   gap: var(--space-sm);
-  margin: 0 0 var(--space-md);
+  margin: 0;
   padding: var(--space-sm) var(--space-md);
   border: 1px solid rgba(210, 160, 87, 0.42);
   border-radius: 12px;
@@ -2208,6 +2187,23 @@ fieldset {
   min-height: 0;
   overflow-y: auto;
   padding: 0 var(--space-md) max(var(--space-md), env(safe-area-inset-bottom));
+}
+
+.export-options {
+  display: grid;
+  gap: var(--space-sm);
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--space-md) max(var(--space-md), env(safe-area-inset-bottom));
+}
+
+.export-sheet .export-actions button {
+  min-height: 52px;
+  justify-content: flex-start;
+  border-color: var(--border-soft);
+  background: var(--surface-strong);
+  padding-inline: var(--space-md);
+  text-align: left;
 }
 
 .swap-unavailable-message {

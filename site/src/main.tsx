@@ -320,6 +320,8 @@ function App() {
   const generationProgressId = useId();
   const quickStartConfirmTitleId = useId();
   const quickStartConfirmDescriptionId = useId();
+  const exportSheetTitleId = useId();
+  const exportSheetDescriptionId = useId();
   const urlState = loadedUrlState.state;
   const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
@@ -351,8 +353,9 @@ function App() {
   const [calorieInputError, setCalorieInputError] = useState("");
   const [dietRuleNotice, setDietRuleNotice] = useState("");
   const [pendingQuickStartPreset, setPendingQuickStartPreset] = useState<QuickStartPreset | undefined>();
+  const [exportSheetOpen, setExportSheetOpen] = useState(false);
   const resultRef = useRef<HTMLElement>(null);
-  const exportDrawerRef = useRef<HTMLDetailsElement>(null);
+  const exportSheetRef = useRef<HTMLDialogElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
   const calorieInputRef = useRef<HTMLInputElement>(null);
   const quickStartConfirmDialogRef = useRef<HTMLDialogElement>(null);
@@ -411,6 +414,22 @@ function App() {
 
     dialog.showModal();
   }, [pendingQuickStartPreset]);
+
+  useEffect(() => {
+    const dialog = exportSheetRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    if (exportSheetOpen && !dialog.open) {
+      dialog.showModal();
+      return;
+    }
+
+    if (!exportSheetOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [exportSheetOpen]);
 
   useEffect(() => {
     if (!addedMealFeedback || activeView !== "plan" || revealedAddedMealKey.current === addedMealFeedback.key) {
@@ -1064,18 +1083,8 @@ function App() {
     setShareState({ message: "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets." });
   }
 
-  function openExportDrawer() {
-    const exportDrawer = exportDrawerRef.current;
-    if (!exportDrawer) return;
-
-    exportDrawer.open = true;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    exportDrawer.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
-
-    const firstExportAction = exportDrawer.querySelector(".export-actions button");
-    if (firstExportAction instanceof HTMLButtonElement) {
-      firstExportAction.focus({ preventScroll: true });
-    }
+  function openExportSheet() {
+    setExportSheetOpen(true);
   }
 
   async function sharePlanText() {
@@ -1477,35 +1486,6 @@ function App() {
               </button>
             </div>
           )}
-          <details className="export-drawer" ref={exportDrawerRef}>
-            <summary>
-              <span className="summary-label"><Icon name="export" />Export</span>
-              <span className="drawer-summary">Share · Image · Spreadsheet</span>
-            </summary>
-            <div className="export-actions" aria-label="Export meal plan">
-              <button className="with-icon" type="button" onClick={() => void sharePlanText()}><Icon name="share" />Share text</button>
-              <button className="with-icon" type="button" onClick={() => void sharePlanImage()}><Icon name="image" />Share image</button>
-              <button className="with-icon" type="button" onClick={exportSpreadsheet}><Icon name="export" />Spreadsheet</button>
-              <button className="with-icon" type="button" onClick={exportCsv}><Icon name="download" />CSV</button>
-            </div>
-            <p className="export-helper">Spreadsheet is one file for Excel or Google Sheets. Share text/image uses the phone share sheet when available.</p>
-            {manualShareText && (
-              <div className="manual-share-recovery">
-                <p role="status">
-                  <strong>Share blocked.</strong> Select this text, copy it, then paste it into WhatsApp or Messages.
-                </p>
-                <label className="manual-share-copy-field">
-                  <span>Share text</span>
-                  <textarea
-                    readOnly
-                    rows={8}
-                    value={manualShareText}
-                    onFocus={(event) => event.currentTarget.select()}
-                  />
-                </label>
-              </div>
-            )}
-          </details>
           {lockedItemCount > 0 && (
             <div className="locked-notice" role="status">
               <p>
@@ -1760,10 +1740,61 @@ function App() {
               </div>
             )}
             <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
-            <button className="plan-action-button with-icon" type="button" onClick={openExportDrawer}><Icon name="export" />Export</button>
+            <button className="plan-action-button with-icon" type="button" onClick={openExportSheet} aria-haspopup="dialog" aria-expanded={exportSheetOpen}><Icon name="export" />Export</button>
             <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
             <button className="primary-action with-icon" type="button" onClick={share}><Icon name="share" />Share</button>
           </nav>
+          <dialog
+            className="swap-sheet export-sheet"
+            ref={exportSheetRef}
+            aria-labelledby={exportSheetTitleId}
+            aria-describedby={exportSheetDescriptionId}
+            onCancel={() => setExportSheetOpen(false)}
+            onClose={() => setExportSheetOpen(false)}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setExportSheetOpen(false);
+              }
+            }}
+          >
+            <div className="swap-sheet-panel export-sheet-panel">
+              <header className="swap-sheet-header">
+                <div>
+                  <p>Export plan</p>
+                  <h3 id={exportSheetTitleId}>Send it anywhere</h3>
+                </div>
+                <button className="with-icon" type="button" aria-label="Close export options" onClick={() => setExportSheetOpen(false)}><Icon name="close" />Close</button>
+              </header>
+              <p id={exportSheetDescriptionId} className="swap-sheet-description">
+                Use the phone share sheet for WhatsApp, save an image, or download one spreadsheet file for Excel and Google Sheets.
+              </p>
+              <div className="export-options" aria-label="Export meal plan">
+                <div className="export-actions">
+                  <button className="with-icon" type="button" onClick={() => void sharePlanText()}><Icon name="share" />Share text</button>
+                  <button className="with-icon" type="button" onClick={() => void sharePlanImage()}><Icon name="image" />Share image</button>
+                  <button className="with-icon" type="button" onClick={exportSpreadsheet}><Icon name="export" />Spreadsheet</button>
+                  <button className="with-icon" type="button" onClick={exportCsv}><Icon name="download" />CSV</button>
+                </div>
+                <p className="export-helper">Spreadsheet downloads as one file. Import it into Google Sheets or open it in Excel.</p>
+                {manualShareText && (
+                  <div className="manual-share-recovery">
+                    <p role="status">
+                      <strong>Share blocked.</strong> Select this text, copy it, then paste it into WhatsApp or Messages.
+                    </p>
+                    <label className="manual-share-copy-field">
+                      <span>Share text</span>
+                      <textarea
+                        readOnly
+                        rows={8}
+                        value={manualShareText}
+                        onFocus={(event) => event.currentTarget.select()}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          </dialog>
         </section>
       )}
     </main>
