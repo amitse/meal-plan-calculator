@@ -3,12 +3,14 @@ import { createRoot } from "react-dom/client";
 import {
   calculateDailyPlanItemNutrition,
   calculateMealTotals,
+  evaluateMealPattern,
   getExchangeOption,
   getFoodItem,
   type DailyPlan,
   type DailyPlanItem,
   type BoundEvaluation,
   type DietaryLevel,
+  type MealRole,
   type NutritionMetric,
 } from "../../src/index.js";
 import {
@@ -513,10 +515,26 @@ function App() {
             {plan.meals.map((meal) => {
               const mealTotals = calculateMealTotals(meal);
               const status = mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {});
+              const roleTags = mealRoleTags(meal);
               return (
               <details className="meal-card" key={meal.id}>
                 <summary>
-                  <span className="meal-title">{meal.displayName}</span>
+                  <span className="meal-heading">
+                    <span className="meal-title">{meal.displayName}</span>
+                    {roleTags.length > 0 && (
+                      <span className="meal-role-tags" aria-label={`${meal.displayName} plate roles`}>
+                        {roleTags.map((tag) => (
+                          <span
+                            className={`role-tag ${tag.present ? "is-present" : "is-missing"}`}
+                            key={tag.role}
+                            aria-label={`${tag.label} ${tag.present ? "present" : "missing"}`}
+                          >
+                            {tag.present ? tag.label : `Missing ${tag.label}`}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </span>
                   <span className="meal-summary">
                     <strong>{Math.round(mealTotals.values.calories)} kcal</strong>
                     <small>{Math.round(mealTotals.values.protein)}gm protein · {meal.items.length} items</small>
@@ -750,6 +768,50 @@ function targetBoundLabel(item: BoundEvaluation) {
 
 function formatMetricValue(value: number, metric: NutritionMetric) {
   return `${Math.round(value)} ${metric === "calories" ? "kcal" : "gm"}`;
+}
+
+type RoleTag = {
+  role: MealRole;
+  label: string;
+  present: boolean;
+};
+
+const mealRoleDisplayNames: Record<MealRole, string> = {
+  cookingFat: "Cooking fat",
+  carb: "Carb",
+  protein: "Protein",
+  vegetables: "Vegetables",
+  fruit: "Fruit",
+  dairy: "Dairy",
+  snack: "Snack",
+};
+
+const mealRoleOrder: readonly MealRole[] = ["cookingFat", "carb", "protein", "vegetables", "fruit", "dairy", "snack"];
+
+function mealRoleTags(meal: DailyPlan["meals"][number]): RoleTag[] {
+  const pattern = evaluateMealPattern(meal);
+  const presentRoles = orderedMealRoles(meal.items.flatMap((item) => item.roles ?? []));
+
+  if (!pattern) {
+    return presentRoles.map((role) => ({ role, label: mealRoleDisplayNames[role], present: true }));
+  }
+
+  const expectedRoles = new Set(pattern.roles.map((item) => item.role));
+  const expectedTags = pattern.roles.map((item) => ({
+    role: item.role,
+    label: mealRoleDisplayNames[item.role],
+    present: item.present,
+  }));
+  const extraTags = presentRoles
+    .filter((role) => !expectedRoles.has(role))
+    .map((role) => ({ role, label: mealRoleDisplayNames[role], present: true }));
+
+  return [...expectedTags, ...extraTags];
+}
+
+function orderedMealRoles(roles: MealRole[]): MealRole[] {
+  const present = new Set(roles);
+  return mealRoleOrder.filter((role) => present.has(role));
 }
 
 const metricDisplayNames: Record<NutritionMetric, string> = {
