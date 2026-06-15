@@ -1314,7 +1314,7 @@ fieldset {
 
 .result-action-bar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-xs);
 }
 
@@ -2204,6 +2204,12 @@ fieldset {
   background: var(--surface-strong);
   padding-inline: var(--space-md);
   text-align: left;
+}
+
+.export-sheet .export-actions button:first-child {
+  grid-column: 1 / -1;
+  border-color: rgba(210, 160, 87, 0.48);
+  background: rgba(210, 160, 87, 0.1);
 }
 
 .swap-unavailable-message {

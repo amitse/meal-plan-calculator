@@ -1083,7 +1083,7 @@ function App() {
     setShareState({ message: "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets." });
   }
 
-  function openExportSheet() {
+  function openShareSheet() {
     setExportSheetOpen(true);
   }
 
@@ -1742,9 +1742,8 @@ function App() {
               </div>
             )}
             <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
-            <button className="plan-action-button with-icon" type="button" onClick={openExportSheet} aria-haspopup="dialog" aria-expanded={exportSheetOpen}><Icon name="export" />Export</button>
             <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
-            <button className="primary-action with-icon" type="button" onClick={share}><Icon name="share" />Share</button>
+            <button className="primary-action with-icon" type="button" onClick={openShareSheet} aria-haspopup="dialog" aria-expanded={exportSheetOpen}><Icon name="share" />Share</button>
           </nav>
           <dialog
             className="swap-sheet export-sheet"
@@ -1762,16 +1761,17 @@ function App() {
             <div className="swap-sheet-panel export-sheet-panel">
               <header className="swap-sheet-header">
                 <div>
-                  <p>Export plan</p>
+                  <p>Share plan</p>
                   <h3 id={exportSheetTitleId}>Send it anywhere</h3>
                 </div>
-                <button className="with-icon" type="button" aria-label="Close export options" onClick={() => setExportSheetOpen(false)}><Icon name="close" />Close</button>
+                <button className="with-icon" type="button" aria-label="Close share options" onClick={() => setExportSheetOpen(false)}><Icon name="close" />Close</button>
               </header>
               <p id={exportSheetDescriptionId} className="swap-sheet-description">
-                Use the phone share sheet for WhatsApp, save an image, or download one spreadsheet file for Excel and Google Sheets.
+                Share a live link to this plan, send text or image to WhatsApp, or download one spreadsheet file for Excel and Google Sheets.
               </p>
-              <div className="export-options" aria-label="Export meal plan">
+              <div className="export-options" aria-label="Share and export meal plan">
                 <div className="export-actions">
+                  <button className="with-icon" type="button" onClick={share}><Icon name="share" />Share link</button>
                   <button className="with-icon" type="button" onClick={() => void sharePlanText()}><Icon name="share" />Share text</button>
                   <button className="with-icon" type="button" onClick={() => void sharePlanImage()}><Icon name="image" />Share image</button>
                   <button className="with-icon" type="button" onClick={exportSpreadsheet}><Icon name="export" />Spreadsheet</button>
