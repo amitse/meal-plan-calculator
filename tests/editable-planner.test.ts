@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addItemToMeal,
   addMeal,
+  buildNutritionInput,
   buildDynamicTemplate,
   decodeShareState,
   encodeShareState,
@@ -24,6 +25,54 @@ describe("editable planner workflows", () => {
   it("selects every visible grain and protein preference by default", () => {
     expect(initialFormState.preferredGrains).toEqual(grainOptions.map((option) => option.id));
     expect(initialFormState.preferredProteins).toEqual(proteinOptions.map((option) => option.id));
+  });
+
+  it("keeps optional macro limits off for fresh and omitted shared states", () => {
+    expect(initialFormState.carbs.mode).toBe("none");
+    expect(initialFormState.fat.mode).toBe("none");
+    expect(initialFormState.fiber.mode).toBe("none");
+    expect(initialFormState.saturatedFat.mode).toBe("none");
+
+    const input = buildNutritionInput(initialFormState);
+    expect(input).not.toHaveProperty("carbs");
+    expect(input).not.toHaveProperty("fat");
+    expect(input).not.toHaveProperty("fiber");
+    expect(input).not.toHaveProperty("saturatedFat");
+
+    const encoded = btoa(encodeURIComponent(JSON.stringify({
+      form: { calories: "1800", protein: "80", dietaryLevel: "vegetarian" },
+      lockedItemIds: [],
+      mealTargets: {},
+    })));
+    const decoded = decodeShareState(encoded);
+
+    expect(decoded?.form.carbs.mode).toBe("none");
+    expect(decoded?.form.fat.mode).toBe("none");
+    expect(decoded?.form.fiber.mode).toBe("none");
+    expect(decoded?.form.saturatedFat.mode).toBe("none");
+  });
+
+  it("preserves explicit optional macro rules from decoded shared states", () => {
+    const encoded = encodeShareState({
+      form: {
+        ...initialFormState,
+        carbs: { mode: "min", value: "120" },
+        fat: { mode: "max", value: "70" },
+        fiber: { mode: "min", value: "25" },
+        saturatedFat: { mode: "max", value: "18" },
+      },
+      lockedItemIds: [],
+      mealTargets: {},
+    });
+    const decoded = decodeShareState(encoded);
+    const input = decoded ? buildNutritionInput(decoded.form) : undefined;
+
+    expect(input).toMatchObject({
+      carbs: { min: 120 },
+      fat: { max: 70 },
+      fiber: { min: 25 },
+      saturatedFat: { max: 18 },
+    });
   });
 
   it("categorizes grains so breakfast varies and dinner excludes snack grains", () => {
