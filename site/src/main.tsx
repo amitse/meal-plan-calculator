@@ -41,6 +41,10 @@ import "./styles.css";
 
 type BoundField = "none" | "min" | "max" | "target";
 type PlannerView = "targets" | "plan";
+type ShareState = {
+  message: string;
+  manualUrl?: string;
+};
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -123,7 +127,7 @@ function App() {
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set(urlState?.lockedItemIds ?? []));
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [shareState, setShareState] = useState("");
+  const [shareState, setShareState] = useState<ShareState | undefined>();
   const [generationError, setGenerationError] = useState("");
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
@@ -252,27 +256,32 @@ function App() {
     };
     const url = shareUrlForState(state);
     window.history.replaceState(null, "", `?s=${encodeShareState(state)}`);
-    const copyRequest = navigator.clipboard?.writeText(url);
-    if (!copyRequest) {
-      setShareState("Link ready in address bar");
+
+    const showManualShareRecovery = () => setShareState({
+      message: "Copy blocked. Copy this share link manually.",
+      manualUrl: url,
+    });
+
+    if (typeof navigator.clipboard?.writeText !== "function") {
+      showManualShareRecovery();
       return;
     }
 
-    void copyRequest
-      .then(() => setShareState("Link copied"))
-      .catch(() => setShareState("Copy blocked; link is in address bar"));
+    void navigator.clipboard.writeText(url)
+      .then(() => setShareState({ message: "Link copied" }))
+      .catch(showManualShareRecovery);
   }
 
   function exportCsv() {
     if (!plan) return;
     downloadTextFile(exportFilename("csv"), "text/csv;charset=utf-8", planExportCsv(plan));
-    setShareState("CSV downloaded");
+    setShareState({ message: "CSV downloaded" });
   }
 
   function exportExcel() {
     if (!plan) return;
     downloadTextFile(exportFilename("xls"), "application/vnd.ms-excel;charset=utf-8", planExportExcelHtml(plan));
-    setShareState("Excel file downloaded");
+    setShareState({ message: "Excel file downloaded" });
   }
 
   async function copyForGoogleDocs() {
@@ -291,13 +300,13 @@ function App() {
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(plainText);
       } else {
-        setShareState("Copy blocked; use CSV or Excel");
+        setShareState({ message: "Copy blocked; use CSV or Excel" });
         return;
       }
 
-      setShareState("Copied for Google Docs");
+      setShareState({ message: "Copied for Google Docs" });
     } catch {
-      setShareState("Copy blocked; use CSV or Excel");
+      setShareState({ message: "Copy blocked; use CSV or Excel" });
     }
   }
 
@@ -427,7 +436,17 @@ function App() {
             <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds))}>Randomize</button>
             <button type="button" onClick={share}>Share</button>
           </div>
-          {shareState && <p className="share-state">{shareState}</p>}
+          {shareState && (
+            <div className={`share-state${shareState.manualUrl ? " manual-share" : ""}`} role="status">
+              <p>{shareState.message}</p>
+              {shareState.manualUrl && (
+                <label className="manual-share-link">
+                  <span>Share link</span>
+                  <input readOnly value={shareState.manualUrl} onFocus={(event) => event.currentTarget.select()} />
+                </label>
+              )}
+            </div>
+          )}
           <details className="export-drawer">
             <summary>
               <span>Export</span>

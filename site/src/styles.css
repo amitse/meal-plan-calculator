@@ -1044,8 +1044,46 @@ fieldset {
 }
 
 .share-state {
-  color: var(--success);
   margin: 0 0 var(--space-sm);
+  color: var(--success);
+  line-height: 1.4;
+}
+
+.share-state p {
+  margin: 0;
+}
+
+.share-state.manual-share {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(210, 160, 87, 0.42);
+  border-radius: 12px;
+  background: rgba(210, 160, 87, 0.1);
+  color: var(--body);
+}
+
+.manual-share-link {
+  display: grid;
+  gap: 6px;
+}
+
+.manual-share-link span {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manual-share-link input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: 0 var(--space-sm);
 }
 
 .generation-feedback {
