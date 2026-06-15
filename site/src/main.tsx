@@ -2685,6 +2685,9 @@ function PlanItemRow({
   const quantity = planItemDisplayQuantity(item);
   const nutrition = calculateDailyPlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, form, mealId);
+  const hasSelectableSwapAlternative = item.kind === "exchange"
+    ? exchangeOptions.some((option) => option.id !== item.exchangeOptionId)
+    : true;
   const [servingDraft, setServingDraft] = useState(String(quantity.amount));
   const [servingValidationMessage, setServingValidationMessage] = useState("");
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
@@ -2832,6 +2835,11 @@ function PlanItemRow({
                   Choose an exchange-equivalent option. Your serving amount, locks, and the rest of the meal stay unchanged.
                 </p>
                 <div className="swap-options" aria-label={`Allowed swaps for ${label}`}>
+                  {!hasSelectableSwapAlternative && (
+                    <p className="swap-unavailable-message" role="note">
+                      No other swap choices match your active rules. Change diet or Leave out choices in Customize, or relax meal-specific food rules, then try Swap again.
+                    </p>
+                  )}
                   {exchangeOptions.map((option) => {
                     const previewNutrition = swapOptionPreviewNutrition(item, option.id);
                     const isCurrentOption = option.id === item.exchangeOptionId;
