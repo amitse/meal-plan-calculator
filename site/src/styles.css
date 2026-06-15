@@ -2622,6 +2622,35 @@ fieldset {
   font-weight: 700;
 }
 
+.swap-option-impact {
+  display: inline-flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: var(--size-3) var(--size-6);
+  align-items: center;
+  margin-top: var(--size-2);
+}
+
+.swap-option-meta .swap-option-impact,
+.swap-option-meta .swap-option-impact span {
+  color: var(--body);
+}
+
+.swap-option-impact span:first-child {
+  color: var(--faint);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.swap-option-impact span:not(:first-child) {
+  border: var(--size-px) solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  background: var(--surface-strong);
+  padding: var(--size-2) var(--size-6);
+  font-weight: 700;
+}
+
 .item-actions .lock-toggle,
 .item-actions .delete-toggle {
   min-height: var(--size-44);

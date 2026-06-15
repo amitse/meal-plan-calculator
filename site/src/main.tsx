@@ -3022,6 +3022,26 @@ function formatKnownNutritionValue(value: number | null | undefined, metric: "ca
   return metric === "calories" ? `${Math.round(value)} kcal` : `${Math.round(value)}gm`;
 }
 
+function formatSwapNutritionImpact(
+  nextValue: number | null | undefined,
+  currentValue: number | null | undefined,
+  metric: "calories" | "protein",
+) {
+  if (nextValue == null || currentValue == null) {
+    return metric === "calories" ? "kcal impact unknown" : "protein impact unknown";
+  }
+
+  const delta = Math.round(nextValue - currentValue);
+
+  if (delta === 0) {
+    return metric === "calories" ? "same kcal" : "same protein";
+  }
+
+  const signedDelta = delta > 0 ? `+${delta}` : String(delta);
+
+  return metric === "calories" ? `${signedDelta} kcal` : `${signedDelta}gm protein`;
+}
+
 type RoleTag = {
   role: MealRole;
   label: string;
@@ -3291,6 +3311,8 @@ function PlanItemRow({
                   {exchangeOptions.map((option) => {
                     const previewNutrition = swapOptionPreviewNutrition(item, option.id);
                     const isCurrentOption = option.id === item.exchangeOptionId;
+                    const calorieImpact = formatSwapNutritionImpact(previewNutrition.calories, nutrition.calories, "calories");
+                    const proteinImpact = formatSwapNutritionImpact(previewNutrition.protein, nutrition.protein, "protein");
 
                     return (
                       <button
@@ -3308,6 +3330,13 @@ function PlanItemRow({
                           <span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.calories, "calories")}</span>
                           <span><span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.protein, "protein")}</span>{previewNutrition.protein == null ? "" : " protein"}</span>
                           {isCurrentOption && <span className="swap-option-current">Current</span>}
+                          {!isCurrentOption && (
+                            <span className="swap-option-impact" aria-label={`Impact compared with current item: ${calorieImpact}, ${proteinImpact}`}>
+                              <span>Impact</span>
+                              <span className="notranslate" translate="no">{calorieImpact}</span>
+                              <span className="notranslate" translate="no">{proteinImpact}</span>
+                            </span>
+                          )}
                         </small>
                       </button>
                     );
