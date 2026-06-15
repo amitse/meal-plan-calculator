@@ -243,6 +243,7 @@ small {
 .secondary-action,
 .export-actions button,
 .meal-targets button,
+.undo-delete-state button,
 .item-actions button {
   min-height: 44px;
   border: 1px solid var(--border);
@@ -261,6 +262,7 @@ small {
 .secondary-action:hover,
 .export-actions button:hover,
 .meal-targets button:hover,
+.undo-delete-state button:hover,
 .item-actions button:hover {
   border-color: var(--muted);
   background: rgba(240, 239, 235, 0.04);
@@ -270,6 +272,7 @@ small {
 .secondary-action:active,
 .export-actions button:active,
 .meal-targets button:active,
+.undo-delete-state button:active,
 .item-actions button:active {
   transform: translateY(1px) scale(0.99);
 }
@@ -1254,6 +1257,38 @@ fieldset {
 .failure li {
   margin: 8px 0;
   color: var(--danger);
+}
+
+.undo-delete-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(223, 138, 120, 0.48);
+  border-radius: var(--control-radius);
+  background: rgba(223, 138, 120, 0.1);
+  color: var(--body);
+  line-height: 1.3;
+}
+
+.undo-delete-state p {
+  min-width: 0;
+  margin: 0;
+}
+
+.undo-delete-state strong {
+  color: var(--ink);
+}
+
+.undo-delete-state button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border-color: rgba(223, 138, 120, 0.62);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .share-state {

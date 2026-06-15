@@ -57,6 +57,13 @@ type GenerateOptions = {
   seed?: number;
   useExistingLocks?: boolean;
 };
+type DeletedItemUndo = {
+  item: DailyPlanItem;
+  itemIndex: number;
+  label: string;
+  mealId: string;
+  wasLocked: boolean;
+};
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -144,6 +151,7 @@ function App() {
   const [generationError, setGenerationError] = useState("");
   const [isPlanStale, setIsPlanStale] = useState(false);
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, string>>({});
+  const [deletedItemUndo, setDeletedItemUndo] = useState<DeletedItemUndo | undefined>();
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(false);
@@ -203,6 +211,7 @@ function App() {
   function generate(sourceForm = form, options: GenerateOptions = {}) {
     const seed = options.seed ?? Date.now();
     const useExistingLocks = options.useExistingLocks ?? true;
+    setDeletedItemUndo(undefined);
     const next = generateEditablePlan(sourceForm, useExistingLocks ? plan : undefined, useExistingLocks ? lockedIds : new Set<string>(), seed);
 
     if (next) {
@@ -243,6 +252,7 @@ function App() {
 
   function randomizeVisiblePlan() {
     if (!plan) return;
+    setDeletedItemUndo(undefined);
     setPlan(randomizePlan(plan, form, lockedIds));
     setIsPlanStale(false);
   }
@@ -273,6 +283,7 @@ function App() {
   }
 
   function toggleLock(itemId: string) {
+    setDeletedItemUndo(undefined);
     setLockedIds((current) => {
       const next = new Set(current);
       if (next.has(itemId)) {
@@ -286,12 +297,46 @@ function App() {
 
   function deleteItem(itemId: string) {
     if (!plan) return;
+    const meal = plan.meals.find((candidate) => candidate.items.some((item) => item.id === itemId));
+    const itemIndex = meal?.items.findIndex((item) => item.id === itemId) ?? -1;
+    const item = meal?.items[itemIndex];
+
+    if (!meal || !item) return;
+
+    setDeletedItemUndo({
+      item,
+      itemIndex,
+      label: planItemLabel(item),
+      mealId: meal.id,
+      wasLocked: lockedIds.has(itemId),
+    });
     setPlan(removePlanItem(plan, itemId));
     setLockedIds((current) => {
       const next = new Set(current);
       next.delete(itemId);
       return next;
     });
+  }
+
+  function undoDeletedItem() {
+    if (!deletedItemUndo) return;
+
+    setPlan((current) => current ? restoreDeletedItem(current, deletedItemUndo) : current);
+    setLockedIds((current) => {
+      const next = new Set(current);
+      const itemId = deletedItemUndo.item.id;
+
+      if (itemId) {
+        if (deletedItemUndo.wasLocked) {
+          next.add(itemId);
+        } else {
+          next.delete(itemId);
+        }
+      }
+
+      return next;
+    });
+    setDeletedItemUndo(undefined);
   }
 
   function addMealItem(mealId: string, groupId: "grain" | "protein-serving" | "fruit") {
@@ -311,7 +356,37 @@ function App() {
       const { [mealId]: _removed, ...rest } = current;
       return rest;
     });
+    setDeletedItemUndo(undefined);
     setPlan(next);
+  }
+
+  function addEmptyMeal() {
+    if (!plan) return;
+    setDeletedItemUndo(undefined);
+    setPlan(addMeal(plan));
+  }
+
+  function updatePlanItemServing(itemId: string, amount: number) {
+    if (!plan) return;
+    setDeletedItemUndo(undefined);
+    setPlan(updateItemAmount(plan, itemId, amount));
+  }
+
+  function swapPlanItem(itemId: string, optionId: string) {
+    if (!plan) return;
+    setDeletedItemUndo(undefined);
+    setPlan(swapExchangeOption(plan, itemId, optionId));
+  }
+
+  function randomizeSingleMeal(mealId: string) {
+    if (!plan) return;
+    setDeletedItemUndo(undefined);
+    setPlan(randomizePlan(plan, form, lockedIds, mealId));
+  }
+
+  function clearLocks() {
+    setDeletedItemUndo(undefined);
+    setLockedIds(new Set());
   }
 
   function share() {
@@ -536,7 +611,7 @@ function App() {
                 <strong>{lockedItemCount} {lockedItemCount === 1 ? "item" : "items"} locked.</strong>{" "}
                 Generate and Randomize keep locked items fixed.
               </p>
-              <button type="button" onClick={() => setLockedIds(new Set())}>Clear locks</button>
+              <button type="button" onClick={clearLocks}>Clear locks</button>
             </div>
           )}
           <div className="summary-grid">
@@ -556,6 +631,12 @@ function App() {
               <ul>
                 {recoveryMessages.map((message) => <li key={message}>{message}</li>)}
               </ul>
+            </div>
+          )}
+          {deletedItemUndo && (
+            <div className="undo-delete-state" role="status">
+              <p><strong>{deletedItemUndo.label}</strong> removed</p>
+              <button type="button" onClick={undoDeletedItem}>Undo</button>
             </div>
           )}
           <p className="meal-list-helper">Tap any meal to view foods, edit servings, swap options, or lock items.</p>
@@ -597,10 +678,10 @@ function App() {
                       key={item.id ?? `${meal.id}-${index}`}
                       locked={Boolean(item.id && lockedIds.has(item.id))}
                       mealId={meal.id}
-                      onAmount={(amount) => item.id && setPlan(updateItemAmount(plan, item.id, amount))}
+                      onAmount={(amount) => item.id && updatePlanItemServing(item.id, amount)}
                       onDelete={() => item.id && deleteItem(item.id)}
                       onLock={() => item.id && toggleLock(item.id)}
-                      onSwap={(optionId) => item.id && setPlan(swapExchangeOption(plan, item.id, optionId))}
+                      onSwap={(optionId) => item.id && swapPlanItem(item.id, optionId)}
                     />
                   ))}
                 </div>
@@ -612,7 +693,7 @@ function App() {
                   <div className="meal-targets">
                     <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} min="0" max="5000" step="25" type="number" /></label>
                     <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} min="0" step="5" type="number" /></label>
-                    <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds, meal.id))}>Randomize meal</button>
+                    <button type="button" onClick={() => randomizeSingleMeal(meal.id)}>Randomize meal</button>
                     <button type="button" onClick={() => addMealItem(meal.id, "protein-serving")}>Add protein</button>
                     <button type="button" onClick={() => addMealItem(meal.id, "grain")}>Add grain</button>
                     <button type="button" onClick={() => addMealItem(meal.id, "fruit")}>Add fruit</button>
@@ -623,11 +704,36 @@ function App() {
             );
             })}
           </div>
-          <button className="secondary-action" type="button" onClick={() => setPlan(addMeal(plan))}>Add meal</button>
+          <button className="secondary-action" type="button" onClick={addEmptyMeal}>Add meal</button>
         </section>
       )}
     </main>
   );
+}
+
+function planItemLabel(item: DailyPlanItem) {
+  return item.kind === "food"
+    ? getFoodItem(item.foodItemId).displayName
+    : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
+}
+
+function restoreDeletedItem(plan: DailyPlan, deletedItem: DeletedItemUndo): DailyPlan {
+  return {
+    ...plan,
+    meals: plan.meals.map((meal) => {
+      if (meal.id !== deletedItem.mealId) {
+        return meal;
+      }
+
+      if (deletedItem.item.id && meal.items.some((item) => item.id === deletedItem.item.id)) {
+        return meal;
+      }
+
+      const items = [...meal.items];
+      items.splice(Math.min(deletedItem.itemIndex, items.length), 0, deletedItem.item);
+      return { ...meal, items };
+    }),
+  };
 }
 
 function MacroInput({ label, value, onChange }: { label: string; value: MacroField; onChange: (value: MacroField) => void }) {
@@ -901,7 +1007,7 @@ function PlanItemRow({
   onLock: () => void;
   onSwap: (optionId: string) => void;
 }) {
-  const label = item.kind === "food" ? getFoodItem(item.foodItemId).displayName : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
+  const label = planItemLabel(item);
   const quantity = planItemDisplayQuantity(item);
   const nutrition = calculateDailyPlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, form, mealId);
