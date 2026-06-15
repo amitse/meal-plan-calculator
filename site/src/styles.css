@@ -1052,9 +1052,39 @@ fieldset {
 }
 
 .meal-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   color: var(--warning);
   font-size: 0.9rem;
   min-height: 1.2rem;
+}
+
+.meal-status span + span::before {
+  content: "·";
+  margin-right: 6px;
+  color: var(--faint);
+}
+
+.randomize-feedback {
+  margin: 0 0 var(--space-sm);
+  color: var(--body);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.randomize-feedback-inline {
+  color: var(--body);
+}
+
+.randomize-feedback.is-success,
+.randomize-feedback-inline.is-success {
+  color: var(--success);
+}
+
+.randomize-feedback.is-notice,
+.randomize-feedback-inline.is-notice {
+  color: var(--warning);
 }
 
 .plan-row {

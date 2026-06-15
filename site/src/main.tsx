@@ -49,6 +49,10 @@ type ShareState = {
   message: string;
   manualUrl?: string;
 };
+type RandomizeFeedback = {
+  message: string;
+  changed: boolean;
+};
 type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
@@ -151,6 +155,8 @@ function App() {
   const [generationError, setGenerationError] = useState("");
   const [isPlanStale, setIsPlanStale] = useState(false);
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, string>>({});
+  const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
+  const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
   const [deletedItemUndo, setDeletedItemUndo] = useState<DeletedItemUndo | undefined>();
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
@@ -204,6 +210,7 @@ function App() {
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
     setGenerationError("");
     setMealToolMessages({});
+    clearRandomizeFeedback();
     markPlanStale();
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -212,6 +219,8 @@ function App() {
     const seed = options.seed ?? Date.now();
     const useExistingLocks = options.useExistingLocks ?? true;
     setDeletedItemUndo(undefined);
+    setMealToolMessages({});
+    clearRandomizeFeedback();
     const next = generateEditablePlan(sourceForm, useExistingLocks ? plan : undefined, useExistingLocks ? lockedIds : new Set<string>(), seed);
 
     if (next) {
@@ -253,13 +262,23 @@ function App() {
   function randomizeVisiblePlan() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
-    setPlan(randomizePlan(plan, form, lockedIds));
+    setMealRandomizeFeedback({});
+    const next = randomizePlan(plan, form, lockedIds);
+    const changed = JSON.stringify(next) !== JSON.stringify(plan);
+    setPlan(next);
+    setPlanRandomizeFeedback({
+      changed,
+      message: changed
+        ? "Plan randomized."
+        : "No different plan found with the current locks and food rules. Unlock items or relax rules, then try again.",
+    });
     setIsPlanStale(false);
   }
 
   function updateDietaryLevel(level: DietaryLevel) {
     setGenerationError("");
     setMealToolMessages({});
+    clearRandomizeFeedback();
     markPlanStale();
     setForm((current) => ({
       ...current,
@@ -273,6 +292,7 @@ function App() {
   function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
     setGenerationError("");
     setMealToolMessages({});
+    clearRandomizeFeedback();
     markPlanStale();
     setForm((current) => {
       const next = checked
@@ -284,6 +304,7 @@ function App() {
 
   function toggleLock(itemId: string) {
     setDeletedItemUndo(undefined);
+    clearRandomizeFeedback();
     setLockedIds((current) => {
       const next = new Set(current);
       if (next.has(itemId)) {
@@ -303,6 +324,7 @@ function App() {
 
     if (!meal || !item) return;
 
+    clearRandomizeFeedback();
     setDeletedItemUndo({
       item,
       itemIndex,
@@ -321,6 +343,7 @@ function App() {
   function undoDeletedItem() {
     if (!deletedItemUndo) return;
 
+    clearRandomizeFeedback();
     setPlan((current) => current ? restoreDeletedItem(current, deletedItemUndo) : current);
     setLockedIds((current) => {
       const next = new Set(current);
@@ -342,6 +365,7 @@ function App() {
   function addMealItem(mealId: string, groupId: "grain" | "protein-serving" | "fruit") {
     if (!plan) return;
 
+    clearRandomizeFeedback();
     const next = addItemToMeal(plan, mealId, groupId, groupId === "protein-serving" ? form : undefined);
     if (next === plan && groupId === "protein-serving") {
       setMealToolMessages((current) => ({
@@ -363,30 +387,59 @@ function App() {
   function addEmptyMeal() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
+    clearRandomizeFeedback();
     setPlan(addMeal(plan));
   }
 
   function updatePlanItemServing(itemId: string, amount: number) {
     if (!plan) return;
     setDeletedItemUndo(undefined);
+    clearRandomizeFeedback();
     setPlan(updateItemAmount(plan, itemId, amount));
   }
 
   function swapPlanItem(itemId: string, optionId: string) {
     if (!plan) return;
     setDeletedItemUndo(undefined);
+    clearRandomizeFeedback();
     setPlan(swapExchangeOption(plan, itemId, optionId));
   }
 
   function randomizeSingleMeal(mealId: string) {
     if (!plan) return;
+    const meal = plan.meals.find((candidate) => candidate.id === mealId);
+    if (!meal) return;
+
     setDeletedItemUndo(undefined);
-    setPlan(randomizePlan(plan, form, lockedIds, mealId));
+    setPlanRandomizeFeedback(undefined);
+    const next = randomizePlan(plan, form, lockedIds, mealId);
+    const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
+    const changed = JSON.stringify(nextMeal) !== JSON.stringify(meal);
+    setPlan(next);
+    setMealRandomizeFeedback({
+      [mealId]: {
+        changed,
+        message: changed
+          ? `${meal.displayName} randomized.`
+          : "No different meal found with the current locks and food rules. Unlock items or relax rules, then try again.",
+      },
+    });
   }
 
   function clearLocks() {
     setDeletedItemUndo(undefined);
+    clearRandomizeFeedback();
     setLockedIds(new Set());
+  }
+
+  function updateMealTarget(mealId: string, key: keyof MealMacroTarget, value: string) {
+    clearRandomizeFeedback();
+    setMealTargets((current) => ({ ...current, [mealId]: { ...current[mealId], [key]: value } }));
+  }
+
+  function clearRandomizeFeedback() {
+    setPlanRandomizeFeedback(undefined);
+    setMealRandomizeFeedback({});
   }
 
   function share() {
@@ -589,6 +642,11 @@ function App() {
             <button type="button" onClick={randomizeVisiblePlan}>Randomize</button>
             <button type="button" onClick={share}>Share</button>
           </div>
+          {planRandomizeFeedback && (
+            <p className={`randomize-feedback ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}`} role="status">
+              {planRandomizeFeedback.message}
+            </p>
+          )}
           {shareState && (
             <div className={`share-state${shareState.manualUrl ? " manual-share" : ""}`} role="status">
               <p>{shareState.message}</p>
@@ -652,6 +710,7 @@ function App() {
               const mealTotals = calculateMealTotals(meal);
               const status = mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {});
               const roleTags = mealRoleTags(meal);
+              const mealFeedback = mealRandomizeFeedback[meal.id];
               return (
               <details className="meal-card" key={meal.id}>
                 <summary>
@@ -698,14 +757,23 @@ function App() {
                     <span className="drawer-summary">{status.length > 0 ? status.join(" · ") : "Targets + add items"}</span>
                   </summary>
                   <div className="meal-targets">
-                    <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], calories: event.target.value } }))} min="0" max="5000" step="25" type="number" /></label>
-                    <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => setMealTargets((current) => ({ ...current, [meal.id]: { ...current[meal.id], protein: event.target.value } }))} min="0" step="5" type="number" /></label>
+                    <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => updateMealTarget(meal.id, "calories", event.target.value)} min="0" max="5000" step="25" type="number" /></label>
+                    <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => updateMealTarget(meal.id, "protein", event.target.value)} min="0" step="5" type="number" /></label>
                     <button type="button" onClick={() => randomizeSingleMeal(meal.id)}>Randomize meal</button>
                     <button type="button" onClick={() => addMealItem(meal.id, "protein-serving")}>Add protein</button>
                     <button type="button" onClick={() => addMealItem(meal.id, "grain")}>Add grain</button>
                     <button type="button" onClick={() => addMealItem(meal.id, "fruit")}>Add fruit</button>
                   </div>
-                  <div className="meal-status">{[mealToolMessages[meal.id], status.join(" · ")].filter(Boolean).join(" · ")}</div>
+                  <div className="meal-status">
+                    {mealFeedback && (
+                      <span className={`randomize-feedback-inline ${mealFeedback.changed ? "is-success" : "is-notice"}`}>
+                        {mealFeedback.message}
+                      </span>
+                    )}
+                    {[mealToolMessages[meal.id], status.join(" · ")].filter(Boolean).map((message) => (
+                      <span key={message}>{message}</span>
+                    ))}
+                  </div>
                 </details>
               </details>
             );
