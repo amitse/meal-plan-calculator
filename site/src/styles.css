@@ -298,6 +298,14 @@ small {
   line-height: 1;
 }
 
+.first-plan-helper {
+  margin: 0 0 var(--space-sm);
+  color: var(--body);
+  font-size: 0.86rem;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

@@ -940,6 +940,12 @@ function App() {
             </div>
           )}
 
+          {!plan && (
+            <p className="first-plan-helper">
+              Calories are required. Protein and Customize are optional for the first Generate.
+            </p>
+          )}
+
           <div className="quick-fields">
             <label className="field calorie-field">
               <span className="label-with-icon"><Icon name="calories" />Calories (kcal)</span>
