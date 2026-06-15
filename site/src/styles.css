@@ -1152,6 +1152,22 @@ fieldset {
   line-height: 1.45;
 }
 
+.stale-plan-notice {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(225, 189, 99, 0.48);
+  border-radius: 12px;
+  background: rgba(225, 189, 99, 0.12);
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.bottom-action .stale-plan-notice {
+  margin: 0 0 var(--space-xs);
+  text-align: center;
+}
+
 .locked-notice {
   display: grid;
   gap: var(--space-sm);

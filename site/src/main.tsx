@@ -131,6 +131,7 @@ function App() {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState<ShareState | undefined>();
   const [generationError, setGenerationError] = useState("");
+  const [isPlanStale, setIsPlanStale] = useState(false);
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(false);
@@ -182,6 +183,7 @@ function App() {
 
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
     setGenerationError("");
+    markPlanStale();
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -190,6 +192,7 @@ function App() {
 
     if (next) {
       setGenerationError("");
+      setIsPlanStale(false);
       setPlan(next);
       setActiveView("plan");
     } else {
@@ -207,8 +210,21 @@ function App() {
     generate(preset.form);
   }
 
+  function markPlanStale() {
+    if (plan) {
+      setIsPlanStale(true);
+    }
+  }
+
+  function randomizeVisiblePlan() {
+    if (!plan) return;
+    setPlan(randomizePlan(plan, form, lockedIds));
+    setIsPlanStale(false);
+  }
+
   function updateDietaryLevel(level: DietaryLevel) {
     setGenerationError("");
+    markPlanStale();
     setForm((current) => ({
       ...current,
       dietaryLevel: level,
@@ -220,6 +236,7 @@ function App() {
 
   function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
     setGenerationError("");
+    markPlanStale();
     setForm((current) => {
       const next = checked
         ? [...new Set([...current[key], optionId])]
@@ -426,6 +443,7 @@ function App() {
         </section>
 
         <div className="bottom-action">
+          {isPlanStale && plan && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
           <button className="primary-action" type="submit">Generate</button>
         </div>
       </form>
@@ -436,7 +454,7 @@ function App() {
           <div className="section-heading result-head">
             <h2 id="result-title">{evaluation.status === "pass" ? "Meets target" : "Adjust"}</h2>
             <button type="button" onClick={() => setActiveView("targets")}>Targets</button>
-            <button type="button" onClick={() => setPlan(randomizePlan(plan, form, lockedIds))}>Randomize</button>
+            <button type="button" onClick={randomizeVisiblePlan}>Randomize</button>
             <button type="button" onClick={share}>Share</button>
           </div>
           {shareState && (
@@ -450,6 +468,7 @@ function App() {
               )}
             </div>
           )}
+          {isPlanStale && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
           <details className="export-drawer">
             <summary>
               <span>Export</span>
