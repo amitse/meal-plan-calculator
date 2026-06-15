@@ -1458,6 +1458,21 @@ function App() {
             {dietRuleNotice && <p id="diet-rule-notice" className="diet-rule-notice" role="status">{dietRuleNotice}</p>}
           </fieldset>
 
+          <details className={`quick-start-presets example-drawer${plan ? " is-compact" : ""}`}>
+            <summary>
+              <span className="summary-label"><Icon name="plate" />{plan ? "Replace with example" : "Try sample targets"}</span>
+              <span className="drawer-summary">Fill safe targets and generate</span>
+            </summary>
+            <div className="quick-start-row">
+              {quickStartPresets.map((preset) => (
+                <button key={preset.label} type="button" onClick={() => selectQuickStartPreset(preset)}>
+                  <span className="quick-start-label"><Icon name="bowl" />{preset.label}</span>
+                  <span className="quick-start-preview">{quickStartPresetPreview(preset.form)}</span>
+                </button>
+              ))}
+            </div>
+          </details>
+
           <details className="options-drawer" ref={optionsDrawerRef} open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>
               <span className="summary-label"><Icon name="tools" />Customize</span>
@@ -1529,21 +1544,6 @@ function App() {
               </ul>
             </div>
           )}
-
-          <details className={`quick-start-presets example-drawer${plan ? " is-compact" : ""}`}>
-            <summary>
-              <span className="summary-label"><Icon name="plate" />{plan ? "Replace with example" : "Try an example"}</span>
-              <span className="drawer-summary">Use sample targets</span>
-            </summary>
-            <div className="quick-start-row">
-              {quickStartPresets.map((preset) => (
-                <button key={preset.label} type="button" onClick={() => selectQuickStartPreset(preset)}>
-                  <span className="quick-start-label"><Icon name="bowl" />{preset.label}</span>
-                  <span className="quick-start-preview">{quickStartPresetPreview(preset.form)}</span>
-                </button>
-              ))}
-            </div>
-          </details>
 
           {pendingQuickStartPreset && (
             <dialog
