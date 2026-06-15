@@ -475,6 +475,7 @@ function App() {
     if (result.plan) {
       setIsPlanStale(false);
       setPlan(result.plan);
+      setExpandedMealIds(new Set(result.plan.meals[0] ? [result.plan.meals[0].id] : []));
       setActiveView("plan");
       setDietRuleNotice("");
       return true;
