@@ -1557,7 +1557,7 @@ export function App() {
 
         {surface === "page" && !plan && (
           <p className="first-plan-helper">
-            Start with daily calories. Protein and macros are optional; use Customize for diet, food preferences, and Leave out rules before Generate.
+            Start with calories; protein is optional. Customize only if you want diet, food, or macro rules.
           </p>
         )}
 
@@ -1580,7 +1580,7 @@ export function App() {
               step={50}
               value={form.calories}
             />
-            <small id="calories-helper" className="field-hint">Target band: plans can pass within about 50 kcal.</small>
+            <small id="calories-helper" className="field-hint">Passes within about 50 kcal.</small>
             {calorieInputError && (
               <small id="calories-error" className="field-error" role="alert">{calorieInputError}</small>
             )}
@@ -1596,7 +1596,7 @@ export function App() {
               step={5}
               value={form.protein}
             />
-            <small id="protein-helper" className="field-hint">Optional: leave blank to generate from calories only. When set, plans can pass within about 5gm.</small>
+            <small id="protein-helper" className="field-hint">Optional; blank uses calories only.</small>
           </label>
         </div>
 
@@ -1697,7 +1697,7 @@ export function App() {
 
         {activeCustomizationRuleLabels.length > 0 && (
           <div className="active-macro-rules active-customization-rules" aria-label="Active customization rules">
-            <span>Active settings</span>
+            <span>{activeCustomizationRuleLabels.length} active settings</span>
             <ul>
               {activeCustomizationRuleLabels.map((label) => <li key={label}>{label}</li>)}
             </ul>
@@ -1905,13 +1905,13 @@ export function App() {
           )}
           {recoveryMessages.length > 0 && (
             <div className="failure" role="alert" aria-label="Target recovery actions">
-              <p>Some targets need adjustment:</p>
+              <p><strong>Targets need adjustment.</strong> Regenerate after changing these limits:</p>
               <ul>
                 {recoveryMessages.map((message) => <li key={message}>{message}</li>)}
               </ul>
             </div>
           )}
-          <p className="meal-list-helper">Tap any meal to view foods, edit servings, swap options, or lock items.</p>
+          <p className="meal-list-helper">Review meals below. Open one to edit servings, swap foods, or lock items.</p>
           <p className="meal-collapse-cue" role="note">{mealReviewCue(plan, expandedMealIds)}</p>
           <div className="meal-list-toolbar">
             <button className="secondary-action with-icon" type="button" onClick={() => addEmptyMeal("before-list")}><Icon name="add" />Add meal</button>
@@ -2092,7 +2092,7 @@ export function App() {
             })}
           </div>
           {addMealBlocker && addMealBlockerLocation === "after-list" && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
-          <button className="secondary-action with-icon" type="button" onClick={() => addEmptyMeal("after-list")}><Icon name="add" />Add meal</button>
+          <button className="secondary-action with-icon after-list-add-meal" type="button" onClick={() => addEmptyMeal("after-list")}><Icon name="add" />Add meal</button>
           {deletedItemUndo && (
             <div className="undo-delete-state" role="status">
               <p><strong>{deletedItemUndo.label}</strong> removed</p>
@@ -2176,7 +2176,7 @@ export function App() {
                 <button className="with-icon" type="button" aria-label="Close adjust options" onClick={() => setAdjustSheetOpen(false)}><Icon name="close" />Close</button>
               </header>
               <p id={adjustSheetDescriptionId} className="swap-sheet-description">
-                Tune calories, protein, diet, foods, and macro rules here. Your current plan stays visible underneath until regeneration succeeds.
+                Tune targets and rules here. The visible plan changes only after regeneration succeeds.
               </p>
               <div className="adjust-options">
                 {renderTargetControls("sheet")}
@@ -2209,12 +2209,12 @@ export function App() {
               <header className="swap-sheet-header">
                 <div>
                   <p>Share plan</p>
-                  <h3 id={exportSheetTitleId}>Send it anywhere</h3>
+                  <h3 id={exportSheetTitleId}>Share this plan</h3>
                 </div>
                 <button className="with-icon" type="button" aria-label="Close share options" onClick={() => setExportSheetOpen(false)}><Icon name="close" />Close</button>
               </header>
               <p id={exportSheetDescriptionId} className="swap-sheet-description">
-                Share a live link to this plan, send text or image to WhatsApp, or download one spreadsheet file for Excel and Google Sheets.
+                Send a live link, text, or image. Download a spreadsheet when you want to edit the plan later.
               </p>
               <div className="export-options" aria-label="Share and export meal plan">
                 {isPlanStale && (
@@ -2238,7 +2238,7 @@ export function App() {
                     <p>{exportSheetStatus.message}</p>
                   </div>
                 )}
-                <p className="export-helper">Spreadsheet downloads as one file. Import it into Google Sheets or open it in Excel.</p>
+                <p className="export-helper">Spreadsheet works in Google Sheets and Excel. CSV is best for plain data import.</p>
                 {!isPlanStale && manualShareText && (
                   <div className="manual-share-recovery">
                     <p role="status">
@@ -2727,6 +2727,11 @@ function customizeDrawerSummary(form: EditableFormState) {
   const activeFoodLabels = activeFoodCustomizationLabels(form);
   const activeMacros = activeMacroCount(form);
   const incompleteMacros = incompleteMacroCount(form);
+  const activeCount = activeFoodLabels.length + activeMacros + incompleteMacros;
+  if (activeCount > 0) {
+    return `${activeCount} active setting${activeCount === 1 ? "" : "s"}`;
+  }
+
   const labels = [
     ...activeFoodLabels,
     incompleteMacros > 0 ? `${incompleteMacros} incomplete macro rule${incompleteMacros === 1 ? "" : "s"}` : undefined,
@@ -3564,7 +3569,7 @@ function PlanItemRow({
                   <button className="with-icon" type="button" aria-label={`Close swap options for ${label}`} onClick={() => setSwapSheetOpen(false)}><Icon name="close" />Close</button>
                 </header>
                 <p id={swapDescriptionId} className="swap-sheet-description">
-                  Choose an exchange-equivalent option. Your serving amount, locks, and the rest of the meal stay unchanged.
+                  Pick an exchange-equivalent food. Serving amount and locks stay unchanged.
                 </p>
                 <div className="swap-options" aria-label={`Allowed swaps for ${label}`}>
                   {!hasSelectableSwapAlternative && (
