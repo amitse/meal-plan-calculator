@@ -22,12 +22,15 @@ import { Grains } from "@phosphor-icons/react/Grains";
 import { Leaf } from "@phosphor-icons/react/Leaf";
 import { Lock } from "@phosphor-icons/react/Lock";
 import { LockOpen } from "@phosphor-icons/react/LockOpen";
+import { Monitor } from "@phosphor-icons/react/Monitor";
+import { MoonStars } from "@phosphor-icons/react/MoonStars";
 import { Orange } from "@phosphor-icons/react/Orange";
 import { Plant } from "@phosphor-icons/react/Plant";
 import { Plus } from "@phosphor-icons/react/Plus";
 import { ShareNetwork } from "@phosphor-icons/react/ShareNetwork";
 import { Shuffle } from "@phosphor-icons/react/Shuffle";
 import { SlidersHorizontal } from "@phosphor-icons/react/SlidersHorizontal";
+import { Sun } from "@phosphor-icons/react/Sun";
 import { Swap } from "@phosphor-icons/react/Swap";
 import { Target } from "@phosphor-icons/react/Target";
 import { Trash } from "@phosphor-icons/react/Trash";
@@ -122,6 +125,8 @@ type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
 };
+type ThemePreference = "system" | "light" | "dark";
+type ResolvedTheme = Exclude<ThemePreference, "system">;
 type GenerateOptions = {
   seed?: number;
   useExistingLocks?: boolean;
@@ -197,11 +202,14 @@ type IconName =
   | "leaf"
   | "lock"
   | "macros"
+  | "moon"
   | "plate"
   | "plantProtein"
   | "protein"
   | "randomize"
   | "share"
+  | "sun"
+  | "system"
   | "swap"
   | "targets"
   | "tools"
@@ -282,6 +290,17 @@ const generationProgressMessage = "Generating plan...";
 const googleTranslateElementId = "google_translate_element";
 const googleTranslateScriptId = "google-translate-script";
 const googleTranslateCookieName = "googtrans";
+const themeStorageKey = "meal-plan-theme";
+const themeColorMetaSelector = 'meta[name="theme-color"]';
+const themeColorByMode: Record<ResolvedTheme, string> = {
+  dark: "#141414",
+  light: "#F7F6F2",
+};
+const themeOptions: { preference: ThemePreference; label: string }[] = [
+  { preference: "system", label: "Auto" },
+  { preference: "light", label: "Light" },
+  { preference: "dark", label: "Dark" },
+];
 const translationLanguages = [
   { code: "", label: "English" },
   { code: "hi", label: "Hindi" },
@@ -317,6 +336,62 @@ function waitForGenerationProgressFrame() {
       }, 0);
     });
   });
+}
+
+function isThemePreference(value: string | null): value is ThemePreference {
+  return value === "system" || value === "light" || value === "dark";
+}
+
+function readThemePreference(): ThemePreference {
+  if (typeof window === "undefined") return "system";
+
+  try {
+    const storedPreference = window.localStorage.getItem(themeStorageKey);
+    return isThemePreference(storedPreference) ? storedPreference : "system";
+  } catch (error) {
+    console.warn("Could not read theme preference.", error);
+    return "system";
+  }
+}
+
+function readSystemTheme(): ResolvedTheme {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "dark";
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+function resolveTheme(preference: ThemePreference, systemTheme: ResolvedTheme): ResolvedTheme {
+  return preference === "system" ? systemTheme : preference;
+}
+
+function writeThemePreference(preference: ThemePreference) {
+  try {
+    window.localStorage.setItem(themeStorageKey, preference);
+  } catch (error) {
+    console.warn("Could not save theme preference.", error);
+  }
+}
+
+function applyTheme(preference: ThemePreference, resolvedTheme: ResolvedTheme) {
+  if (typeof document === "undefined") return;
+
+  document.documentElement.dataset.theme = resolvedTheme;
+  document.documentElement.dataset.themePreference = preference;
+
+  const themeColorMeta = document.querySelector<HTMLMetaElement>(themeColorMetaSelector);
+  if (themeColorMeta) {
+    themeColorMeta.content = themeColorByMode[resolvedTheme];
+  }
+}
+
+function themePreferenceFromValue(value: string): ThemePreference {
+  if (isThemePreference(value)) return value;
+  console.warn(`Unsupported theme preference "${value}". Falling back to system.`);
+  return "system";
+}
+
+function themePreferenceLabel(preference: ThemePreference | ResolvedTheme) {
+  if (preference === "system") return "Auto";
+  return preference === "light" ? "Light" : "Dark";
 }
 
 function App() {
@@ -358,6 +433,8 @@ function App() {
   const [dietRuleNotice, setDietRuleNotice] = useState("");
   const [pendingQuickStartPreset, setPendingQuickStartPreset] = useState<QuickStartPreset | undefined>();
   const [exportSheetOpen, setExportSheetOpen] = useState(false);
+  const [themePreference, setThemePreference] = useState<ThemePreference>(readThemePreference);
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(readSystemTheme);
   const resultRef = useRef<HTMLElement>(null);
   const exportSheetRef = useRef<HTMLDialogElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
@@ -394,6 +471,7 @@ function App() {
   const shareActionFeedback = shareState && (shareState.stale || shareState.shareKey || shareState.manualUrl) ? shareState : undefined;
   const topShareState = shareState && !shareActionFeedback ? shareState : undefined;
   const hasResultActionStatus = Boolean(activeView === "plan" && (planRandomizeFeedback || shareActionFeedback));
+  const resolvedTheme = resolveTheme(themePreference, systemTheme);
 
   useEffect(() => {
     if (plan && activeView === "plan") {
@@ -415,6 +493,22 @@ function App() {
     feedbackPanel.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
     feedbackPanel.focus({ preventScroll: true });
   }, [generationBlockers]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+
+    const systemThemeQuery = window.matchMedia("(prefers-color-scheme: light)");
+    const syncSystemTheme = () => setSystemTheme(systemThemeQuery.matches ? "light" : "dark");
+
+    syncSystemTheme();
+    systemThemeQuery.addEventListener("change", syncSystemTheme);
+    return () => systemThemeQuery.removeEventListener("change", syncSystemTheme);
+  }, []);
+
+  useEffect(() => {
+    applyTheme(themePreference, resolvedTheme);
+    writeThemePreference(themePreference);
+  }, [resolvedTheme, themePreference]);
 
   useEffect(() => {
     const dialog = quickStartConfirmDialogRef.current;
@@ -1203,6 +1297,7 @@ function App() {
         <h1>Meal plan</h1>
         <div className="header-actions">
           <TranslationControl />
+          <ThemeSwitcher preference={themePreference} resolvedTheme={resolvedTheme} onChange={setThemePreference} />
           {!isInstalledView && (
             <button className="with-icon" type="button" onClick={() => void installApp()}>
               <Icon name="install" />
@@ -1859,6 +1954,39 @@ function restoreDeletedItem(plan: DailyPlan, deletedItem: DeletedItemUndo): Dail
   };
 }
 
+function ThemeSwitcher({
+  onChange,
+  preference,
+  resolvedTheme,
+}: {
+  onChange: (preference: ThemePreference) => void;
+  preference: ThemePreference;
+  resolvedTheme: ResolvedTheme;
+}) {
+  const themeSelectId = useId();
+  const activeLabel = preference === "system"
+    ? `Auto (${themePreferenceLabel(resolvedTheme)})`
+    : themePreferenceLabel(preference);
+
+  return (
+    <div className={`theme-control is-${resolvedTheme} notranslate`} translate="no">
+      <label className="sr-only" htmlFor={themeSelectId}>Appearance</label>
+      <Icon name={preference === "system" ? "system" : resolvedTheme === "light" ? "sun" : "moon"} />
+      <select
+        id={themeSelectId}
+        aria-label={`Appearance: ${activeLabel}`}
+        value={preference}
+        onChange={(event) => onChange(themePreferenceFromValue(event.target.value))}
+      >
+        {themeOptions.map((option) => (
+          <option key={option.preference} value={option.preference}>{option.label}</option>
+        ))}
+      </select>
+      <span className="sr-only" role="status">Theme is {activeLabel}</span>
+    </div>
+  );
+}
+
 function TranslationControl() {
   const [language, setLanguage] = useState(readGoogleTranslateLanguage);
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable">("loading");
@@ -2139,11 +2267,14 @@ const iconMap = {
   leaf: Leaf,
   lock: Lock,
   macros: ChartBar,
+  moon: MoonStars,
   plate: CookingPot,
   plantProtein: Plant,
   protein: Barbell,
   randomize: Shuffle,
   share: ShareNetwork,
+  sun: Sun,
+  system: Monitor,
   swap: Swap,
   targets: Target,
   tools: SlidersHorizontal,

@@ -8,6 +8,25 @@
       content="Generate realistic Indian meal plans from calories, macros, dietary level, and taste preferences."
     />
     <meta name="theme-color" content="#141414" />
+    <script>
+      (() => {
+        const storageKey = "meal-plan-theme";
+        const themeColorByMode = { dark: "#141414", light: "#F7F6F2" };
+        const isThemePreference = (value) => value === "system" || value === "light" || value === "dark";
+
+        try {
+          const storedPreference = window.localStorage.getItem(storageKey);
+          const preference = isThemePreference(storedPreference) ? storedPreference : "system";
+          const systemTheme = window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+          const resolvedTheme = preference === "system" ? systemTheme : preference;
+          document.documentElement.dataset.theme = resolvedTheme;
+          document.documentElement.dataset.themePreference = preference;
+          document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColorByMode[resolvedTheme]);
+        } catch (error) {
+          console.warn("Could not apply saved theme preference.", error);
+        }
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Meal Plan" />
@@ -22,8 +41,8 @@
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/meal-plan-calculator/assets/index-BRVKDybC.js"></script>
-    <link rel="stylesheet" crossorigin href="/meal-plan-calculator/assets/index-CgZ-4REx.css">
+    <script type="module" crossorigin src="/meal-plan-calculator/assets/index-C6VhUWEK.js"></script>
+    <link rel="stylesheet" crossorigin href="/meal-plan-calculator/assets/index-DC0zUTr8.css">
   </head>
   <body>
     <div id="root"></div>

@@ -31,4 +31,12 @@ describe("PWA shell", () => {
     expect(serviceWorker).toContain("self.addEventListener(\"fetch\"");
     expect(serviceWorker).toContain("request.mode === \"navigate\"");
   });
+
+  it("applies saved appearance before the app renders", async () => {
+    const html = await readFile("site/index.html", "utf8");
+
+    expect(html).toContain("meal-plan-theme");
+    expect(html).toContain("prefers-color-scheme: light");
+    expect(html).toContain("document.documentElement.dataset.theme");
+  });
 });

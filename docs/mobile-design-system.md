@@ -22,8 +22,10 @@ The source site uses:
 - alternate charcoal `#1c1c1c`
 - warm off-white ink `#F0EFEB`
 - light theme background `#F7F6F2`
-- light alternate surface `#EFEDE8`
+- light content surface `#FFFFFF`
+- light alternate surface `#EEEAE2`
 - accessible thin editorial borders `#4A433A` / `#C9C3B8`
+- persisted `Auto` / `Light` / `Dark` appearance switching that honors system preference by default
 - serif display: `Cormorant Garamond`
 - sans UI: `DM Sans`
 - uppercase micro-labels with wide tracking
@@ -47,11 +49,12 @@ The source site uses:
 | Role | Dark | Light | Use |
 | --- | --- | --- | --- |
 | Background | `#141414` | `#F7F6F2` | App/page base |
-| Surface | `#1c1c1c` | `#EFEDE8` | Panels, result sections |
-| Ink | `#F0EFEB` | `#141414` | Headings and primary text |
-| Body | `#C8C2B7` | `#2A2A2A` | Body copy; AA/AAA contrast on base backgrounds |
-| Muted | `#ACA394` | `#5E574E` | Hints, labels, secondary metadata; still AA-safe |
-| Border | `#4A433A` | `#C9C3B8` | Dividers and low chrome with visible contrast |
+| Surface | `#1c1c1c` | `#FFFFFF` | Panels, dialogs, result sections |
+| Strong surface | `#0e0e0e` | `#EEEAE2` | Inputs, bottom action bar, compact header controls |
+| Ink | `#F0EFEB` | `#161412` | Headings and primary text |
+| Body | `#C8C2B7` | `#332D25` | Body copy; AA/AAA contrast on base backgrounds |
+| Muted | `#ACA394` | `#665E52` | Hints, labels, secondary metadata; still AA-safe |
+| Border | `#4A433A` | `#C8BFB0` | Dividers and low chrome with visible contrast |
 
 ### Typography roles
 
