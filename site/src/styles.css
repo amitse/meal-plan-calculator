@@ -1905,6 +1905,18 @@ fieldset {
   color: var(--danger);
 }
 
+.generated-target-confirmation {
+  margin: var(--space-xs) 0 0;
+  border: var(--size-px) solid var(--alpha-success-42);
+  border-radius: var(--control-radius);
+  background: var(--alpha-success-10);
+  color: var(--ink);
+  padding: var(--size-8) var(--size-10);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .target-context {
   display: flex;
   flex-wrap: wrap;

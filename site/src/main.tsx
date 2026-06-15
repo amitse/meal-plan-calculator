@@ -433,6 +433,7 @@ function App() {
   const [shareLoadFailed, setShareLoadFailed] = useState(loadedUrlState.shareLoadFailed);
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
+  const [generatedTargetConfirmation, setGeneratedTargetConfirmation] = useState("");
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, MealToolMessage>>({});
   const [swapConfirmation, setSwapConfirmation] = useState<SwapConfirmation | undefined>();
   const [servingEditConfirmation, setServingEditConfirmation] = useState<ServingEditConfirmation | undefined>();
@@ -679,6 +680,7 @@ function App() {
 
     if (result.plan) {
       setIsPlanStale(false);
+      setGeneratedTargetConfirmation(generatedTargetConfirmationMessage(sourceForm));
       setPlan(result.plan);
       setExpandedMealIds(new Set(result.plan.meals[0] ? [result.plan.meals[0].id] : []));
       setActiveView("plan");
@@ -780,6 +782,7 @@ function App() {
   function markPlanStale() {
     if (plan) {
       setIsPlanStale(true);
+      setGeneratedTargetConfirmation("");
       setManualShareText("");
     }
   }
@@ -1277,6 +1280,7 @@ function App() {
     setExportSheetStatus(undefined);
     setGenerationBlockers([]);
     setIsPlanStale(false);
+    setGeneratedTargetConfirmation("");
     setMealToolMessages({});
     setSwapConfirmation(undefined);
     setLockConfirmation(undefined);
@@ -1749,6 +1753,11 @@ function App() {
             <div className="shared-plan-orientation" role="status">
               <p><strong>Shared plan opened.</strong> Edits stay here until you Share a new link.</p>
             </div>
+          )}
+          {generatedTargetConfirmation && !isPlanStale && (
+            <p className="generated-target-confirmation" role="status" aria-live="polite" aria-atomic="true">
+              {generatedTargetConfirmation}
+            </p>
           )}
           {isPlanStale && (
             <div className="stale-plan-notice has-action" role="status">
@@ -2550,6 +2559,16 @@ function quickStartPresetPreview(form: EditableFormState) {
     dietLabel(form.dietaryLevel),
     quickStartFoodCue(form),
   ].filter((label): label is string => Boolean(label)).join(" · ");
+}
+
+function generatedTargetConfirmationMessage(form: EditableFormState) {
+  const calories = Math.round(Number(form.calories || 0));
+  const protein = Number(form.protein || 0);
+  const proteinLabel = protein > 0 ? `${Math.round(protein)}gm protein` : undefined;
+  const targetLabels = [`${calories} kcal`, proteinLabel, dietLabel(form.dietaryLevel)]
+    .filter((label): label is string => Boolean(label))
+    .join(", ");
+  return `Generated for ${targetLabels}.`;
 }
 
 function dietLabel(level: DietaryLevel) {
