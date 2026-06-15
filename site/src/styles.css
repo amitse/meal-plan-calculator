@@ -101,6 +101,68 @@ label {
   -webkit-tap-highlight-color: transparent;
 }
 
+.line-icon {
+  width: 1.12em;
+  height: 1.12em;
+  flex: 0 0 auto;
+  color: currentColor;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+  vector-effect: non-scaling-stroke;
+}
+
+.with-icon,
+.label-with-icon,
+.summary-label,
+.quick-start-label,
+.metric span,
+.target-status-item strong,
+.role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.with-icon {
+  justify-content: center;
+}
+
+.label-with-icon .line-icon,
+.summary-label .line-icon {
+  color: var(--muted);
+}
+
+.primary-action .line-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.mobile-header .line-icon,
+.section-heading button .line-icon,
+.export-actions .line-icon,
+.meal-targets button .line-icon,
+.secondary-action .line-icon,
+.item-actions button .line-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.segmented .line-icon,
+.choice-group .line-icon,
+.avoid-list .line-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.role-tag .line-icon {
+  width: 0.82rem;
+  height: 0.82rem;
+  stroke-width: 2;
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -964,7 +1026,9 @@ fieldset {
 }
 
 .metric span {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 600;
@@ -1451,16 +1515,28 @@ fieldset {
   color: var(--accent);
 }
 
-.swap-option span {
+.swap-option-name {
   font-size: 0.98rem;
   font-weight: 650;
   line-height: 1.25;
 }
 
-.swap-option small {
+.swap-option-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+}
+
+.swap-option-meta,
+.swap-option-meta span {
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.25;
+}
+
+.swap-option-current {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .item-actions .lock-toggle,
@@ -1601,6 +1677,8 @@ fieldset {
 }
 
 .share-load-warning {
+  display: grid;
+  gap: var(--space-xs);
   margin: 0 0 var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border: 1px solid rgba(225, 189, 99, 0.48);
@@ -1612,6 +1690,27 @@ fieldset {
 
 .share-load-warning p {
   margin: 0;
+}
+
+.share-load-warning button {
+  min-height: 40px;
+  justify-self: start;
+  border: 1px solid rgba(225, 189, 99, 0.6);
+  border-radius: 999px;
+  background: rgba(225, 189, 99, 0.14);
+  color: var(--ink);
+  padding: 0 var(--space-sm);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.share-load-warning button:hover {
+  border-color: var(--warning);
+  background: rgba(225, 189, 99, 0.2);
+}
+
+.share-load-warning button:active {
+  transform: translateY(1px) scale(0.99);
 }
 
 .share-load-warning strong {

@@ -80,6 +80,37 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
+type IconName =
+  | "add"
+  | "alert"
+  | "bowl"
+  | "calories"
+  | "carb"
+  | "check"
+  | "close"
+  | "copy"
+  | "dairy"
+  | "delete"
+  | "download"
+  | "egg"
+  | "export"
+  | "fat"
+  | "fiber"
+  | "fish"
+  | "food"
+  | "fruit"
+  | "install"
+  | "leaf"
+  | "lock"
+  | "macros"
+  | "plate"
+  | "protein"
+  | "randomize"
+  | "share"
+  | "swap"
+  | "targets"
+  | "tools"
+  | "unlock";
 
 const dietOptions: { level: DietaryLevel; label: string }[] = [
   { level: "vegetarian", label: "Vegetarian" },
@@ -161,6 +192,7 @@ function App() {
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState<ShareState | undefined>();
+  const [shareLoadFailed, setShareLoadFailed] = useState(loadedUrlState.shareLoadFailed);
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, string>>({});
@@ -571,6 +603,29 @@ function App() {
       .catch(showManualShareRecovery);
   }
 
+  function startCleanPlanFromBrokenShare() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("s");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+
+    setForm(normalizeEditableFormState());
+    setPlan(undefined);
+    setActiveView("targets");
+    setLockedIds(new Set());
+    setMealTargets({});
+    setOptionsOpen(false);
+    setShareState(undefined);
+    setGenerationBlockers([]);
+    setIsPlanStale(false);
+    setMealToolMessages({});
+    clearRandomizeFeedback();
+    setDeletedItemUndo(undefined);
+    setAddedMealFeedback(undefined);
+    setAddMealBlocker("");
+    setExpandedMealIds(new Set());
+    setShareLoadFailed(false);
+  }
+
   function exportCsv() {
     if (!plan) return;
     downloadTextFile(exportFilename("csv"), "text/csv;charset=utf-8", planExportCsv(plan));
@@ -633,12 +688,18 @@ function App() {
     <main className="app-shell">
       <header className="mobile-header">
         <h1>Meal plan</h1>
-        {!isInstalledView && <button type="button" onClick={() => void installApp()}>{isIosBrowser() ? "Add app" : "Install"}</button>}
+        {!isInstalledView && (
+          <button className="with-icon" type="button" onClick={() => void installApp()}>
+            <Icon name="install" />
+            {isIosBrowser() ? "Add app" : "Install"}
+          </button>
+        )}
       </header>
       {!isInstalledView && installState && <p className="install-state" role="status">{installState}</p>}
-      {loadedUrlState.shareLoadFailed && (
+      {shareLoadFailed && (
         <div className="share-load-warning" role="alert">
           <p><strong>Shared plan could not be opened.</strong> Start a new plan or ask for a fresh link.</p>
+          <button type="button" onClick={startCleanPlanFromBrokenShare}>Start new plan</button>
         </div>
       )}
 
@@ -656,7 +717,7 @@ function App() {
 
           <div className="quick-fields">
             <label className="field calorie-field">
-              <span>Calories (kcal)</span>
+              <span className="label-with-icon"><Icon name="calories" />Calories (kcal)</span>
               <div className="target-stepper">
                 <button type="button" aria-label="Decrease calories by 50" onClick={() => stepTarget("calories", -50, 800, 5000)}>−</button>
                 <input aria-describedby="calories-helper" inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="50" type="number" />
@@ -665,7 +726,7 @@ function App() {
               <small id="calories-helper" className="field-hint">Target band: plans can pass within about 50 kcal.</small>
             </label>
             <label className="field">
-              <span>Protein (gm)</span>
+              <span className="label-with-icon"><Icon name="protein" />Protein (gm)</span>
               <div className="target-stepper">
                 <button type="button" aria-label="Decrease protein by 5 grams" onClick={() => stepTarget("protein", -5)}>−</button>
                 <input aria-describedby="protein-helper" inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" step="5" type="number" />
@@ -685,7 +746,7 @@ function App() {
                   checked={form.dietaryLevel === option.level}
                   onChange={() => updateDietaryLevel(option.level)}
                 />
-                <span>{option.label}</span>
+                <span><Icon name={dietIcon(option.level)} />{option.label}</span>
               </label>
             ))}
             <p id="diet-helper" className="helper diet-helper">{dietDescriptions[form.dietaryLevel]}</p>
@@ -693,23 +754,23 @@ function App() {
 
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>
-              <span>Customize</span>
+              <span className="summary-label"><Icon name="tools" />Customize</span>
               <span className="drawer-summary">{customizeDrawerSummary(form)}</span>
             </summary>
 
             <details className="nested-drawer">
               <summary>
-                <span>Food</span>
+                <span className="summary-label"><Icon name="food" />Food</span>
                 <span className="drawer-summary">{foodDrawerSummary(form)}</span>
               </summary>
-              <PreferenceGroup label="Choose carbs" options={grainOptions} values={form.preferredGrains} onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)} />
-              <PreferenceGroup label="Choose proteins" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} values={form.preferredProteins} onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)} />
+              <PreferenceGroup iconFor={grainOptionIcon} label="Choose carbs" options={grainOptions} values={form.preferredGrains} onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)} />
+              <PreferenceGroup iconFor={proteinOptionIcon} label="Choose proteins" options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))} values={form.preferredProteins} onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)} />
               <fieldset className="avoid-list">
                 <legend>Leave out</legend>
-                <CheckChip label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
-                <CheckChip label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
-                {form.dietaryLevel !== "vegetarian" && <CheckChip label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />}
-                {form.dietaryLevel === "nonVegetarian" && <CheckChip label="Chicken / fish" checked={form.avoidChickenFish} onChange={(checked) => update("avoidChickenFish", checked)} />}
+                <CheckChip icon="dairy" label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
+                <CheckChip icon="protein" label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
+                {form.dietaryLevel !== "vegetarian" && <CheckChip icon="egg" label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />}
+                {form.dietaryLevel === "nonVegetarian" && <CheckChip icon="fish" label="Chicken / fish" checked={form.avoidChickenFish} onChange={(checked) => update("avoidChickenFish", checked)} />}
               </fieldset>
               {likedProteinAvoidConflicts.length > 0 && (
                 <p className="food-rule-conflict" role="note">
@@ -720,14 +781,14 @@ function App() {
 
             <details className="nested-drawer">
               <summary>
-                <span>Macros</span>
+                <span className="summary-label"><Icon name="macros" />Macros</span>
                 <span className="drawer-summary">{macroDrawerSummary(form)}</span>
               </summary>
               <div className="macro-grid">
-                <MacroInput label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
-                <MacroInput label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
-                <MacroInput label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
-                <MacroInput label="Saturated fat" value={form.saturatedFat} onChange={(value) => update("saturatedFat", value)} />
+                <MacroInput icon="carb" label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
+                <MacroInput icon="fat" label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
+                <MacroInput icon="fiber" label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
+                <MacroInput icon="fat" label="Saturated fat" value={form.saturatedFat} onChange={(value) => update("saturatedFat", value)} />
               </div>
             </details>
 
@@ -735,13 +796,13 @@ function App() {
 
           <details className={`quick-start-presets example-drawer${plan ? " is-compact" : ""}`}>
             <summary>
-              <span>{plan ? "Replace with example" : "Try an example"}</span>
+              <span className="summary-label"><Icon name="plate" />{plan ? "Replace with example" : "Try an example"}</span>
               <span className="drawer-summary">Use sample targets</span>
             </summary>
             <div className="quick-start-row">
               {quickStartPresets.map((preset) => (
                 <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
-                  <span className="quick-start-label">{preset.label}</span>
+                  <span className="quick-start-label"><Icon name="bowl" />{preset.label}</span>
                   <span className="quick-start-preview">{quickStartPresetPreview(preset.form)}</span>
                 </button>
               ))}
@@ -760,7 +821,7 @@ function App() {
 
         <div className="bottom-action">
           {isPlanStale && plan && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
-          <button className="primary-action" type="submit">{plan ? "Regenerate plan" : "Generate"}</button>
+          <button className="primary-action with-icon" type="submit"><Icon name="plate" />{plan ? "Regenerate plan" : "Generate"}</button>
         </div>
       </form>
       )}
@@ -772,9 +833,9 @@ function App() {
               <h2 id="result-title">Daily plan</h2>
               <span className={`result-status is-${evaluation.status}`}>{evaluation.status === "pass" ? "Within targets" : "Needs adjustment"}</span>
             </div>
-            <button type="button" onClick={() => setActiveView("targets")}>Targets</button>
-            <button type="button" onClick={randomizeVisiblePlan}>Randomize</button>
-            <button type="button" onClick={share}>Share</button>
+            <button className="with-icon" type="button" onClick={() => setActiveView("targets")}><Icon name="targets" />Targets</button>
+            <button className="with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
+            <button className="with-icon" type="button" onClick={share}><Icon name="share" />Share</button>
           </div>
           {planRandomizeFeedback && (
             <p className={`randomize-feedback ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}`} role="status">
@@ -795,13 +856,13 @@ function App() {
           {isPlanStale && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
           <details className="export-drawer">
             <summary>
-              <span>Export</span>
+              <span className="summary-label"><Icon name="export" />Export</span>
               <span className="drawer-summary">CSV · Excel · Google Docs</span>
             </summary>
             <div className="export-actions" aria-label="Export meal plan">
-              <button type="button" onClick={exportCsv}>CSV</button>
-              <button type="button" onClick={exportExcel}>Excel</button>
-              <button type="button" onClick={() => void copyForGoogleDocs()}>Google Docs</button>
+              <button className="with-icon" type="button" onClick={exportCsv}><Icon name="download" />CSV</button>
+              <button className="with-icon" type="button" onClick={exportExcel}><Icon name="export" />Excel</button>
+              <button className="with-icon" type="button" onClick={() => void copyForGoogleDocs()}><Icon name="copy" />Google Docs</button>
             </div>
           </details>
           {lockedItemCount > 0 && (
@@ -814,8 +875,8 @@ function App() {
             </div>
           )}
           <div className="summary-grid">
-            <SummaryMetric label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
-            <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
+            <SummaryMetric icon="calories" label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
+            <SummaryMetric icon="protein" label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
           </div>
           {proteinTarget > 0 && (
             <p className="target-context">Protein target {Math.round(proteinTarget)}gm uses an about ±5gm pass band.</p>
@@ -875,6 +936,7 @@ function App() {
                             key={tag.role}
                             aria-label={`${tag.label} ${tag.present ? "present" : "missing"}`}
                           >
+                            <Icon name={mealRoleIcon(tag.role)} />
                             {tag.present ? tag.label : `Missing ${tag.label}`}
                           </span>
                         ))}
@@ -914,16 +976,16 @@ function App() {
                 </div>
                 <details className="meal-tools">
                   <summary>
-                    <span>Meal tools</span>
+                    <span className="summary-label"><Icon name="tools" />Meal tools</span>
                     <span className="drawer-summary">{status.length > 0 ? status.join(" · ") : "Targets + add items"}</span>
                   </summary>
                   <div className="meal-targets">
                     <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => updateMealTarget(meal.id, "calories", event.target.value)} min="0" max="5000" step="25" type="number" /></label>
                     <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => updateMealTarget(meal.id, "protein", event.target.value)} min="0" step="5" type="number" /></label>
-                    <button type="button" onClick={() => randomizeSingleMeal(meal.id)}>Randomize meal</button>
-                    <button type="button" onClick={() => addMealItem(meal.id, "protein-serving")}>Add protein</button>
-                    <button type="button" onClick={() => addMealItem(meal.id, "grain")}>Add grain</button>
-                    <button type="button" onClick={() => addMealItem(meal.id, "fruit")}>Add fruit</button>
+                    <button className="with-icon" type="button" onClick={() => randomizeSingleMeal(meal.id)}><Icon name="randomize" />Randomize meal</button>
+                    <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "protein-serving")}><Icon name="protein" />Add protein</button>
+                    <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "grain")}><Icon name="carb" />Add grain</button>
+                    <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "fruit")}><Icon name="fruit" />Add fruit</button>
                   </div>
                   <div className="meal-status">
                     {mealFeedback && (
@@ -941,7 +1003,7 @@ function App() {
             })}
           </div>
           {addMealBlocker && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
-          <button className="secondary-action" type="button" onClick={addEmptyMeal}>Add meal</button>
+          <button className="secondary-action with-icon" type="button" onClick={addEmptyMeal}><Icon name="add" />Add meal</button>
         </section>
       )}
     </main>
@@ -973,10 +1035,10 @@ function restoreDeletedItem(plan: DailyPlan, deletedItem: DeletedItemUndo): Dail
   };
 }
 
-function MacroInput({ label, value, onChange }: { label: string; value: MacroField; onChange: (value: MacroField) => void }) {
+function MacroInput({ icon, label, value, onChange }: { icon: IconName; label: string; value: MacroField; onChange: (value: MacroField) => void }) {
   return (
     <label className="field compact">
-      <span>{label}</span>
+      <span><Icon name={icon} />{label}</span>
       <div className="inline-inputs">
         <select aria-label={`${label} bound type`} value={value.mode} onChange={(event) => onChange({ ...value, mode: event.target.value as BoundField })}>
           <option value="none">Off</option>
@@ -990,27 +1052,268 @@ function MacroInput({ label, value, onChange }: { label: string; value: MacroFie
   );
 }
 
-function PreferenceGroup({ label, options, values, onChange }: { label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
+function PreferenceGroup({ iconFor, label, options, values, onChange }: { iconFor: (optionId: string) => IconName; label: string; options: { id: string; label: string }[]; values: string[]; onChange: (optionId: string, checked: boolean) => void }) {
   return (
     <fieldset className="choice-group preference-group">
       <legend>{label}</legend>
       {options.map((option) => (
         <label key={option.id}>
           <input type="checkbox" checked={values.includes(option.id)} onChange={(event) => onChange(option.id, event.target.checked)} />
-          <span>{option.label}</span>
+          <span><Icon name={iconFor(option.id)} />{option.label}</span>
         </label>
       ))}
     </fieldset>
   );
 }
 
-function CheckChip({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+function CheckChip({ icon, label, checked, onChange }: { icon: IconName; label: string; checked: boolean; onChange: (checked: boolean) => void }) {
   return (
     <label>
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-      <span>{label}</span>
+      <span><Icon name={icon} />{label}</span>
     </label>
   );
+}
+
+function Icon({ name }: { name: IconName }) {
+  return (
+    <svg className="line-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+      {iconShape(name)}
+    </svg>
+  );
+}
+
+function iconShape(name: IconName) {
+  switch (name) {
+    case "add":
+      return <path d="M12 5v14M5 12h14" />;
+    case "alert":
+      return (
+        <>
+          <path d="M12 4 3.7 18.2h16.6L12 4Z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </>
+      );
+    case "bowl":
+      return (
+        <>
+          <path d="M5 11h14c-.4 4.2-3 7-7 7s-6.6-2.8-7-7Z" />
+          <path d="M7 11c.9-2 2.6-3 5-3s4.1 1 5 3" />
+          <path d="M9 18h6" />
+        </>
+      );
+    case "calories":
+      return (
+        <>
+          <path d="M12 20c3 0 5-2 5-4.8 0-2.5-1.5-4.2-3.4-5.8-.9-.8-1.5-1.9-1.3-3.4-3 1.8-5.3 4.6-5.3 8.9C7 17.9 9 20 12 20Z" />
+          <path d="M12 17c1.2 0 2-.8 2-2 0-1-.6-1.8-1.5-2.5-.5.8-1.4 1.4-1.9 2.3-.6 1.2.1 2.2 1.4 2.2Z" />
+        </>
+      );
+    case "carb":
+      return (
+        <>
+          <circle cx="12" cy="12" r="6.2" />
+          <path d="M7.8 10.2c2.2-1.2 5.6-1.3 8.4 0" />
+          <path d="M8.1 14.2c2.5 1.1 5.3 1 7.8 0" />
+        </>
+      );
+    case "check":
+      return <path d="m5 12.5 4.2 4.2L19 7" />;
+    case "close":
+      return (
+        <>
+          <path d="M6 6l12 12" />
+          <path d="M18 6 6 18" />
+        </>
+      );
+    case "copy":
+      return (
+        <>
+          <rect x="8" y="8" width="10" height="11" rx="1.5" />
+          <path d="M6 15H5.5A1.5 1.5 0 0 1 4 13.5v-8A1.5 1.5 0 0 1 5.5 4h8A1.5 1.5 0 0 1 15 5.5V6" />
+        </>
+      );
+    case "dairy":
+      return (
+        <>
+          <path d="M8 8h8l-1 11H9L8 8Z" />
+          <path d="M9 8V5.5C9 4.7 9.7 4 10.5 4h3c.8 0 1.5.7 1.5 1.5V8" />
+          <path d="M9 12h6" />
+        </>
+      );
+    case "delete":
+      return (
+        <>
+          <path d="M5 7h14" />
+          <path d="M9 7V5h6v2" />
+          <path d="m8 10 .6 9h6.8l.6-9" />
+        </>
+      );
+    case "download":
+      return (
+        <>
+          <path d="M12 4v10" />
+          <path d="m8 10 4 4 4-4" />
+          <path d="M5 19h14" />
+        </>
+      );
+    case "egg":
+      return <path d="M12 20c3.1 0 5-2.2 5-5.4C17 10.5 14.8 4 12 4s-5 6.5-5 10.6C7 17.8 8.9 20 12 20Z" />;
+    case "export":
+      return (
+        <>
+          <path d="M6 4h8l4 4v12H6V4Z" />
+          <path d="M14 4v5h5" />
+          <path d="M9 14h6" />
+          <path d="M9 17h4" />
+        </>
+      );
+    case "fat":
+      return <path d="M12 20c2.8 0 5-2 5-4.8 0-3.8-5-10.2-5-10.2S7 11.4 7 15.2C7 18 9.2 20 12 20Z" />;
+    case "fiber":
+      return (
+        <>
+          <path d="M5 19c7-1.2 11-5.2 14-14" />
+          <path d="M8 16c-1.4-3-.8-5.3 1.8-7" />
+          <path d="M11 13c-1.5-2.8-.9-5 1.8-6.8" />
+          <path d="M14 10c.8 2.4 2.2 3.8 4.2 4.2" />
+        </>
+      );
+    case "fish":
+      return (
+        <>
+          <path d="M4 12s3-4 8-4 8 4 8 4-3 4-8 4-8-4-8-4Z" />
+          <path d="m20 12-3-3v6l3-3Z" />
+          <path d="M9 12h.01" />
+        </>
+      );
+    case "food":
+      return (
+        <>
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="3.5" />
+          <path d="M4 20h16" />
+        </>
+      );
+    case "fruit":
+      return (
+        <>
+          <path d="M12 8c3.2 0 5 2.2 5 5.2C17 17 14.8 20 12 20s-5-3-5-6.8C7 10.2 8.8 8 12 8Z" />
+          <path d="M12 8c.2-2.2 1.3-3.5 3.5-4" />
+          <path d="M12.4 7.5C10.2 6.8 8.8 5.8 8 4" />
+        </>
+      );
+    case "install":
+      return (
+        <>
+          <path d="M7 20h10" />
+          <path d="M8 4h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
+          <path d="M12 7v6" />
+          <path d="m9.5 10.5 2.5 2.5 2.5-2.5" />
+        </>
+      );
+    case "leaf":
+      return (
+        <>
+          <path d="M5 13c5-7 10-7 14-7 0 5-3 11-9 11-2.3 0-4-1.4-5-4Z" />
+          <path d="M5 18c3-4.5 6.5-7 11-9" />
+        </>
+      );
+    case "lock":
+      return (
+        <>
+          <rect x="6" y="10" width="12" height="9" rx="1.5" />
+          <path d="M9 10V7a3 3 0 0 1 6 0v3" />
+        </>
+      );
+    case "macros":
+      return (
+        <>
+          <path d="M5 18V9" />
+          <path d="M12 18V5" />
+          <path d="M19 18v-6" />
+          <path d="M4 19h16" />
+        </>
+      );
+    case "plate":
+      return (
+        <>
+          <circle cx="12" cy="12" r="7.2" />
+          <path d="M7.8 12.2h8.4" />
+          <path d="M10 8.4h4" />
+          <path d="M9.2 15.2c1.8.7 3.8.7 5.6 0" />
+        </>
+      );
+    case "protein":
+      return (
+        <>
+          <path d="M6.5 11h11c-.4 4-2.4 6.5-5.5 6.5S6.9 15 6.5 11Z" />
+          <path d="M8 11c.7-1.7 2-2.6 4-2.6s3.3.9 4 2.6" />
+          <circle cx="10" cy="13.2" r=".6" />
+          <circle cx="12" cy="14.5" r=".6" />
+          <circle cx="14" cy="13.2" r=".6" />
+        </>
+      );
+    case "randomize":
+      return (
+        <>
+          <path d="M4 7h3c3.5 0 4.5 10 8 10h5" />
+          <path d="M17 14l3 3-3 3" />
+          <path d="M4 17h3c1.2 0 2.1-1.1 3-2.6" />
+          <path d="M14 7h6" />
+          <path d="M17 4l3 3-3 3" />
+        </>
+      );
+    case "share":
+      return (
+        <>
+          <circle cx="6" cy="12" r="2" />
+          <circle cx="17" cy="6" r="2" />
+          <circle cx="17" cy="18" r="2" />
+          <path d="m8 11 7-4" />
+          <path d="m8 13 7 4" />
+        </>
+      );
+    case "swap":
+      return (
+        <>
+          <path d="M7 7h10" />
+          <path d="m14 4 3 3-3 3" />
+          <path d="M17 17H7" />
+          <path d="m10 14-3 3 3 3" />
+        </>
+      );
+    case "targets":
+      return (
+        <>
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 5v3" />
+          <path d="M12 16v3" />
+          <path d="M5 12h3" />
+          <path d="M16 12h3" />
+        </>
+      );
+    case "tools":
+      return (
+        <>
+          <path d="M7 5v14" />
+          <path d="M17 5v14" />
+          <path d="M4 9h6" />
+          <path d="M14 15h6" />
+          <circle cx="7" cy="9" r="2" />
+          <circle cx="17" cy="15" r="2" />
+        </>
+      );
+    case "unlock":
+      return (
+        <>
+          <rect x="6" y="10" width="12" height="9" rx="1.5" />
+          <path d="M9 10V7a3 3 0 0 1 5.6-1.5" />
+        </>
+      );
+  }
 }
 
 function macroLabel(label: string, field: MacroField) {
@@ -1173,6 +1476,56 @@ function visibleProteinPreferences(preferredProteins: string[], dietaryLevel: Di
   return ["chicken-fish-100g"];
 }
 
+function dietIcon(level: DietaryLevel): IconName {
+  if (level === "vegetarian") return "leaf";
+  if (level === "eggetarian") return "egg";
+  return "fish";
+}
+
+function grainOptionIcon(optionId: string): IconName {
+  if (optionId.includes("rice") || optionId.includes("poha") || optionId.includes("oats")) return "bowl";
+  return "carb";
+}
+
+function proteinOptionIcon(optionId: string): IconName {
+  if (optionId.includes("egg")) return "egg";
+  if (optionId.includes("chicken") || optionId.includes("fish")) return "fish";
+  if (optionId.includes("paneer")) return "dairy";
+  return "protein";
+}
+
+function mealRoleIcon(role: MealRole): IconName {
+  const icons: Record<MealRole, IconName> = {
+    cookingFat: "fat",
+    carb: "carb",
+    protein: "protein",
+    vegetables: "leaf",
+    fruit: "fruit",
+    dairy: "dairy",
+    snack: "bowl",
+  };
+
+  return icons[role];
+}
+
+function metricIcon(metric: NutritionMetric): IconName {
+  const icons: Record<NutritionMetric, IconName> = {
+    calories: "calories",
+    protein: "protein",
+    carbs: "carb",
+    fat: "fat",
+    fiber: "fiber",
+    saturatedFat: "fat",
+  };
+
+  return icons[metric];
+}
+
+function statusIcon(status: BoundEvaluation["status"] | "unknown"): IconName {
+  if (status === "pass") return "check";
+  return "alert";
+}
+
 function exportFilename(extension: "csv" | "xls") {
   const date = new Date().toISOString().slice(0, 10);
   return `meal-plan-${date}.${extension}`;
@@ -1202,10 +1555,10 @@ function amountStep(item: DailyPlanItem, unit: string) {
   return "1";
 }
 
-function SummaryMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {
+function SummaryMetric({ icon, label, value, suffix }: { icon: IconName; label: string; value: number; suffix: string }) {
   return (
     <div className="metric">
-      <span>{label}</span>
+      <span><Icon name={icon} />{label}</span>
       <strong>{value}<small>{suffix}</small></strong>
     </div>
   );
@@ -1217,12 +1570,12 @@ function TargetStatusItem({ item }: { item: BoundEvaluation }) {
   return (
     <div className={`target-status-item is-${status}`}>
       <div>
-        <strong>{metricDisplayNames[item.bound.metric]}</strong>
+        <strong><Icon name={metricIcon(item.bound.metric)} />{metricDisplayNames[item.bound.metric]}</strong>
         <span>{targetBoundLabel(item)}</span>
       </div>
       <div>
         <span>{formatMetricValue(item.value, item.bound.metric)}{item.unknown ? " + unknown" : ""}</span>
-        <strong>{statusDisplayNames[status]}</strong>
+        <strong><Icon name={statusIcon(status)} />{statusDisplayNames[status]}</strong>
       </div>
     </div>
   );
@@ -1320,6 +1673,17 @@ const statusDisplayNames: Record<BoundEvaluation["status"] | "unknown", string> 
   unknown: "Unknown",
 };
 
+function swapOptionPreviewNutrition(item: Extract<DailyPlanItem, { kind: "exchange" }>, optionId: string) {
+  const servingAmount = planItemDisplayQuantity(item).amount;
+  const optionServingAmount = exchangeOptionGramAmount(item.exchangeGroupId, optionId);
+
+  return calculateDailyPlanItemNutrition({
+    ...item,
+    exchangeOptionId: optionId,
+    exchangeUnits: optionServingAmount > 0 ? servingAmount / optionServingAmount : 0,
+  });
+}
+
 function PlanItemRow({
   form,
   item,
@@ -1380,17 +1744,18 @@ function PlanItemRow({
           <input inputMode="numeric" value={quantity.amount} onChange={(event) => onAmount(Number(event.target.value || 0))} min="0" step={amountStep(item, quantity.unit)} type="number" />
         </label>
         <span className="unit-label" title="grams">gm</span>
-        <button className="lock-toggle" type="button" aria-pressed={locked} onClick={onLock}>{locked ? "Unlock" : "Lock"}</button>
-        <button className="delete-toggle" type="button" aria-label={`Delete ${label}`} onClick={onDelete}>Del</button>
+        <button className="lock-toggle with-icon" type="button" aria-pressed={locked} onClick={onLock}><Icon name={locked ? "unlock" : "lock"} />{locked ? "Unlock" : "Lock"}</button>
+        <button className="delete-toggle with-icon" type="button" aria-label={`Delete ${label}`} onClick={onDelete}><Icon name="delete" />Del</button>
         {isExchangeItem && (
           <>
             <button
-              className="swap-button"
+              className="swap-button with-icon"
               type="button"
               aria-haspopup="dialog"
               aria-expanded={swapSheetOpen}
               onClick={() => setSwapSheetOpen(true)}
             >
+              <Icon name="swap" />
               Swap
             </button>
             <dialog
@@ -1412,27 +1777,34 @@ function PlanItemRow({
                     <p>Swap item</p>
                     <h3 id={swapTitleId}>{label}</h3>
                   </div>
-                  <button type="button" aria-label={`Close swap options for ${label}`} onClick={() => setSwapSheetOpen(false)}>Close</button>
+                  <button className="with-icon" type="button" aria-label={`Close swap options for ${label}`} onClick={() => setSwapSheetOpen(false)}><Icon name="close" />Close</button>
                 </header>
                 <p id={swapDescriptionId} className="swap-sheet-description">
                   Choose an exchange-equivalent option. Your serving amount, locks, and the rest of the meal stay unchanged.
                 </p>
                 <div className="swap-options" aria-label={`Allowed swaps for ${label}`}>
-                  {exchangeOptions.map((option) => (
-                    <button
-                      className="swap-option"
-                      type="button"
-                      key={option.id}
-                      aria-pressed={option.id === item.exchangeOptionId}
-                      onClick={() => chooseSwapOption(option.id)}
-                    >
-                      <span>{option.displayName}</span>
-                      <small>
-                        {exchangeOptionGramAmount(item.exchangeGroupId, option.id)}gm exchange
-                        {option.id === item.exchangeOptionId ? " · Current" : ""}
-                      </small>
-                    </button>
-                  ))}
+                  {exchangeOptions.map((option) => {
+                    const previewNutrition = swapOptionPreviewNutrition(item, option.id);
+                    const isCurrentOption = option.id === item.exchangeOptionId;
+
+                    return (
+                      <button
+                        className="swap-option"
+                        type="button"
+                        key={option.id}
+                        aria-pressed={isCurrentOption}
+                        onClick={() => chooseSwapOption(option.id)}
+                      >
+                        <span className="swap-option-name">{option.displayName}</span>
+                        <small className="swap-option-meta">
+                          <span>{exchangeOptionGramAmount(item.exchangeGroupId, option.id)}gm exchange</span>
+                          <span>{Math.round(previewNutrition.calories ?? 0)} kcal</span>
+                          <span>{Math.round(previewNutrition.protein ?? 0)}gm protein</span>
+                          {isCurrentOption && <span className="swap-option-current">Current</span>}
+                        </small>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </dialog>
