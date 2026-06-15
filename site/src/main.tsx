@@ -181,6 +181,7 @@ function App() {
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
   const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
+  const proteinTarget = Number(form.protein || 0);
   const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
   const currentShareableState = useMemo<ShareablePlannerState>(() => ({
@@ -270,6 +271,12 @@ function App() {
     clearRandomizeFeedback();
     markPlanStale();
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function stepTarget(key: "calories" | "protein", delta: number, min = 0, max = Number.POSITIVE_INFINITY) {
+    const current = Number(form[key] || 0);
+    const next = Math.min(max, Math.max(min, current + delta));
+    update(key, String(next));
   }
 
   function generate(sourceForm = form, options: GenerateOptions = {}) {
@@ -643,24 +650,22 @@ function App() {
           <div className="quick-fields">
             <label className="field calorie-field">
               <span>Calories (kcal)</span>
-              <input inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="25" type="number" />
+              <div className="target-stepper">
+                <button type="button" aria-label="Decrease calories by 50" onClick={() => stepTarget("calories", -50, 800, 5000)}>−</button>
+                <input inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="50" type="number" />
+                <button type="button" aria-label="Increase calories by 50" onClick={() => stepTarget("calories", 50, 800, 5000)}>+</button>
+              </div>
             </label>
             <label className="field">
               <span>Protein (gm)</span>
-              <input inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" step="5" type="number" />
+              <div className="target-stepper">
+                <button type="button" aria-label="Decrease protein by 5 grams" onClick={() => stepTarget("protein", -5)}>−</button>
+                <input aria-describedby="protein-helper" inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" step="5" type="number" />
+                <button type="button" aria-label="Increase protein by 5 grams" onClick={() => stepTarget("protein", 5)}>+</button>
+              </div>
+              <small id="protein-helper" className="field-hint">Target band: plans can pass within about 5gm.</small>
             </label>
           </div>
-
-          <fieldset className={`quick-start-presets${plan ? " is-compact" : ""}`}>
-            <legend>{plan ? "Replace with example" : "Try an example"}</legend>
-            <div className="quick-start-row">
-              {quickStartPresets.map((preset) => (
-                <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </fieldset>
 
           <fieldset className="segmented diet-segments" aria-describedby="diet-helper">
             <legend>Diet</legend>
@@ -718,6 +723,20 @@ function App() {
               </div>
             </details>
 
+          </details>
+
+          <details className={`quick-start-presets example-drawer${plan ? " is-compact" : ""}`}>
+            <summary>
+              <span>{plan ? "Replace with example" : "Try an example"}</span>
+              <span className="drawer-summary">Use sample targets</span>
+            </summary>
+            <div className="quick-start-row">
+              {quickStartPresets.map((preset) => (
+                <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </details>
 
           {generationBlockers.length > 0 && (
@@ -786,6 +805,9 @@ function App() {
             <SummaryMetric label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
             <SummaryMetric label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
           </div>
+          {proteinTarget > 0 && (
+            <p className="target-context">Protein target {Math.round(proteinTarget)}gm uses an about ±5gm pass band.</p>
+          )}
           {targetStatusItems.length > 0 && (
             <div className="target-status" aria-label="Daily target status">
               {targetStatusItems.map((item) => (
@@ -975,7 +997,7 @@ function CheckChip({ label, checked, onChange }: { label: string; checked: boole
 
 function macroLabel(label: string, field: MacroField) {
   const value = field.value.trim();
-  return field.mode === "none" || value === "" ? undefined : `${label} ${field.mode} ${value}g`;
+  return field.mode === "none" || value === "" ? undefined : `${label} ${field.mode} ${value}gm`;
 }
 
 function customizeDrawerSummary(form: EditableFormState) {
