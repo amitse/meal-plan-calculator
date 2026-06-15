@@ -57,6 +57,10 @@ type RandomizeFeedback = {
   message: string;
   changed: boolean;
 };
+type MealToolMessage = {
+  message: string;
+  tone: "notice" | "success";
+};
 type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
@@ -196,7 +200,7 @@ function App() {
   const [shareLoadFailed, setShareLoadFailed] = useState(loadedUrlState.shareLoadFailed);
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
-  const [mealToolMessages, setMealToolMessages] = useState<Record<string, string>>({});
+  const [mealToolMessages, setMealToolMessages] = useState<Record<string, MealToolMessage>>({});
   const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
   const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
   const [deletedItemUndo, setDeletedItemUndo] = useState<DeletedItemUndo | undefined>();
@@ -425,6 +429,7 @@ function App() {
   function toggleLock(itemId: string) {
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
+    clearMealToolMessageForItem(itemId);
     setLockedIds((current) => {
       const next = new Set(current);
       if (next.has(itemId)) {
@@ -445,6 +450,7 @@ function App() {
     if (!meal || !item) return;
 
     clearRandomizeFeedback();
+    clearMealToolMessage(meal.id);
     setDeletedItemUndo({
       item,
       itemIndex,
@@ -490,16 +496,26 @@ function App() {
     if (next === plan && groupId === "protein-serving") {
       setMealToolMessages((current) => ({
         ...current,
-        [mealId]: "No protein matches your active diet and avoid rules. Change food rules, then add protein.",
+        [mealId]: {
+          message: "No protein matches your active diet and avoid rules. Change food rules, then add protein.",
+          tone: "notice",
+        },
       }));
       return;
     }
 
-    setMealToolMessages((current) => {
-      if (!current[mealId]) return current;
-      const { [mealId]: _removed, ...rest } = current;
-      return rest;
-    });
+    const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
+    const addedItem = nextMeal?.items.at(-1);
+    const addedLabel = addedItem ? planItemLabel(addedItem) : mealItemGroupLabel(groupId);
+    const mealLabel = nextMeal?.displayName ?? "meal";
+
+    setMealToolMessages((current) => ({
+      ...current,
+      [mealId]: {
+        message: `${addedLabel} added to ${mealLabel}.`,
+        tone: "success",
+      },
+    }));
     setDeletedItemUndo(undefined);
     setPlan(next);
   }
@@ -535,6 +551,7 @@ function App() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
+    clearMealToolMessageForItem(itemId);
     setPlan(updateItemAmount(plan, itemId, amount));
   }
 
@@ -542,6 +559,7 @@ function App() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
+    clearMealToolMessageForItem(itemId);
     setPlan(swapExchangeOption(plan, itemId, optionId));
   }
 
@@ -552,6 +570,7 @@ function App() {
 
     setDeletedItemUndo(undefined);
     setPlanRandomizeFeedback(undefined);
+    clearMealToolMessage(mealId);
     const next = randomizePlan(plan, form, lockedIds, mealId, Date.now(), mealTargets[mealId]);
     const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
     const changed = JSON.stringify(nextMeal) !== JSON.stringify(meal);
@@ -574,12 +593,28 @@ function App() {
 
   function updateMealTarget(mealId: string, key: keyof MealMacroTarget, value: string) {
     clearRandomizeFeedback();
+    clearMealToolMessage(mealId);
     setMealTargets((current) => ({ ...current, [mealId]: { ...current[mealId], [key]: value } }));
   }
 
   function clearRandomizeFeedback() {
     setPlanRandomizeFeedback(undefined);
     setMealRandomizeFeedback({});
+  }
+
+  function clearMealToolMessage(mealId: string) {
+    setMealToolMessages((current) => {
+      if (!current[mealId]) return current;
+      const { [mealId]: _removed, ...rest } = current;
+      return rest;
+    });
+  }
+
+  function clearMealToolMessageForItem(itemId: string) {
+    const meal = plan?.meals.find((candidate) => candidate.items.some((item) => item.id === itemId));
+    if (meal) {
+      clearMealToolMessage(meal.id);
+    }
   }
 
   function toggleMealExpanded(mealId: string, open: boolean) {
@@ -927,6 +962,7 @@ function App() {
               const roleTags = mealRoleTags(meal);
               const lockedItemsInMeal = meal.items.filter((item) => item.id && lockedIds.has(item.id)).length;
               const mealFeedback = mealRandomizeFeedback[meal.id];
+              const mealToolMessage = mealToolMessages[meal.id];
               const addedFeedback = addedMealFeedback?.mealId === meal.id ? addedMealFeedback : undefined;
               return (
               <details
@@ -1004,15 +1040,18 @@ function App() {
                     <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "grain")}><Icon name="carb" />Add grain</button>
                     <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "fruit")}><Icon name="fruit" />Add fruit</button>
                   </div>
-                  <div className="meal-status">
+                  <div className="meal-status" role="status">
                     {mealFeedback && (
                       <span className={`randomize-feedback-inline ${mealFeedback.changed ? "is-success" : "is-notice"}`}>
                         {mealFeedback.message}
                       </span>
                     )}
-                    {[mealToolMessages[meal.id], status.join(" · ")].filter(Boolean).map((message) => (
-                      <span key={message}>{message}</span>
-                    ))}
+                    {mealToolMessage && (
+                      <span className={`randomize-feedback-inline is-${mealToolMessage.tone}`}>
+                        {mealToolMessage.message}
+                      </span>
+                    )}
+                    {status.length > 0 && <span>{status.join(" · ")}</span>}
                   </div>
                 </details>
               </details>
@@ -1042,6 +1081,12 @@ function planItemLabel(item: DailyPlanItem) {
   return item.kind === "food"
     ? getFoodItem(item.foodItemId).displayName
     : getExchangeOption(item.exchangeGroupId, item.exchangeOptionId).displayName;
+}
+
+function mealItemGroupLabel(groupId: "grain" | "protein-serving" | "fruit") {
+  if (groupId === "protein-serving") return "Protein";
+  if (groupId === "grain") return "Grain";
+  return "Fruit";
 }
 
 function restoreDeletedItem(plan: DailyPlan, deletedItem: DeletedItemUndo): DailyPlan {
