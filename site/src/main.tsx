@@ -483,6 +483,13 @@ function App() {
         <section className="input-panel primary-panel" aria-labelledby="targets-title">
           <h2 id="targets-title" className="sr-only">Plan</h2>
 
+          {plan && (
+            <div className="current-plan-return" role="status">
+              <p>Current plan stays unchanged unless you regenerate.</p>
+              <button type="button" onClick={() => setActiveView("plan")}>Back to current plan</button>
+            </div>
+          )}
+
           <div className="quick-fields">
             <label className="field calorie-field">
               <span>Calories (kcal)</span>
@@ -569,7 +576,7 @@ function App() {
 
         <div className="bottom-action">
           {isPlanStale && plan && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
-          <button className="primary-action" type="submit">Generate</button>
+          <button className="primary-action" type="submit">{plan ? "Regenerate plan" : "Generate"}</button>
         </div>
       </form>
       )}

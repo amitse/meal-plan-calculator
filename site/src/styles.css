@@ -212,6 +212,34 @@ small {
   border-top-color: var(--border-soft);
 }
 
+.current-plan-return {
+  display: grid;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.current-plan-return p {
+  margin: 0;
+  color: var(--body);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.current-plan-return button {
+  min-height: 42px;
+  justify-self: start;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: 0 var(--space-sm);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -259,6 +287,7 @@ small {
 }
 
 .section-heading button:hover,
+.current-plan-return button:hover,
 .secondary-action:hover,
 .export-actions button:hover,
 .meal-targets button:hover,
@@ -269,6 +298,7 @@ small {
 }
 
 .section-heading button:active,
+.current-plan-return button:active,
 .secondary-action:active,
 .export-actions button:active,
 .meal-targets button:active,
