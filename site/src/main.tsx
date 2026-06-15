@@ -1057,8 +1057,9 @@ function App() {
                     <span className="drawer-summary">{status.length > 0 ? status.join(" · ") : "Targets + add items"}</span>
                   </summary>
                   <div className="meal-targets">
-                    <label><span>Kcal</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => updateMealTarget(meal.id, "calories", event.target.value)} min="0" max="5000" step="25" type="number" /></label>
-                    <label><span>Protein</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => updateMealTarget(meal.id, "protein", event.target.value)} min="0" step="5" type="number" /></label>
+                    <p className="meal-target-helper">Per-meal targets for this meal only. The current meal is compared below; Randomize meal tries to meet them.</p>
+                    <label><span>Meal kcal target</span><input inputMode="numeric" value={mealTargets[meal.id]?.calories ?? ""} onChange={(event) => updateMealTarget(meal.id, "calories", event.target.value)} min="0" max="5000" step="25" type="number" /></label>
+                    <label><span>Meal protein target</span><input inputMode="numeric" value={mealTargets[meal.id]?.protein ?? ""} onChange={(event) => updateMealTarget(meal.id, "protein", event.target.value)} min="0" step="5" type="number" /></label>
                     <button className="with-icon" type="button" onClick={() => randomizeSingleMeal(meal.id)}><Icon name="randomize" />Randomize meal</button>
                     <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "protein-serving")}><Icon name="protein" />Add protein</button>
                     <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "grain")}><Icon name="carb" />Add grain</button>
@@ -1075,7 +1076,7 @@ function App() {
                         {mealToolMessage.message}
                       </span>
                     )}
-                    {status.length > 0 && <span>{status.join(" · ")}</span>}
+                    {status.length > 0 && <span>Current meal: {status.join(" · ")}. Tap Randomize meal to try meeting the target.</span>}
                   </div>
                 </details>
               </details>
