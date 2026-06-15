@@ -1022,6 +1022,7 @@ function App() {
     if (!plan) return;
     const meal = plan.meals.find((candidate) => candidate.items.some((item) => item.id === itemId));
     const item = meal?.items.find((candidate) => candidate.id === itemId);
+    if (item?.kind === "exchange" && item.exchangeOptionId === optionId) return;
     const optionName = item?.kind === "exchange"
       ? getExchangeOption(item.exchangeGroupId, optionId).displayName
       : undefined;
@@ -3157,6 +3158,7 @@ function PlanItemRow({
   }, [isExchangeItem, swapSheetOpen]);
 
   function chooseSwapOption(optionId: string) {
+    if (item.kind === "exchange" && optionId === item.exchangeOptionId) return;
     onSwap(optionId);
     setSwapSheetOpen(false);
   }
@@ -3296,6 +3298,8 @@ function PlanItemRow({
                         type="button"
                         key={option.id}
                         aria-pressed={isCurrentOption}
+                        aria-current={isCurrentOption ? "true" : undefined}
+                        disabled={isCurrentOption}
                         onClick={() => chooseSwapOption(option.id)}
                       >
                         <span className="swap-option-name">{option.displayName}</span>

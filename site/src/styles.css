@@ -2579,12 +2579,17 @@ fieldset {
   text-align: left;
 }
 
-.swap-option:hover {
+.swap-option:hover:not(:disabled) {
   background: var(--alpha-ink-04);
 }
 
 .swap-option[aria-pressed="true"] {
   color: var(--accent);
+}
+
+.swap-option:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .swap-option-name {
