@@ -192,9 +192,30 @@ const quickStartPresets: QuickStartPreset[] = [
 ];
 const staleShareMessage = "Plan changed - share again for an updated link.";
 const staleShareBlockedMessage = "Regenerate before sharing updated targets.";
+const generationProgressMessage = "Generating plan...";
+
+function waitForGenerationProgressFrame() {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    const timeoutId = window.setTimeout(finish, 80);
+
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        window.clearTimeout(timeoutId);
+        finish();
+      }, 0);
+    });
+  });
+}
 
 function App() {
   const loadedUrlState = useMemo(loadStateFromUrl, []);
+  const generationProgressId = useId();
   const urlState = loadedUrlState.state;
   const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
@@ -218,8 +239,10 @@ function App() {
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(() => isStandaloneApp());
+  const [isGenerating, setIsGenerating] = useState(false);
   const resultRef = useRef<HTMLElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
+  const generationInFlight = useRef(false);
   const mealCardRefs = useRef<Map<string, HTMLDetailsElement>>(new Map());
   const addedMealFeedbackKey = useRef(0);
   const revealedAddedMealKey = useRef<number | undefined>(undefined);
@@ -238,6 +261,7 @@ function App() {
   }), [form, plan, lockedIds, mealTargets]);
   const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
   const googleDocsManualCopyText = showGoogleDocsManualCopy && plan ? planExportTsv(plan) : "";
+  const generationActionLabel = isGenerating ? "Generating..." : plan ? "Regenerate plan" : "Generate";
 
   useEffect(() => {
     if (plan && activeView === "plan") {
@@ -363,9 +387,26 @@ function App() {
     }
   }
 
+  async function generateWithProgress(sourceForm = form, options: GenerateOptions = {}) {
+    if (generationInFlight.current) {
+      return false;
+    }
+
+    generationInFlight.current = true;
+    setIsGenerating(true);
+
+    try {
+      await waitForGenerationProgressFrame();
+      return generate(sourceForm, options);
+    } finally {
+      generationInFlight.current = false;
+      setIsGenerating(false);
+    }
+  }
+
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    generate();
+    void generateWithProgress();
   }
 
   function applyQuickStartPreset(preset: QuickStartPreset) {
@@ -910,7 +951,21 @@ function App() {
 
         <div className="bottom-action">
           {isPlanStale && plan && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
-          <button className="primary-action with-icon" type="submit"><Icon name="plate" />{plan ? "Regenerate plan" : "Generate"}</button>
+          {isGenerating && (
+            <p className="generation-progress" id={generationProgressId} role="status" aria-live="polite">
+              {generationProgressMessage}
+            </p>
+          )}
+          <button
+            className="primary-action with-icon"
+            type="submit"
+            disabled={isGenerating}
+            aria-busy={isGenerating}
+            aria-describedby={isGenerating ? generationProgressId : undefined}
+          >
+            <Icon name="plate" />
+            {generationActionLabel}
+          </button>
         </div>
       </form>
       )}

@@ -1001,8 +1001,20 @@ fieldset {
   background: var(--body);
 }
 
+.primary-action:disabled,
+.primary-action[aria-busy="true"] {
+  cursor: wait;
+  background: var(--body);
+  color: var(--inverse-ink);
+  opacity: 1;
+}
+
 .primary-action:active {
   transform: translateY(1px) scale(0.995);
+}
+
+.primary-action:disabled:active {
+  transform: none;
 }
 
 .result-action-bar {
@@ -1918,6 +1930,15 @@ fieldset {
 
 .bottom-action .stale-plan-notice {
   margin: 0 0 var(--space-xs);
+  text-align: center;
+}
+
+.generation-progress {
+  margin: 0 0 var(--space-xs);
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
   text-align: center;
 }
 
