@@ -963,7 +963,7 @@ fieldset {
     var(--app-gutter)
     max(var(--space-sm), env(safe-area-inset-bottom));
   border-top: 1px solid var(--border-soft);
-  background: var(--canvas);
+  background: var(--surface-strong);
   transform: translateX(-50%);
 }
 
@@ -985,6 +985,42 @@ fieldset {
 
 .primary-action:active {
   transform: translateY(1px) scale(0.995);
+}
+
+.result-action-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+
+.result-action-bar button {
+  min-width: 0;
+  min-height: 48px;
+  border-radius: var(--control-radius);
+  padding: 0 8px;
+  font-size: 0.82rem;
+}
+
+.plan-action-button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.plan-action-button:hover {
+  border-color: var(--muted);
+  background: rgba(240, 239, 235, 0.04);
+}
+
+.plan-action-button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.result-action-bar .primary-action {
+  min-height: 48px;
+  letter-spacing: 0.08em;
 }
 
 .result-panel {

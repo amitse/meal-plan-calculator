@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 import {
   calculateDailyPlanItemNutrition,
   calculateMealTotals,
@@ -1005,6 +1005,11 @@ function App() {
           </div>
           {addMealBlocker && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
           <button className="secondary-action with-icon" type="button" onClick={addEmptyMeal}><Icon name="add" />Add meal</button>
+          <nav className="bottom-action result-action-bar" aria-label="Plan actions">
+            <button className="plan-action-button with-icon" type="button" onClick={() => setActiveView("targets")}><Icon name="targets" />Targets</button>
+            <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
+            <button className="primary-action with-icon" type="button" onClick={share}><Icon name="share" />Share</button>
+          </nav>
         </section>
       )}
     </main>
@@ -1894,7 +1899,19 @@ function installFallbackMessage() {
     : "Use the browser menu to install this app.";
 }
 
-createRoot(document.getElementById("root")!).render(
+type MealPlanWindow = Window & { mealPlanRoot?: Root };
+
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element #root was not found.");
+}
+
+const mealPlanWindow = window as MealPlanWindow;
+const root = mealPlanWindow.mealPlanRoot ?? createRoot(rootElement);
+mealPlanWindow.mealPlanRoot = root;
+
+root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
