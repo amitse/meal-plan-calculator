@@ -950,7 +950,17 @@ fieldset {
 
 .diet-segments span {
   width: 100%;
+  gap: 6px;
+  padding-inline: 9px;
+  font-size: clamp(0.94rem, 4vw, 1rem);
+  white-space: nowrap;
   text-align: center;
+}
+
+.diet-segments .line-icon {
+  width: 1.18rem;
+  height: 1.18rem;
+  stroke-width: 2.45;
 }
 
 .diet-helper {

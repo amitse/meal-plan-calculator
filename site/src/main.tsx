@@ -1284,7 +1284,12 @@ function iconShape(name: IconName) {
         </>
       );
     case "egg":
-      return <path d="M12 20c3.1 0 5-2.2 5-5.4C17 10.5 14.8 4 12 4s-5 6.5-5 10.6C7 17.8 8.9 20 12 20Z" />;
+      return (
+        <>
+          <path d="M12 20c3.1 0 5-2.2 5-5.4C17 10.5 14.8 4 12 4s-5 6.5-5 10.6C7 17.8 8.9 20 12 20Z" />
+          <circle cx="12" cy="14.2" r="1.5" />
+        </>
+      );
     case "export":
       return (
         <>
@@ -1310,7 +1315,8 @@ function iconShape(name: IconName) {
         <>
           <path d="M4 12s3-4 8-4 8 4 8 4-3 4-8 4-8-4-8-4Z" />
           <path d="m20 12-3-3v6l3-3Z" />
-          <path d="M9 12h.01" />
+          <circle cx="9" cy="12" r=".7" />
+          <path d="M13 9.2c-.8 1.8-.8 3.8 0 5.6" />
         </>
       );
     case "food":
