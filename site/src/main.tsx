@@ -2514,6 +2514,11 @@ function downloadBlob(filename: string, blob: Blob) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function cssTokenValue(name: string, fallback: string) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
+
 async function createPlanShareImageFile(plan: DailyPlan) {
   const lines = planShareText(plan).split("\n");
   const canvas = document.createElement("canvas");
@@ -2530,19 +2535,27 @@ async function createPlanShareImageFile(plan: DailyPlan) {
   canvas.width = width;
   canvas.height = height;
 
-  context.fillStyle = "#141414";
+  const imageBg = cssTokenValue("--bg", "#141414");
+  const imageSurface = cssTokenValue("--surface", "#1c1c1c");
+  const imageBorder = cssTokenValue("--alpha-warning-48", "rgba(225, 189, 99, 0.48)");
+  const imageInk = cssTokenValue("--ink", "#f0efeb");
+  const imageAccent = cssTokenValue("--warning", "#e1bd63");
+  const imageBody = cssTokenValue("--body", "#c8c2b7");
+  const imageSans = cssTokenValue("--sans", "DM Sans, system-ui, sans-serif");
+
+  context.fillStyle = imageBg;
   context.fillRect(0, 0, width, height);
-  context.fillStyle = "#1c1915";
+  context.fillStyle = imageSurface;
   context.fillRect(32, 32, width - 64, height - 64);
-  context.strokeStyle = "rgba(225, 189, 99, 0.48)";
+  context.strokeStyle = imageBorder;
   context.lineWidth = 3;
   context.strokeRect(32, 32, width - 64, height - 64);
 
-  context.fillStyle = "#f8f1e4";
-  context.font = '700 56px "DM Sans", system-ui, sans-serif';
+  context.fillStyle = imageInk;
+  context.font = `700 56px ${imageSans}`;
   context.fillText("Meal plan", padding, 118);
-  context.fillStyle = "#e1bd63";
-  context.font = '700 34px "DM Sans", system-ui, sans-serif';
+  context.fillStyle = imageAccent;
+  context.font = `700 34px ${imageSans}`;
   context.fillText(plan.displayName, padding, 172);
 
   let y = 240;
@@ -2554,10 +2567,10 @@ async function createPlanShareImageFile(plan: DailyPlan) {
 
     const isMealHeading = plan.meals.some((meal) => meal.displayName === line);
     const isTotal = line.startsWith("Daily total:") || line.startsWith("Meal total:");
-    context.fillStyle = isMealHeading ? "#f8f1e4" : isTotal ? "#e1bd63" : "#cfc5b6";
+    context.fillStyle = isMealHeading ? imageInk : isTotal ? imageAccent : imageBody;
     context.font = isMealHeading || isTotal
-      ? '700 30px "DM Sans", system-ui, sans-serif'
-      : '500 27px "DM Sans", system-ui, sans-serif';
+      ? `700 30px ${imageSans}`
+      : `500 27px ${imageSans}`;
     context.fillText(ellipsizeCanvasText(context, line, width - (padding * 2)), padding, y);
     y += lineHeight;
   }
