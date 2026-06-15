@@ -2535,6 +2535,10 @@ fieldset {
   background: var(--alpha-backdrop);
 }
 
+.adjust-sheet {
+  max-height: min(88dvh, calc(var(--size-560) + var(--size-72)));
+}
+
 .swap-sheet-panel {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -2608,6 +2612,43 @@ fieldset {
   min-height: 0;
   overflow-y: auto;
   padding: 0 var(--space-md) max(var(--space-md), env(safe-area-inset-bottom));
+}
+
+.adjust-sheet-panel {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.adjust-options {
+  display: grid;
+  gap: var(--space-sm);
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--space-md) var(--space-sm);
+}
+
+.adjust-options .quick-fields,
+.adjust-options .segmented,
+.adjust-options .quick-start-presets,
+.adjust-options .options-drawer,
+.adjust-options .active-macro-rules,
+.adjust-options .generation-feedback {
+  margin: 0;
+}
+
+.adjust-sheet-actions {
+  display: grid;
+  gap: var(--space-xs);
+  padding:
+    var(--space-sm)
+    var(--space-md)
+    max(var(--space-md), env(safe-area-inset-bottom));
+  border-top: var(--size-px) solid var(--border-soft);
+  background: var(--surface-strong);
+}
+
+.adjust-sheet-actions .stale-plan-notice,
+.adjust-sheet-actions .generation-progress {
+  margin: 0;
 }
 
 .export-sheet .export-actions button {

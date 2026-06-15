@@ -417,6 +417,8 @@ function App() {
   const quickStartConfirmDescriptionId = useId();
   const exportSheetTitleId = useId();
   const exportSheetDescriptionId = useId();
+  const adjustSheetTitleId = useId();
+  const adjustSheetDescriptionId = useId();
   const exportStaleNoticeId = useId();
   const resultStaleNoticeId = useId();
   const urlState = loadedUrlState.state;
@@ -453,10 +455,12 @@ function App() {
   const [dietRuleNotice, setDietRuleNotice] = useState("");
   const [pendingQuickStartPreset, setPendingQuickStartPreset] = useState<QuickStartPreset | undefined>();
   const [exportSheetOpen, setExportSheetOpen] = useState(false);
+  const [adjustSheetOpen, setAdjustSheetOpen] = useState(false);
   const [themePreference, setThemePreference] = useState<ThemePreference>(readThemePreference);
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(readSystemTheme);
   const resultRef = useRef<HTMLElement>(null);
   const exportSheetRef = useRef<HTMLDialogElement>(null);
+  const adjustSheetRef = useRef<HTMLDialogElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
   const quickFieldsRef = useRef<HTMLDivElement>(null);
   const calorieInputRef = useRef<HTMLInputElement>(null);
@@ -572,6 +576,22 @@ function App() {
       dialog.close();
     }
   }, [exportSheetOpen]);
+
+  useEffect(() => {
+    const dialog = adjustSheetRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    if (adjustSheetOpen && !dialog.open) {
+      dialog.showModal();
+      return;
+    }
+
+    if (!adjustSheetOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [adjustSheetOpen]);
 
   useEffect(() => {
     if (!addedMealFeedback || activeView !== "plan" || revealedAddedMealKey.current === addedMealFeedback.key) {
@@ -735,14 +755,23 @@ function App() {
   function regenerateStalePlanFromChangedInputs() {
     if (!isValidCalorieTarget(form.calories)) {
       setExportSheetOpen(false);
+      if (plan) {
+        setAdjustSheetOpen(true);
+      }
       setCalorieInputError(calorieValidationMessage);
-      openTargetsView();
+      if (!plan) {
+        openTargetsView();
+      }
       window.requestAnimationFrame(() => calorieInputRef.current?.focus());
       return;
     }
 
     setCalorieInputError("");
-    void generateWithProgress();
+    void generateWithProgress().then((generated) => {
+      if (generated) {
+        setAdjustSheetOpen(false);
+      }
+    });
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -754,7 +783,11 @@ function App() {
     }
 
     setCalorieInputError("");
-    void generateWithProgress();
+    void generateWithProgress().then((generated) => {
+      if (generated) {
+        setAdjustSheetOpen(false);
+      }
+    });
   }
 
   function showCalorieInputError(event: React.InvalidEvent<HTMLInputElement>) {
@@ -765,6 +798,7 @@ function App() {
 
   function selectQuickStartPreset(preset: QuickStartPreset) {
     if (plan) {
+      setAdjustSheetOpen(false);
       setPendingQuickStartPreset(preset);
       return;
     }
@@ -785,7 +819,11 @@ function App() {
     setAddMealBlocker("");
     setShareState(undefined);
 
-    if (generate(preset.form, { useExistingLocks: false }) && replacesPlan) {
+    const generated = generate(preset.form, { useExistingLocks: false });
+    if (generated) {
+      setAdjustSheetOpen(false);
+    }
+    if (generated && replacesPlan) {
       setShareState({ message: `${preset.label} example replaced the previous plan.` });
     }
   }
@@ -804,7 +842,20 @@ function App() {
 
   function openTargetsView() {
     setShowSharedPlanOrientation(false);
+    if (plan) {
+      setActiveView("plan");
+      setAdjustSheetOpen(true);
+      return;
+    }
+
     setActiveView("targets");
+  }
+
+  function openAdjustSheet() {
+    setShowSharedPlanOrientation(false);
+    setExportSheetOpen(false);
+    setActiveView("plan");
+    setAdjustSheetOpen(true);
   }
 
   function scrollToRecoveryElement(element: HTMLElement | null, focusElement = element) {
@@ -1464,6 +1515,207 @@ function App() {
     setInstallState(choice.outcome === "accepted" ? "" : installFallbackMessage());
   }
 
+  function renderTargetControls(surface: "page" | "sheet") {
+    return (
+      <>
+        {surface === "page" && plan && (
+          <div className="current-plan-return" role="status">
+            <p>Current plan stays unchanged unless you regenerate.</p>
+            <button type="button" onClick={() => setActiveView("plan")}>Back to current plan</button>
+          </div>
+        )}
+
+        {surface === "page" && !plan && (
+          <p className="first-plan-helper">
+            Calories are required. Protein and Customize are optional for the first Generate.
+          </p>
+        )}
+
+        <div className="quick-fields" ref={quickFieldsRef}>
+          <label className="field calorie-field">
+            <span className="label-with-icon"><Icon name="calories" />Calories (kcal)</span>
+            <NumberStepper
+              ariaDescribedBy={`calories-helper${calorieInputError ? " calories-error" : ""}`}
+              ariaErrorMessage={calorieInputError ? "calories-error" : undefined}
+              ariaInvalid={Boolean(calorieInputError)}
+              ariaLabel="Calories"
+              decrementLabel="Decrease calories by 50"
+              incrementLabel="Increase calories by 50"
+              inputRef={calorieInputRef}
+              max={calorieTargetMax}
+              min={calorieTargetMin}
+              onChange={(value) => update("calories", value)}
+              onInvalid={showCalorieInputError}
+              required
+              step={50}
+              value={form.calories}
+            />
+            <small id="calories-helper" className="field-hint">Target band: plans can pass within about 50 kcal.</small>
+            {calorieInputError && (
+              <small id="calories-error" className="field-error" role="alert">{calorieInputError}</small>
+            )}
+          </label>
+          <label className="field">
+            <span className="label-with-icon"><Icon name="protein" />Protein (gm)</span>
+            <NumberStepper
+              ariaDescribedBy="protein-helper"
+              ariaLabel="Protein"
+              decrementLabel="Decrease protein by 5 grams"
+              incrementLabel="Increase protein by 5 grams"
+              onChange={(value) => update("protein", value)}
+              step={5}
+              value={form.protein}
+            />
+            <small id="protein-helper" className="field-hint">Optional: leave blank to generate from calories only. When set, plans can pass within about 5gm.</small>
+          </label>
+        </div>
+
+        <fieldset className="segmented diet-segments" aria-describedby={dietRuleNotice ? "diet-helper diet-rule-notice" : "diet-helper"}>
+          <legend>Diet</legend>
+          {dietOptions.map((option) => (
+            <label key={option.level}>
+              <input
+                type="radio"
+                name="dietary-level"
+                checked={form.dietaryLevel === option.level}
+                onChange={() => updateDietaryLevel(option.level)}
+              />
+              <span><Icon name={dietIcon(option.level)} />{option.label}</span>
+            </label>
+          ))}
+          <p id="diet-helper" className="helper diet-helper">{dietDescriptions[form.dietaryLevel]}</p>
+          {dietRuleNotice && <p id="diet-rule-notice" className="diet-rule-notice" role="status">{dietRuleNotice}</p>}
+        </fieldset>
+
+        <details className={`quick-start-presets example-drawer${plan ? " is-compact" : ""}`}>
+          <summary>
+            <span className="summary-label"><Icon name="plate" />{plan ? "Replace with example" : "Try sample targets"}</span>
+            <span className="drawer-summary">Fill safe targets and generate</span>
+          </summary>
+          <div className="quick-start-row">
+            {quickStartPresets.map((preset) => (
+              <button key={preset.label} type="button" onClick={() => selectQuickStartPreset(preset)}>
+                <span className="quick-start-label"><Icon name="bowl" />{preset.label}</span>
+                <span className="quick-start-preview">{quickStartPresetPreview(preset.form)}</span>
+              </button>
+            ))}
+          </div>
+        </details>
+
+        <details className="options-drawer" ref={optionsDrawerRef} open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
+          <summary>
+            <span className="summary-label"><Icon name="tools" />Customize</span>
+            <span className="drawer-summary">{customizeDrawerSummary(form)}</span>
+          </summary>
+
+          <details className="nested-drawer" ref={foodDrawerRef}>
+            <summary>
+              <span className="summary-label"><Icon name="food" />Food</span>
+              <span className="drawer-summary">{foodDrawerSummary(form)}</span>
+            </summary>
+            <PreferenceGroup
+              automaticHelper="All carb choices are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
+              emptyHelper="No specific choices selected - the planner will choose automatically."
+              iconFor={grainOptionIcon}
+              label="Choose carbs"
+              options={grainOptions}
+              values={form.preferredGrains}
+              onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)}
+            />
+            <PreferenceGroup
+              automaticHelper="All visible proteins are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
+              emptyHelper="No specific choices selected - the planner will choose automatically."
+              iconFor={proteinOptionIcon}
+              label="Choose proteins"
+              options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))}
+              values={form.preferredProteins}
+              onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)}
+            />
+            <fieldset className="avoid-list">
+              <legend>Leave out</legend>
+              <CheckChip icon="dairy" label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
+              <CheckChip icon="protein" label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
+              {form.dietaryLevel !== "vegetarian" && <CheckChip icon="egg" label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />}
+              {form.dietaryLevel === "nonVegetarian" && <CheckChip icon="fish" label="Chicken / fish" checked={form.avoidChickenFish} onChange={(checked) => update("avoidChickenFish", checked)} />}
+            </fieldset>
+            {likedProteinAvoidConflicts.length > 0 && (
+              <p className="food-rule-conflict" role="note">
+                <strong>Leave out takes priority:</strong> {formatFoodRuleConflictList(likedProteinAvoidConflicts)} {likedProteinAvoidConflicts.length === 1 ? "is" : "are"} also selected above, so {likedProteinAvoidConflicts.length === 1 ? "it" : "they"} will stay out of the plan.
+              </p>
+            )}
+          </details>
+
+          <details className="nested-drawer" ref={macroDrawerRef}>
+            <summary>
+              <span className="summary-label"><Icon name="macros" />Macros</span>
+              <span className="drawer-summary">{macroDrawerSummary(form)}</span>
+            </summary>
+            {incompleteMacroRuleCount > 0 && (
+              <p className="macro-drawer-warning" role="alert">
+                <strong>{formatFoodRuleConflictList(incompleteMacroRuleLabels)}</strong> {incompleteMacroRuleCount === 1 ? "needs" : "need"} grams or Off before Generate.
+              </p>
+            )}
+            <div className="macro-grid">
+              <MacroInput icon="carb" label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
+              <MacroInput icon="fat" label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
+              <MacroInput icon="fiber" label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
+              <MacroInput icon="fat" label="Saturated fat" value={form.saturatedFat} onChange={(value) => update("saturatedFat", value)} />
+            </div>
+          </details>
+
+        </details>
+
+        {activeMacroRuleLabels.length > 0 && (
+          <div className="active-macro-rules" aria-label="Active macro rules">
+            <span>Macro rules</span>
+            <ul>
+              {activeMacroRuleLabels.map((label) => <li key={label}>{label}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {generationBlockers.length > 0 && (
+          <div
+            className="generation-feedback"
+            ref={generationFeedbackRef}
+            role="alert"
+            aria-label="Generation blockers"
+            tabIndex={-1}
+          >
+            <p><strong>Plan blocked.</strong> Adjust these before regenerating:</p>
+            <ul>
+              {generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+            </ul>
+            <div className="generation-recovery-actions" aria-label="Recovery shortcuts">
+              <span>Jump to fixes:</span>
+              <button className="with-icon" type="button" onClick={reviewTargetInputs}>
+                <Icon name="targets" />Targets
+              </button>
+              <button className="with-icon" type="button" onClick={() => openCustomizeRecovery("food")}>
+                <Icon name="food" />Food rules
+              </button>
+              <button className="with-icon" type="button" onClick={() => openCustomizeRecovery("macros")}>
+                <Icon name="macros" />Macro rules
+              </button>
+            </div>
+            {lockedItemCount > 0 && (
+              <div className="generation-lock-recovery">
+                <p>
+                  <strong>{lockedItemCount} locked {lockedItemCount === 1 ? "food is" : "foods are"} still fixed.</strong>{" "}
+                  Clear all locks here, or return to the plan to unlock specific foods.
+                </p>
+                <div className="generation-lock-actions">
+                  <button type="button" onClick={clearLocksFromGenerationBlocker}>Clear all locks</button>
+                  {plan && <button type="button" onClick={() => { setAdjustSheetOpen(false); setActiveView("plan"); }}>Back to plan</button>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <main className={`app-shell${hasResultActionStatus ? " has-bottom-status" : ""}${shareActionFeedback?.manualUrl ? " has-share-recovery" : ""}`}>
       <header className="mobile-header">
@@ -1497,234 +1749,7 @@ function App() {
         <section className="input-panel primary-panel" aria-labelledby="targets-title">
           <h2 id="targets-title" className="sr-only">Plan</h2>
 
-          {plan && (
-            <div className="current-plan-return" role="status">
-              <p>Current plan stays unchanged unless you regenerate.</p>
-              <button type="button" onClick={() => setActiveView("plan")}>Back to current plan</button>
-            </div>
-          )}
-
-          {!plan && (
-            <p className="first-plan-helper">
-              Calories are required. Protein and Customize are optional for the first Generate.
-            </p>
-          )}
-
-          <div className="quick-fields" ref={quickFieldsRef}>
-            <label className="field calorie-field">
-              <span className="label-with-icon"><Icon name="calories" />Calories (kcal)</span>
-              <NumberStepper
-                ariaDescribedBy={`calories-helper${calorieInputError ? " calories-error" : ""}`}
-                ariaErrorMessage={calorieInputError ? "calories-error" : undefined}
-                ariaInvalid={Boolean(calorieInputError)}
-                ariaLabel="Calories"
-                decrementLabel="Decrease calories by 50"
-                incrementLabel="Increase calories by 50"
-                inputRef={calorieInputRef}
-                max={calorieTargetMax}
-                min={calorieTargetMin}
-                onChange={(value) => update("calories", value)}
-                onInvalid={showCalorieInputError}
-                required
-                step={50}
-                value={form.calories}
-              />
-              <small id="calories-helper" className="field-hint">Target band: plans can pass within about 50 kcal.</small>
-              {calorieInputError && (
-                <small id="calories-error" className="field-error" role="alert">{calorieInputError}</small>
-              )}
-            </label>
-            <label className="field">
-              <span className="label-with-icon"><Icon name="protein" />Protein (gm)</span>
-              <NumberStepper
-                ariaDescribedBy="protein-helper"
-                ariaLabel="Protein"
-                decrementLabel="Decrease protein by 5 grams"
-                incrementLabel="Increase protein by 5 grams"
-                onChange={(value) => update("protein", value)}
-                step={5}
-                value={form.protein}
-              />
-              <small id="protein-helper" className="field-hint">Optional: leave blank to generate from calories only. When set, plans can pass within about 5gm.</small>
-            </label>
-          </div>
-
-          <fieldset className="segmented diet-segments" aria-describedby={dietRuleNotice ? "diet-helper diet-rule-notice" : "diet-helper"}>
-            <legend>Diet</legend>
-            {dietOptions.map((option) => (
-              <label key={option.level}>
-                <input
-                  type="radio"
-                  name="dietary-level"
-                  checked={form.dietaryLevel === option.level}
-                  onChange={() => updateDietaryLevel(option.level)}
-                />
-                <span><Icon name={dietIcon(option.level)} />{option.label}</span>
-              </label>
-            ))}
-            <p id="diet-helper" className="helper diet-helper">{dietDescriptions[form.dietaryLevel]}</p>
-            {dietRuleNotice && <p id="diet-rule-notice" className="diet-rule-notice" role="status">{dietRuleNotice}</p>}
-          </fieldset>
-
-          <details className={`quick-start-presets example-drawer${plan ? " is-compact" : ""}`}>
-            <summary>
-              <span className="summary-label"><Icon name="plate" />{plan ? "Replace with example" : "Try sample targets"}</span>
-              <span className="drawer-summary">Fill safe targets and generate</span>
-            </summary>
-            <div className="quick-start-row">
-              {quickStartPresets.map((preset) => (
-                <button key={preset.label} type="button" onClick={() => selectQuickStartPreset(preset)}>
-                  <span className="quick-start-label"><Icon name="bowl" />{preset.label}</span>
-                  <span className="quick-start-preview">{quickStartPresetPreview(preset.form)}</span>
-                </button>
-              ))}
-            </div>
-          </details>
-
-          <details className="options-drawer" ref={optionsDrawerRef} open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
-            <summary>
-              <span className="summary-label"><Icon name="tools" />Customize</span>
-              <span className="drawer-summary">{customizeDrawerSummary(form)}</span>
-            </summary>
-
-            <details className="nested-drawer" ref={foodDrawerRef}>
-              <summary>
-                <span className="summary-label"><Icon name="food" />Food</span>
-                <span className="drawer-summary">{foodDrawerSummary(form)}</span>
-              </summary>
-              <PreferenceGroup
-                automaticHelper="All carb choices are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
-                emptyHelper="No specific choices selected - the planner will choose automatically."
-                iconFor={grainOptionIcon}
-                label="Choose carbs"
-                options={grainOptions}
-                values={form.preferredGrains}
-                onChange={(optionId, checked) => updatePreference("preferredGrains", optionId, checked)}
-              />
-              <PreferenceGroup
-                automaticHelper="All visible proteins are selected, so the planner chooses automatically from this group. Uncheck chips to narrow likes; use Leave out to avoid foods that must be excluded."
-                emptyHelper="No specific choices selected - the planner will choose automatically."
-                iconFor={proteinOptionIcon}
-                label="Choose proteins"
-                options={proteinOptions.filter((option) => isProteinVisible(option.id, form.dietaryLevel))}
-                values={form.preferredProteins}
-                onChange={(optionId, checked) => updatePreference("preferredProteins", optionId, checked)}
-              />
-              <fieldset className="avoid-list">
-                <legend>Leave out</legend>
-                <CheckChip icon="dairy" label="Paneer" checked={form.avoidPaneer} onChange={(checked) => update("avoidPaneer", checked)} />
-                <CheckChip icon="protein" label="Whey" checked={form.avoidWhey} onChange={(checked) => update("avoidWhey", checked)} />
-                {form.dietaryLevel !== "vegetarian" && <CheckChip icon="egg" label="Eggs" checked={form.avoidEggs} onChange={(checked) => update("avoidEggs", checked)} />}
-                {form.dietaryLevel === "nonVegetarian" && <CheckChip icon="fish" label="Chicken / fish" checked={form.avoidChickenFish} onChange={(checked) => update("avoidChickenFish", checked)} />}
-              </fieldset>
-              {likedProteinAvoidConflicts.length > 0 && (
-                <p className="food-rule-conflict" role="note">
-                  <strong>Leave out takes priority:</strong> {formatFoodRuleConflictList(likedProteinAvoidConflicts)} {likedProteinAvoidConflicts.length === 1 ? "is" : "are"} also selected above, so {likedProteinAvoidConflicts.length === 1 ? "it" : "they"} will stay out of the plan.
-                </p>
-              )}
-            </details>
-
-            <details className="nested-drawer" ref={macroDrawerRef}>
-              <summary>
-                <span className="summary-label"><Icon name="macros" />Macros</span>
-                <span className="drawer-summary">{macroDrawerSummary(form)}</span>
-              </summary>
-              {incompleteMacroRuleCount > 0 && (
-                <p className="macro-drawer-warning" role="alert">
-                  <strong>{formatFoodRuleConflictList(incompleteMacroRuleLabels)}</strong> {incompleteMacroRuleCount === 1 ? "needs" : "need"} grams or Off before Generate.
-                </p>
-              )}
-              <div className="macro-grid">
-                <MacroInput icon="carb" label="Carbs" value={form.carbs} onChange={(value) => update("carbs", value)} />
-                <MacroInput icon="fat" label="Fat" value={form.fat} onChange={(value) => update("fat", value)} />
-                <MacroInput icon="fiber" label="Fiber" value={form.fiber} onChange={(value) => update("fiber", value)} />
-                <MacroInput icon="fat" label="Saturated fat" value={form.saturatedFat} onChange={(value) => update("saturatedFat", value)} />
-              </div>
-            </details>
-
-          </details>
-
-          {activeMacroRuleLabels.length > 0 && (
-            <div className="active-macro-rules" aria-label="Active macro rules">
-              <span>Macro rules</span>
-              <ul>
-                {activeMacroRuleLabels.map((label) => <li key={label}>{label}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {pendingQuickStartPreset && (
-            <dialog
-              className="preset-confirm-dialog"
-              ref={quickStartConfirmDialogRef}
-              aria-labelledby={quickStartConfirmTitleId}
-              aria-describedby={quickStartConfirmDescriptionId}
-              onCancel={cancelQuickStartReplacement}
-              onClose={cancelQuickStartReplacement}
-              onClick={(event) => {
-                if (event.target === event.currentTarget) {
-                  cancelQuickStartReplacement();
-                }
-              }}
-            >
-              <div className="preset-confirm-panel">
-                <header className="preset-confirm-header">
-                  <p>Replace example</p>
-                  <h3 id={quickStartConfirmTitleId}>Replace with {pendingQuickStartPreset.label}?</h3>
-                </header>
-                <p id={quickStartConfirmDescriptionId} className="preset-confirm-description">
-                  This will replace your current plan and clear plan-specific edits, including locked items and meal targets.
-                </p>
-                <div className="preset-confirm-actions">
-                  <button type="button" onClick={cancelQuickStartReplacement}>
-                    Cancel
-                  </button>
-                  <button type="button" onClick={() => applyQuickStartPreset(pendingQuickStartPreset)}>
-                    Replace plan
-                  </button>
-                </div>
-              </div>
-            </dialog>
-          )}
-
-          {generationBlockers.length > 0 && (
-            <div
-              className="generation-feedback"
-              ref={generationFeedbackRef}
-              role="alert"
-              aria-label="Generation blockers"
-              tabIndex={-1}
-            >
-              <p><strong>Plan blocked.</strong> Adjust these before regenerating:</p>
-              <ul>
-                {generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
-              </ul>
-              <div className="generation-recovery-actions" aria-label="Recovery shortcuts">
-                <span>Jump to fixes:</span>
-                <button className="with-icon" type="button" onClick={reviewTargetInputs}>
-                  <Icon name="targets" />Targets
-                </button>
-                <button className="with-icon" type="button" onClick={() => openCustomizeRecovery("food")}>
-                  <Icon name="food" />Food rules
-                </button>
-                <button className="with-icon" type="button" onClick={() => openCustomizeRecovery("macros")}>
-                  <Icon name="macros" />Macro rules
-                </button>
-              </div>
-              {lockedItemCount > 0 && (
-                <div className="generation-lock-recovery">
-                  <p>
-                    <strong>{lockedItemCount} locked {lockedItemCount === 1 ? "food is" : "foods are"} still fixed.</strong>{" "}
-                    Clear all locks here, or return to the plan to unlock specific foods.
-                  </p>
-                  <div className="generation-lock-actions">
-                    <button type="button" onClick={clearLocksFromGenerationBlocker}>Clear all locks</button>
-                    {plan && <button type="button" onClick={() => setActiveView("plan")}>Back to plan</button>}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {renderTargetControls("page")}
         </section>
 
         <div className="bottom-action">
@@ -2054,7 +2079,7 @@ function App() {
                 <p id={resultStaleNoticeId} className="stale-result-action-copy" role="status" aria-live="polite">
                   Current meals and totals are from your previous inputs until regeneration succeeds.
                 </p>
-                <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
+                <button className="plan-action-button with-icon" type="button" onClick={openAdjustSheet} aria-haspopup="dialog" aria-expanded={adjustSheetOpen}><Icon name="targets" />Adjust</button>
                 <button
                   className="primary-action stale-result-primary with-icon"
                   type="button"
@@ -2097,12 +2122,59 @@ function App() {
                     )}
                   </div>
                 )}
-                <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
+                <button className="plan-action-button with-icon" type="button" onClick={openAdjustSheet} aria-haspopup="dialog" aria-expanded={adjustSheetOpen}><Icon name="targets" />Adjust</button>
                 <button className="plan-action-button with-icon" type="button" aria-label={hasActiveMealTargets ? "Randomize whole plan; meal targets use Randomize meal" : "Randomize plan"} onClick={randomizeVisiblePlan}><Icon name="randomize" />{randomizePlanActionLabel}</button>
                 <button className="primary-action with-icon" type="button" onClick={openShareSheet} aria-haspopup="dialog" aria-expanded={exportSheetOpen}><Icon name="share" />Share</button>
               </>
             )}
           </nav>
+          <dialog
+            className="swap-sheet adjust-sheet"
+            ref={adjustSheetRef}
+            aria-labelledby={adjustSheetTitleId}
+            aria-describedby={adjustSheetDescriptionId}
+            onCancel={() => setAdjustSheetOpen(false)}
+            onClose={() => setAdjustSheetOpen(false)}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setAdjustSheetOpen(false);
+              }
+            }}
+          >
+            <form className="swap-sheet-panel adjust-sheet-panel" onSubmit={submit}>
+              <header className="swap-sheet-header">
+                <div>
+                  <p>Plan settings</p>
+                  <h3 id={adjustSheetTitleId}>Adjust and regenerate</h3>
+                </div>
+                <button className="with-icon" type="button" aria-label="Close adjust options" onClick={() => setAdjustSheetOpen(false)}><Icon name="close" />Close</button>
+              </header>
+              <p id={adjustSheetDescriptionId} className="swap-sheet-description">
+                Tune calories, protein, diet, foods, and macro rules here. Your current plan stays visible underneath until regeneration succeeds.
+              </p>
+              <div className="adjust-options">
+                {renderTargetControls("sheet")}
+              </div>
+              <div className="adjust-sheet-actions">
+                {isPlanStale && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
+                {isGenerating && (
+                  <p className="generation-progress" id={generationProgressId} role="status" aria-live="polite">
+                    {generationProgressMessage}
+                  </p>
+                )}
+                <button
+                  className="primary-action with-icon"
+                  type="submit"
+                  disabled={isGenerating}
+                  aria-busy={isGenerating}
+                  aria-describedby={isGenerating ? generationProgressId : undefined}
+                >
+                  <Icon name="plate" />
+                  {generationActionLabel}
+                </button>
+              </div>
+            </form>
+          </dialog>
           <dialog
             className="swap-sheet export-sheet"
             ref={exportSheetRef}
@@ -2170,6 +2242,39 @@ function App() {
             </div>
           </dialog>
         </section>
+      )}
+      {pendingQuickStartPreset && (
+        <dialog
+          className="preset-confirm-dialog"
+          ref={quickStartConfirmDialogRef}
+          aria-labelledby={quickStartConfirmTitleId}
+          aria-describedby={quickStartConfirmDescriptionId}
+          onCancel={cancelQuickStartReplacement}
+          onClose={cancelQuickStartReplacement}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              cancelQuickStartReplacement();
+            }
+          }}
+        >
+          <div className="preset-confirm-panel">
+            <header className="preset-confirm-header">
+              <p>Replace example</p>
+              <h3 id={quickStartConfirmTitleId}>Replace with {pendingQuickStartPreset.label}?</h3>
+            </header>
+            <p id={quickStartConfirmDescriptionId} className="preset-confirm-description">
+              This will replace your current plan and clear plan-specific edits, including locked items and meal targets.
+            </p>
+            <div className="preset-confirm-actions">
+              <button type="button" onClick={cancelQuickStartReplacement}>
+                Cancel
+              </button>
+              <button type="button" onClick={() => applyQuickStartPreset(pendingQuickStartPreset)}>
+                Replace plan
+              </button>
+            </div>
+          </div>
+        </dialog>
       )}
     </main>
   );
