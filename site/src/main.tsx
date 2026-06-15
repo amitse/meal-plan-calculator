@@ -2582,6 +2582,14 @@ function formatMetricValue(value: number, metric: NutritionMetric) {
   return `${Math.round(value)} ${metric === "calories" ? "kcal" : "gm"}`;
 }
 
+function formatKnownNutritionValue(value: number | null | undefined, metric: "calories" | "protein") {
+  if (value == null) {
+    return metric === "calories" ? "Unknown kcal" : "Protein unknown";
+  }
+
+  return metric === "calories" ? `${Math.round(value)} kcal` : `${Math.round(value)}gm`;
+}
+
 type RoleTag = {
   role: MealRole;
   label: string;
@@ -2744,8 +2752,8 @@ function PlanItemRow({
       <div className="item-summary">
         <strong>{label}</strong>
         <small className="item-metrics">
-          <span><span className="notranslate" translate="no">{Math.round(nutrition.calories ?? 0)} kcal</span></span>
-          <span><span className="notranslate" translate="no">{Math.round(nutrition.protein ?? 0)}gm</span> protein</span>
+          <span><span className="notranslate" translate="no">{formatKnownNutritionValue(nutrition.calories, "calories")}</span></span>
+          <span><span className="notranslate" translate="no">{formatKnownNutritionValue(nutrition.protein, "protein")}</span>{nutrition.protein == null ? "" : " protein"}</span>
         </small>
         {swapConfirmation && (
           <p className="item-swap-confirmation" role="status">
@@ -2855,8 +2863,8 @@ function PlanItemRow({
                         <span className="swap-option-name">{option.displayName}</span>
                         <small className="swap-option-meta">
                           <span><span className="notranslate" translate="no">{exchangeOptionGramAmount(item.exchangeGroupId, option.id)}gm</span> exchange</span>
-                          <span className="notranslate" translate="no">{Math.round(previewNutrition.calories ?? 0)} kcal</span>
-                          <span><span className="notranslate" translate="no">{Math.round(previewNutrition.protein ?? 0)}gm</span> protein</span>
+                          <span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.calories, "calories")}</span>
+                          <span><span className="notranslate" translate="no">{formatKnownNutritionValue(previewNutrition.protein, "protein")}</span>{previewNutrition.protein == null ? "" : " protein"}</span>
                           {isCurrentOption && <span className="swap-option-current">Current</span>}
                         </small>
                       </button>
