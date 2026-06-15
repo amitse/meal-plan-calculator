@@ -1463,6 +1463,8 @@ function App() {
           <div className="summary-grid">
             <SummaryMetric icon="calories" label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
             <SummaryMetric icon="protein" label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
+            <SummaryMetric icon="carb" label="Carbs" value={Math.round(evaluation.totals.values.carbs)} suffix="gm" />
+            <SummaryMetric icon="fat" label="Fat" value={Math.round(evaluation.totals.values.fat)} suffix="gm" />
           </div>
           <dl className="target-context" aria-label="Active targets for this result">
             <div>
