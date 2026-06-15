@@ -1216,6 +1216,7 @@ function App() {
                       key={item.id ?? `${meal.id}-${index}`}
                       locked={Boolean(item.id && lockedIds.has(item.id))}
                       mealId={meal.id}
+                      mealName={meal.displayName}
                       onAmount={(amount) => item.id && updatePlanItemServing(item.id, amount)}
                       onDelete={() => item.id && deleteItem(item.id)}
                       onLock={() => item.id && toggleLock(item.id)}
@@ -1897,6 +1898,7 @@ function PlanItemRow({
   item,
   locked,
   mealId,
+  mealName,
   onAmount,
   onDelete,
   onLock,
@@ -1906,6 +1908,7 @@ function PlanItemRow({
   item: DailyPlanItem;
   locked: boolean;
   mealId: string;
+  mealName: string;
   onAmount: (amount: number) => void;
   onDelete: () => void;
   onLock: () => void;
@@ -1924,6 +1927,7 @@ function PlanItemRow({
   const swapDescriptionId = useId();
   const isExchangeItem = item.kind === "exchange";
   const servingStep = Number(amountStep(item, quantity.unit));
+  const servingAmountLabel = `${label} amount in grams for ${mealName}`;
 
   useEffect(() => {
     setServingDraft(String(quantity.amount));
@@ -1979,10 +1983,10 @@ function PlanItemRow({
           <NumberStepper
             ariaDescribedBy={servingValidationMessage ? servingErrorId : undefined}
             ariaInvalid={Boolean(servingValidationMessage)}
-            ariaLabel={`${label} amount`}
+            ariaLabel={servingAmountLabel}
             className="amount-control"
-            decrementLabel={`Decrease ${label} amount by ${servingStep} ${quantity.unit}`}
-            incrementLabel={`Increase ${label} amount by ${servingStep} ${quantity.unit}`}
+            decrementLabel={`Decrease ${servingAmountLabel} by ${servingStep} ${quantity.unit}`}
+            incrementLabel={`Increase ${servingAmountLabel} by ${servingStep} ${quantity.unit}`}
             onChange={updateServingDraft}
             size="compact"
             step={servingStep}
