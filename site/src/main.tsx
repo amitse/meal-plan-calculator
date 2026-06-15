@@ -106,6 +106,12 @@ type SwapConfirmation = {
   mealId: string;
   message: string;
 };
+type ServingEditConfirmation = {
+  itemId: string;
+  mealId: string;
+  message: string;
+  tone: "notice" | "success";
+};
 type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
@@ -323,6 +329,7 @@ function App() {
   const [isPlanStale, setIsPlanStale] = useState(false);
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, MealToolMessage>>({});
   const [swapConfirmation, setSwapConfirmation] = useState<SwapConfirmation | undefined>();
+  const [servingEditConfirmation, setServingEditConfirmation] = useState<ServingEditConfirmation | undefined>();
   const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
   const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
   const [randomizeUndo, setRandomizeUndo] = useState<RandomizeUndo | undefined>();
@@ -469,6 +476,7 @@ function App() {
     }
     setMealToolMessages({});
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
     if (isFoodCustomizationField(key)) {
@@ -487,6 +495,7 @@ function App() {
     setGenerationBlockers([]);
     setMealToolMessages({});
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     clearRandomizeFeedback();
     const incompleteMacroBlockers = incompleteMacroRuleBlockers(sourceForm);
     if (incompleteMacroBlockers.length > 0) {
@@ -574,6 +583,7 @@ function App() {
     setMealTargets({});
     setMealToolMessages({});
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     setAddMealBlocker("");
     setShareState(undefined);
 
@@ -604,6 +614,7 @@ function App() {
     setAddMealBlocker("");
     setMealRandomizeFeedback({});
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     const next = randomizePlan(plan, form, lockedIds);
     const changed = JSON.stringify(next) !== JSON.stringify(plan);
     setPlan(next);
@@ -650,6 +661,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
+    clearServingEditConfirmationForItem(itemId);
     setLockedIds((current) => {
       const next = new Set(current);
       if (next.has(itemId)) {
@@ -672,6 +684,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessage(meal.id);
     setSwapConfirmation(undefined);
+    clearServingEditConfirmationForItem(itemId);
     setDeletedItemUndo({
       item,
       itemIndex,
@@ -692,6 +705,7 @@ function App() {
 
     clearRandomizeFeedback();
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     setPlan((current) => current ? restoreDeletedItem(current, deletedItemUndo) : current);
     setLockedIds((current) => {
       const next = new Set(current);
@@ -715,6 +729,7 @@ function App() {
 
     clearRandomizeFeedback();
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     const next = addItemToMeal(plan, mealId, groupId, groupId === "protein-serving" ? form : undefined);
     if (next === plan && groupId === "protein-serving") {
       setMealToolMessages((current) => ({
@@ -748,6 +763,7 @@ function App() {
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     const next = addMeal(plan, form);
     if (next === plan) {
       setAddedMealFeedback(undefined);
@@ -777,7 +793,22 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
-    setPlan(updateItemAmount(plan, itemId, amount));
+    const next = updateItemAmount(plan, itemId, amount);
+    const updatedMeal = next.meals.find((meal) => meal.items.some((item) => item.id === itemId));
+    const updatedItem = updatedMeal?.items.find((item) => item.id === itemId);
+    const nextEvaluation = planEvaluation(next, form);
+
+    setPlan(next);
+
+    if (updatedMeal && updatedItem) {
+      const servingAmount = planItemDisplayQuantity(updatedItem).amount;
+      setServingEditConfirmation({
+        itemId,
+        mealId: updatedMeal.id,
+        message: servingEditConfirmationMessage(servingAmount, nextEvaluation.status),
+        tone: nextEvaluation.status === "fail" ? "notice" : "success",
+      });
+    }
   }
 
   function swapPlanItem(itemId: string, optionId: string) {
@@ -792,6 +823,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
+    clearServingEditConfirmationForItem(itemId);
     setPlan(swapExchangeOption(plan, itemId, optionId));
     if (meal && optionName) {
       setSwapConfirmation({
@@ -811,6 +843,7 @@ function App() {
     setPlanRandomizeFeedback(undefined);
     clearMealToolMessage(mealId);
     setSwapConfirmation(undefined);
+    clearServingEditConfirmationForMeal(mealId);
     const next = randomizePlan(plan, form, lockedIds, mealId, Date.now(), mealTargets[mealId]);
     const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
     const changed = JSON.stringify(nextMeal) !== JSON.stringify(meal);
@@ -832,6 +865,7 @@ function App() {
     setPlan(randomizeUndo.plan);
     setIsPlanStale(randomizeUndo.wasPlanStale);
     setSwapConfirmation(undefined);
+    setServingEditConfirmation(undefined);
     clearRandomizeFeedback();
   }
 
@@ -851,6 +885,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessage(mealId);
     setSwapConfirmation(undefined);
+    clearServingEditConfirmationForMeal(mealId);
     setMealTargets((current) => ({ ...current, [mealId]: { ...current[mealId], [key]: value } }));
   }
 
@@ -873,6 +908,14 @@ function App() {
     if (meal) {
       clearMealToolMessage(meal.id);
     }
+  }
+
+  function clearServingEditConfirmationForItem(itemId: string) {
+    setServingEditConfirmation((current) => current?.itemId === itemId ? undefined : current);
+  }
+
+  function clearServingEditConfirmationForMeal(mealId: string) {
+    setServingEditConfirmation((current) => current?.mealId === mealId ? undefined : current);
   }
 
   function openSwapSheetForItem(itemId: string) {
@@ -1537,6 +1580,7 @@ function App() {
                         onLock={() => item.id && toggleLock(item.id)}
                         onSwapOpen={() => item.id && openSwapSheetForItem(item.id)}
                         onSwap={(optionId) => item.id && swapPlanItem(item.id, optionId)}
+                        servingConfirmation={item.id && servingEditConfirmation?.itemId === item.id ? servingEditConfirmation : undefined}
                         swapConfirmation={item.id && swapConfirmation?.itemId === item.id ? swapConfirmation.message : undefined}
                       />
                     ))
@@ -2005,6 +2049,13 @@ function dietLabel(level: DietaryLevel) {
 
 function targetResultLabel(status: "pass" | "fail") {
   return status === "pass" ? "Within targets" : "Needs adjustment";
+}
+
+function servingEditConfirmationMessage(servingAmount: number, status: "pass" | "fail") {
+  const amount = `${Math.round(servingAmount)}gm`;
+  return status === "pass"
+    ? `Serving updated to ${amount}; meal and daily totals recalculated.`
+    : `Serving updated to ${amount}; totals recalculated. Daily targets need attention.`;
 }
 
 function quickStartFoodCue(form: EditableFormState) {
@@ -2571,6 +2622,7 @@ function PlanItemRow({
   onLock,
   onSwapOpen,
   onSwap,
+  servingConfirmation,
   swapConfirmation,
 }: {
   form: EditableFormState;
@@ -2583,6 +2635,7 @@ function PlanItemRow({
   onLock: () => void;
   onSwapOpen: () => void;
   onSwap: (optionId: string) => void;
+  servingConfirmation?: ServingEditConfirmation;
   swapConfirmation?: string;
 }) {
   const label = planItemLabel(item);
@@ -2651,6 +2704,11 @@ function PlanItemRow({
         {swapConfirmation && (
           <p className="item-swap-confirmation" role="status">
             {swapConfirmation}
+          </p>
+        )}
+        {servingConfirmation && (
+          <p className={`item-serving-confirmation is-${servingConfirmation.tone}`} role="status">
+            {servingConfirmation.message}
           </p>
         )}
       </div>

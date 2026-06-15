@@ -2159,7 +2159,8 @@ fieldset {
   color: var(--muted);
 }
 
-.item-swap-confirmation {
+.item-swap-confirmation,
+.item-serving-confirmation {
   width: fit-content;
   max-width: 100%;
   margin: 4px 0 0;
@@ -2171,6 +2172,12 @@ fieldset {
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.25;
+}
+
+.item-serving-confirmation.is-notice {
+  border-color: rgba(225, 189, 99, 0.48);
+  background: rgba(225, 189, 99, 0.1);
+  color: var(--warning);
 }
 
 .failure p {
