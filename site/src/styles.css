@@ -311,6 +311,17 @@ small {
   margin-top: var(--space-md);
 }
 
+.quick-start-presets.is-compact {
+  gap: 6px;
+  margin-top: var(--space-sm);
+}
+
+.quick-start-presets.is-compact legend {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
 .quick-start-row {
   display: flex;
   gap: var(--space-xs);
@@ -336,6 +347,12 @@ small {
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
+}
+
+.quick-start-presets.is-compact .quick-start-row button {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 0.82rem;
 }
 
 .quick-start-row button:hover {

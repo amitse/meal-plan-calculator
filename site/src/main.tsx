@@ -53,6 +53,10 @@ type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
 };
+type GenerateOptions = {
+  seed?: number;
+  useExistingLocks?: boolean;
+};
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -196,16 +200,20 @@ function App() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function generate(sourceForm = form, seed = Date.now()) {
-    const next = generateEditablePlan(sourceForm, plan, lockedIds, seed);
+  function generate(sourceForm = form, options: GenerateOptions = {}) {
+    const seed = options.seed ?? Date.now();
+    const useExistingLocks = options.useExistingLocks ?? true;
+    const next = generateEditablePlan(sourceForm, useExistingLocks ? plan : undefined, useExistingLocks ? lockedIds : new Set<string>(), seed);
 
     if (next) {
       setGenerationError("");
       setIsPlanStale(false);
       setPlan(next);
       setActiveView("plan");
+      return true;
     } else {
       setGenerationError("No plan matched these targets. Relax a macro or food rule, then generate again.");
+      return false;
     }
   }
 
@@ -215,8 +223,16 @@ function App() {
   }
 
   function applyQuickStartPreset(preset: QuickStartPreset) {
+    const replacesPlan = Boolean(plan);
     setForm(preset.form);
-    generate(preset.form);
+    setLockedIds(new Set());
+    setMealTargets({});
+    setMealToolMessages({});
+    setShareState(undefined);
+
+    if (generate(preset.form, { useExistingLocks: false }) && replacesPlan) {
+      setShareState({ message: `${preset.label} example replaced the previous plan.` });
+    }
   }
 
   function markPlanStale() {
@@ -403,18 +419,16 @@ function App() {
             </label>
           </div>
 
-          {!plan && (
-            <fieldset className="quick-start-presets">
-              <legend>Try an example</legend>
-              <div className="quick-start-row">
-                {quickStartPresets.map((preset) => (
-                  <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          )}
+          <fieldset className={`quick-start-presets${plan ? " is-compact" : ""}`}>
+            <legend>{plan ? "Replace with example" : "Try an example"}</legend>
+            <div className="quick-start-row">
+              {quickStartPresets.map((preset) => (
+                <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
           <fieldset className="segmented diet-segments" aria-describedby="diet-helper">
             <legend>Diet</legend>
