@@ -314,8 +314,29 @@ small {
   align-items: center;
 }
 
-.result-head h2 {
+.result-title-group {
+  display: grid;
+  gap: 4px;
   margin-right: auto;
+}
+
+.result-title-group h2 {
+  margin: 0;
+}
+
+.result-status {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.result-status.is-pass {
+  color: var(--success);
+}
+
+.result-status.is-fail {
+  color: var(--warning);
 }
 
 .field {

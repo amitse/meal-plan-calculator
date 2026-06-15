@@ -768,7 +768,10 @@ function App() {
       {activeView === "plan" && plan && evaluation && (
         <section className="result-panel" aria-labelledby="result-title" aria-live="polite" tabIndex={-1} ref={resultRef}>
           <div className="section-heading result-head">
-            <h2 id="result-title">{evaluation.status === "pass" ? "Meets target" : "Adjust"}</h2>
+            <div className="result-title-group">
+              <h2 id="result-title">Daily plan</h2>
+              <span className={`result-status is-${evaluation.status}`}>{evaluation.status === "pass" ? "Within targets" : "Needs adjustment"}</span>
+            </div>
             <button type="button" onClick={() => setActiveView("targets")}>Targets</button>
             <button type="button" onClick={randomizeVisiblePlan}>Randomize</button>
             <button type="button" onClick={share}>Share</button>
