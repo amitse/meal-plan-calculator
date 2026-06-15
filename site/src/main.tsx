@@ -172,7 +172,7 @@ function App() {
   const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set());
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
-  const [isInstalledView, setIsInstalledView] = useState(false);
+  const [isInstalledView, setIsInstalledView] = useState(() => isStandaloneApp());
   const resultRef = useRef<HTMLElement>(null);
   const mealCardRefs = useRef<Map<string, HTMLDetailsElement>>(new Map());
   const addedMealFeedbackKey = useRef(0);
@@ -610,8 +610,15 @@ function App() {
   }
 
   async function installApp() {
+    if (isStandaloneApp()) {
+      setInstallPrompt(undefined);
+      setInstallState("");
+      setIsInstalledView(true);
+      return;
+    }
+
     if (!installPrompt) {
-      setInstallState("Install from browser menu");
+      setInstallState(installFallbackMessage());
       return;
     }
 
@@ -619,16 +626,16 @@ function App() {
     setInstallPrompt(undefined);
     await prompt.prompt();
     const choice = await prompt.userChoice;
-    setInstallState(choice.outcome === "accepted" ? "" : "Install from browser menu");
+    setInstallState(choice.outcome === "accepted" ? "" : installFallbackMessage());
   }
 
   return (
     <main className="app-shell">
       <header className="mobile-header">
         <h1>Meal plan</h1>
-        {!isInstalledView && <button type="button" onClick={() => void installApp()}>Install</button>}
+        {!isInstalledView && <button type="button" onClick={() => void installApp()}>{isIosBrowser() ? "Add app" : "Install"}</button>}
       </header>
-      {installState && <p className="install-state" role="status">{installState}</p>}
+      {!isInstalledView && installState && <p className="install-state" role="status">{installState}</p>}
       {loadedUrlState.shareLoadFailed && (
         <div className="share-load-warning" role="alert">
           <p><strong>Shared plan could not be opened.</strong> Start a new plan or ask for a fresh link.</p>
@@ -1444,6 +1451,19 @@ function isProteinVisible(optionId: string, dietaryLevel: DietaryLevel) {
 
 function isStandaloneApp() {
   return window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+}
+
+function isIosBrowser() {
+  const platform = navigator.platform || "";
+  const userAgent = navigator.userAgent || "";
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  return /iPad|iPhone|iPod/.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
+}
+
+function installFallbackMessage() {
+  return isIosBrowser()
+    ? "On iPhone or iPad: tap Share, then Add to Home Screen."
+    : "Use the browser menu to install this app.";
 }
 
 createRoot(document.getElementById("root")!).render(
