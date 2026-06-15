@@ -335,6 +335,8 @@ small {
 .secondary-action,
 .export-actions button,
 .meal-targets button,
+.randomize-feedback button,
+.randomize-feedback-inline button,
 .undo-delete-state button,
 .item-actions button {
   min-height: 44px;
@@ -355,6 +357,8 @@ small {
 .secondary-action:hover,
 .export-actions button:hover,
 .meal-targets button:hover,
+.randomize-feedback button:hover,
+.randomize-feedback-inline button:hover,
 .undo-delete-state button:hover,
 .item-actions button:hover {
   border-color: var(--muted);
@@ -366,6 +370,8 @@ small {
 .secondary-action:active,
 .export-actions button:active,
 .meal-targets button:active,
+.randomize-feedback button:active,
+.randomize-feedback-inline button:active,
 .undo-delete-state button:active,
 .item-actions button:active {
   transform: translateY(1px) scale(0.99);
@@ -1442,8 +1448,31 @@ fieldset {
   line-height: 1.4;
 }
 
+.randomize-feedback.has-action,
+.randomize-feedback-inline.has-action {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.randomize-feedback.has-action {
+  display: flex;
+}
+
 .randomize-feedback-inline {
   color: var(--body);
+}
+
+.randomize-feedback button,
+.randomize-feedback-inline button {
+  min-height: 44px;
+  border-radius: 999px;
+  border-color: currentColor;
+  color: var(--ink);
+  padding-inline: var(--space-sm);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .randomize-feedback.is-success,

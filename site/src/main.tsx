@@ -57,6 +57,11 @@ type RandomizeFeedback = {
   message: string;
   changed: boolean;
 };
+type RandomizeUndo = {
+  mealId?: string;
+  plan: DailyPlan;
+  wasPlanStale: boolean;
+};
 type MealToolMessage = {
   message: string;
   tone: "notice" | "success";
@@ -204,6 +209,7 @@ function App() {
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, MealToolMessage>>({});
   const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
   const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
+  const [randomizeUndo, setRandomizeUndo] = useState<RandomizeUndo | undefined>();
   const [deletedItemUndo, setDeletedItemUndo] = useState<DeletedItemUndo | undefined>();
   const [addedMealFeedback, setAddedMealFeedback] = useState<AddedMealFeedback | undefined>();
   const [addMealBlocker, setAddMealBlocker] = useState("");
@@ -390,6 +396,7 @@ function App() {
     const next = randomizePlan(plan, form, lockedIds);
     const changed = JSON.stringify(next) !== JSON.stringify(plan);
     setPlan(next);
+    setRandomizeUndo(changed ? { plan, wasPlanStale: isPlanStale } : undefined);
     setPlanRandomizeFeedback({
       changed,
       message: changed
@@ -577,6 +584,7 @@ function App() {
     const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
     const changed = JSON.stringify(nextMeal) !== JSON.stringify(meal);
     setPlan(next);
+    setRandomizeUndo(changed ? { mealId, plan, wasPlanStale: isPlanStale } : undefined);
     setMealRandomizeFeedback({
       [mealId]: {
         changed,
@@ -585,6 +593,14 @@ function App() {
           : "No different meal found with the current locks and food rules. Unlock items or relax rules, then try again.",
       },
     });
+  }
+
+  function undoRandomize() {
+    if (!randomizeUndo) return;
+
+    setPlan(randomizeUndo.plan);
+    setIsPlanStale(randomizeUndo.wasPlanStale);
+    clearRandomizeFeedback();
   }
 
   function clearLocks() {
@@ -602,6 +618,7 @@ function App() {
   function clearRandomizeFeedback() {
     setPlanRandomizeFeedback(undefined);
     setMealRandomizeFeedback({});
+    setRandomizeUndo(undefined);
   }
 
   function clearMealToolMessage(mealId: string) {
@@ -901,9 +918,12 @@ function App() {
             </div>
           </div>
           {planRandomizeFeedback && (
-            <p className={`randomize-feedback ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}`} role="status">
-              {planRandomizeFeedback.message}
-            </p>
+            <div className={`randomize-feedback ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}${randomizeUndo && !randomizeUndo.mealId ? " has-action" : ""}`} role="status">
+              <span>{planRandomizeFeedback.message}</span>
+              {randomizeUndo && !randomizeUndo.mealId && (
+                <button type="button" onClick={undoRandomize}>Undo</button>
+              )}
+            </div>
           )}
           {shareState && (
             <div className={`share-state${shareState.manualUrl && !shareState.stale ? " manual-share" : ""}${shareState.stale ? " stale-share" : ""}`} role="status">
@@ -1064,8 +1084,11 @@ function App() {
                   </div>
                   <div className="meal-status" role="status">
                     {mealFeedback && (
-                      <span className={`randomize-feedback-inline ${mealFeedback.changed ? "is-success" : "is-notice"}`}>
-                        {mealFeedback.message}
+                      <span className={`randomize-feedback-inline ${mealFeedback.changed ? "is-success" : "is-notice"}${randomizeUndo?.mealId === meal.id ? " has-action" : ""}`}>
+                        <span>{mealFeedback.message}</span>
+                        {randomizeUndo?.mealId === meal.id && (
+                          <button type="button" onClick={undoRandomize}>Undo</button>
+                        )}
                       </span>
                     )}
                     {mealToolMessage && (
