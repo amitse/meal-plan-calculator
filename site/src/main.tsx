@@ -439,7 +439,11 @@ function App() {
   const resultRef = useRef<HTMLElement>(null);
   const exportSheetRef = useRef<HTMLDialogElement>(null);
   const generationFeedbackRef = useRef<HTMLDivElement>(null);
+  const quickFieldsRef = useRef<HTMLDivElement>(null);
   const calorieInputRef = useRef<HTMLInputElement>(null);
+  const optionsDrawerRef = useRef<HTMLDetailsElement>(null);
+  const foodDrawerRef = useRef<HTMLDetailsElement>(null);
+  const macroDrawerRef = useRef<HTMLDetailsElement>(null);
   const quickStartConfirmDialogRef = useRef<HTMLDialogElement>(null);
   const generationInFlight = useRef(false);
   const mealCardRefs = useRef<Map<string, HTMLDetailsElement>>(new Map());
@@ -741,6 +745,33 @@ function App() {
   function openTargetsView() {
     setShowSharedPlanOrientation(false);
     setActiveView("targets");
+  }
+
+  function scrollToRecoveryElement(element: HTMLElement | null, focusElement = element) {
+    if (!element) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    element.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
+    focusElement?.focus({ preventScroll: true });
+  }
+
+  function reviewTargetInputs() {
+    openTargetsView();
+    window.requestAnimationFrame(() => scrollToRecoveryElement(quickFieldsRef.current, calorieInputRef.current));
+  }
+
+  function openCustomizeRecovery(section: "food" | "macros") {
+    openTargetsView();
+    setOptionsOpen(true);
+
+    window.requestAnimationFrame(() => {
+      const drawer = section === "food" ? foodDrawerRef.current : macroDrawerRef.current;
+      if (!drawer) return;
+
+      drawer.open = true;
+      const summary = drawer.querySelector("summary");
+      scrollToRecoveryElement(drawer, summary instanceof HTMLElement ? summary : drawer);
+    });
   }
 
   function randomizeVisiblePlan() {
@@ -1333,7 +1364,7 @@ function App() {
             </p>
           )}
 
-          <div className="quick-fields">
+          <div className="quick-fields" ref={quickFieldsRef}>
             <label className="field calorie-field">
               <span className="label-with-icon"><Icon name="calories" />Calories (kcal)</span>
               <NumberStepper
@@ -1389,13 +1420,13 @@ function App() {
             {dietRuleNotice && <p id="diet-rule-notice" className="diet-rule-notice" role="status">{dietRuleNotice}</p>}
           </fieldset>
 
-          <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
+          <details className="options-drawer" ref={optionsDrawerRef} open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>
               <span className="summary-label"><Icon name="tools" />Customize</span>
               <span className="drawer-summary">{customizeDrawerSummary(form)}</span>
             </summary>
 
-            <details className="nested-drawer">
+            <details className="nested-drawer" ref={foodDrawerRef}>
               <summary>
                 <span className="summary-label"><Icon name="food" />Food</span>
                 <span className="drawer-summary">{foodDrawerSummary(form)}</span>
@@ -1432,7 +1463,7 @@ function App() {
               )}
             </details>
 
-            <details className="nested-drawer">
+            <details className="nested-drawer" ref={macroDrawerRef}>
               <summary>
                 <span className="summary-label"><Icon name="macros" />Macros</span>
                 <span className="drawer-summary">{macroDrawerSummary(form)}</span>
@@ -1522,6 +1553,18 @@ function App() {
               <ul>
                 {generationBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
               </ul>
+              <div className="generation-recovery-actions" aria-label="Recovery shortcuts">
+                <span>Jump to fixes:</span>
+                <button className="with-icon" type="button" onClick={reviewTargetInputs}>
+                  <Icon name="targets" />Targets
+                </button>
+                <button className="with-icon" type="button" onClick={() => openCustomizeRecovery("food")}>
+                  <Icon name="food" />Food rules
+                </button>
+                <button className="with-icon" type="button" onClick={() => openCustomizeRecovery("macros")}>
+                  <Icon name="macros" />Macro rules
+                </button>
+              </div>
               {lockedItemCount > 0 && (
                 <div className="generation-lock-recovery">
                   <p>

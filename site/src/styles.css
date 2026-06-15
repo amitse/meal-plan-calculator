@@ -2815,6 +2815,7 @@ fieldset {
   margin: var(--size-4) 0;
 }
 
+.generation-recovery-actions,
 .generation-lock-recovery {
   display: grid;
   gap: var(--space-xs);
@@ -2823,28 +2824,50 @@ fieldset {
   border-top: var(--size-px) solid var(--alpha-danger-34);
 }
 
+.generation-recovery-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.generation-recovery-actions span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
 .generation-lock-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
 }
 
+.generation-recovery-actions button,
 .generation-lock-actions button {
   min-height: var(--size-38);
   border: var(--size-px) solid var(--alpha-danger-58);
   border-radius: var(--radius-pill);
   background: var(--alpha-surface-strong-72);
   color: var(--ink);
-  padding: 0 var(--size-12);
+  padding: 0 var(--size-10);
   font-size: 0.84rem;
   font-weight: 800;
   line-height: 1;
 }
 
+.generation-recovery-actions button:hover,
 .generation-lock-actions button:hover {
   border-color: var(--danger);
   background: var(--alpha-danger-14);
   transform: translateY(calc(var(--size-px) * -1));
+}
+
+.generation-recovery-actions .line-icon {
+  width: 0.92rem;
+  height: 0.92rem;
 }
 
 .stale-plan-notice {
