@@ -2317,6 +2317,7 @@ fieldset {
 }
 
 .item-swap-confirmation,
+.item-lock-confirmation,
 .item-serving-confirmation {
   width: fit-content;
   max-width: 100%;
@@ -2331,6 +2332,7 @@ fieldset {
   line-height: 1.25;
 }
 
+.item-lock-confirmation.is-notice,
 .item-serving-confirmation.is-notice {
   border-color: rgba(225, 189, 99, 0.48);
   background: rgba(225, 189, 99, 0.1);

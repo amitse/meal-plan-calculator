@@ -112,6 +112,12 @@ type ServingEditConfirmation = {
   message: string;
   tone: "notice" | "success";
 };
+type LockConfirmation = {
+  itemId: string;
+  mealId: string;
+  message: string;
+  tone: "notice" | "success";
+};
 type LoadedUrlState = {
   state?: ShareablePlannerState;
   shareLoadFailed: boolean;
@@ -330,6 +336,7 @@ function App() {
   const [mealToolMessages, setMealToolMessages] = useState<Record<string, MealToolMessage>>({});
   const [swapConfirmation, setSwapConfirmation] = useState<SwapConfirmation | undefined>();
   const [servingEditConfirmation, setServingEditConfirmation] = useState<ServingEditConfirmation | undefined>();
+  const [lockConfirmation, setLockConfirmation] = useState<LockConfirmation | undefined>();
   const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
   const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
   const [randomizeUndo, setRandomizeUndo] = useState<RandomizeUndo | undefined>();
@@ -479,6 +486,7 @@ function App() {
     setMealToolMessages({});
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
     if (isFoodCustomizationField(key)) {
@@ -498,6 +506,7 @@ function App() {
     setMealToolMessages({});
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     clearRandomizeFeedback();
     const incompleteMacroBlockers = incompleteMacroRuleBlockers(sourceForm);
     if (incompleteMacroBlockers.length > 0) {
@@ -586,6 +595,7 @@ function App() {
     setMealToolMessages({});
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     setAddMealBlocker("");
     setShareState(undefined);
 
@@ -617,6 +627,7 @@ function App() {
     setMealRandomizeFeedback({});
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     const next = randomizePlan(plan, form, lockedIds);
     const changed = JSON.stringify(next) !== JSON.stringify(plan);
     setPlan(next);
@@ -634,6 +645,7 @@ function App() {
     setGenerationBlockers([]);
     setMealToolMessages({});
     setSwapConfirmation(undefined);
+    setLockConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
@@ -646,6 +658,7 @@ function App() {
     setGenerationBlockers([]);
     setMealToolMessages({});
     setSwapConfirmation(undefined);
+    setLockConfirmation(undefined);
     setAddMealBlocker("");
     clearRandomizeFeedback();
     setDietRuleNotice("");
@@ -659,11 +672,26 @@ function App() {
   }
 
   function toggleLock(itemId: string) {
+    const meal = plan?.meals.find((candidate) => candidate.items.some((item) => item.id === itemId));
+    const item = meal?.items.find((candidate) => candidate.id === itemId);
+    const wasLocked = lockedIds.has(itemId);
+    const itemLabel = item ? planItemLabel(item) : undefined;
+
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
     clearServingEditConfirmationForItem(itemId);
+    setLockConfirmation(meal && itemLabel
+      ? {
+          itemId,
+          mealId: meal.id,
+          message: wasLocked
+            ? itemLabel + " unlocked."
+            : itemLabel + " locked. Generate and Randomize will keep it fixed.",
+          tone: wasLocked ? "notice" : "success",
+        }
+      : undefined);
     setLockedIds((current) => {
       const next = new Set(current);
       if (next.has(itemId)) {
@@ -687,6 +715,7 @@ function App() {
     clearMealToolMessage(meal.id);
     setSwapConfirmation(undefined);
     clearServingEditConfirmationForItem(itemId);
+    setLockConfirmation(undefined);
     setDeletedItemUndo({
       item,
       itemIndex,
@@ -708,6 +737,7 @@ function App() {
     clearRandomizeFeedback();
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     setPlan((current) => current ? restoreDeletedItem(current, deletedItemUndo) : current);
     setLockedIds((current) => {
       const next = new Set(current);
@@ -732,6 +762,7 @@ function App() {
     clearRandomizeFeedback();
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     const next = addItemToMeal(plan, mealId, groupId, groupId === "protein-serving" ? form : undefined);
     if (next === plan && groupId === "protein-serving") {
       setMealToolMessages((current) => ({
@@ -766,6 +797,7 @@ function App() {
     clearRandomizeFeedback();
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     const next = addMeal(plan, form);
     if (next === plan) {
       setAddedMealFeedback(undefined);
@@ -795,6 +827,7 @@ function App() {
     clearRandomizeFeedback();
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
+    setLockConfirmation(undefined);
     const next = updateItemAmount(plan, itemId, amount);
     const updatedMeal = next.meals.find((meal) => meal.items.some((item) => item.id === itemId));
     const updatedItem = updatedMeal?.items.find((item) => item.id === itemId);
@@ -826,6 +859,7 @@ function App() {
     clearMealToolMessageForItem(itemId);
     setSwapConfirmation(undefined);
     clearServingEditConfirmationForItem(itemId);
+    setLockConfirmation(undefined);
     setPlan(swapExchangeOption(plan, itemId, optionId));
     if (meal && optionName) {
       setSwapConfirmation({
@@ -846,6 +880,7 @@ function App() {
     clearMealToolMessage(mealId);
     setSwapConfirmation(undefined);
     clearServingEditConfirmationForMeal(mealId);
+    setLockConfirmation(undefined);
     const next = randomizePlan(plan, form, lockedIds, mealId, Date.now(), mealTargets[mealId]);
     const nextMeal = next.meals.find((candidate) => candidate.id === mealId);
     const changed = JSON.stringify(nextMeal) !== JSON.stringify(meal);
@@ -868,6 +903,7 @@ function App() {
     setIsPlanStale(randomizeUndo.wasPlanStale);
     setSwapConfirmation(undefined);
     setServingEditConfirmation(undefined);
+    setLockConfirmation(undefined);
     clearRandomizeFeedback();
   }
 
@@ -875,6 +911,7 @@ function App() {
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
     setSwapConfirmation(undefined);
+    setLockConfirmation(undefined);
     setLockedIds(new Set());
   }
 
@@ -888,6 +925,7 @@ function App() {
     clearMealToolMessage(mealId);
     setSwapConfirmation(undefined);
     clearServingEditConfirmationForMeal(mealId);
+    setLockConfirmation(undefined);
     setMealTargets((current) => ({ ...current, [mealId]: { ...current[mealId], [key]: value } }));
   }
 
@@ -1004,6 +1042,7 @@ function App() {
     setIsPlanStale(false);
     setMealToolMessages({});
     setSwapConfirmation(undefined);
+    setLockConfirmation(undefined);
     clearRandomizeFeedback();
     setDeletedItemUndo(undefined);
     setAddedMealFeedback(undefined);
@@ -1610,6 +1649,7 @@ function App() {
                         onLock={() => item.id && toggleLock(item.id)}
                         onSwapOpen={() => item.id && openSwapSheetForItem(item.id)}
                         onSwap={(optionId) => item.id && swapPlanItem(item.id, optionId)}
+                        lockConfirmation={item.id && lockConfirmation?.itemId === item.id ? lockConfirmation : undefined}
                         servingConfirmation={item.id && servingEditConfirmation?.itemId === item.id ? servingEditConfirmation : undefined}
                         swapConfirmation={item.id && swapConfirmation?.itemId === item.id ? swapConfirmation.message : undefined}
                       />
@@ -2687,6 +2727,7 @@ function PlanItemRow({
   onLock,
   onSwapOpen,
   onSwap,
+  lockConfirmation,
   servingConfirmation,
   swapConfirmation,
 }: {
@@ -2700,6 +2741,7 @@ function PlanItemRow({
   onLock: () => void;
   onSwapOpen: () => void;
   onSwap: (optionId: string) => void;
+  lockConfirmation?: LockConfirmation;
   servingConfirmation?: ServingEditConfirmation;
   swapConfirmation?: string;
 }) {
@@ -2772,6 +2814,11 @@ function PlanItemRow({
         {swapConfirmation && (
           <p className="item-swap-confirmation" role="status">
             {swapConfirmation}
+          </p>
+        )}
+        {lockConfirmation && (
+          <p className={"item-lock-confirmation is-" + lockConfirmation.tone} role="status" aria-live="polite" aria-atomic="true">
+            {lockConfirmation.message}
           </p>
         )}
         {servingConfirmation && (
