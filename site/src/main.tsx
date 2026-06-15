@@ -168,6 +168,7 @@ function App() {
   const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
   const [deletedItemUndo, setDeletedItemUndo] = useState<DeletedItemUndo | undefined>();
   const [addedMealFeedback, setAddedMealFeedback] = useState<AddedMealFeedback | undefined>();
+  const [addMealBlocker, setAddMealBlocker] = useState("");
   const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set());
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
@@ -265,6 +266,7 @@ function App() {
   function update<K extends keyof EditableFormState>(key: K, value: EditableFormState[K]) {
     setGenerationBlockers([]);
     setMealToolMessages({});
+    setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
     setForm((current) => ({ ...current, [key]: value }));
@@ -275,6 +277,7 @@ function App() {
     const useExistingLocks = options.useExistingLocks ?? true;
     setDeletedItemUndo(undefined);
     setAddedMealFeedback(undefined);
+    setAddMealBlocker("");
     setGenerationBlockers([]);
     setMealToolMessages({});
     clearRandomizeFeedback();
@@ -302,6 +305,7 @@ function App() {
     setLockedIds(new Set());
     setMealTargets({});
     setMealToolMessages({});
+    setAddMealBlocker("");
     setShareState(undefined);
 
     if (generate(preset.form, { useExistingLocks: false }) && replacesPlan) {
@@ -319,6 +323,7 @@ function App() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
     setAddedMealFeedback(undefined);
+    setAddMealBlocker("");
     setMealRandomizeFeedback({});
     const next = randomizePlan(plan, form, lockedIds);
     const changed = JSON.stringify(next) !== JSON.stringify(plan);
@@ -335,6 +340,7 @@ function App() {
   function updateDietaryLevel(level: DietaryLevel) {
     setGenerationBlockers([]);
     setMealToolMessages({});
+    setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
     setForm((current) => ({
@@ -349,6 +355,7 @@ function App() {
   function updatePreference(key: "preferredGrains" | "preferredProteins", optionId: string, checked: boolean) {
     setGenerationBlockers([]);
     setMealToolMessages({});
+    setAddMealBlocker("");
     clearRandomizeFeedback();
     markPlanStale();
     setForm((current) => {
@@ -445,8 +452,15 @@ function App() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
-    const next = addMeal(plan);
+    const next = addMeal(plan, form);
+    if (next === plan) {
+      setAddedMealFeedback(undefined);
+      setAddMealBlocker("No protein matches your active diet and avoid rules. Relax food rules before adding a meal.");
+      return;
+    }
+
     const addedMeal = next.meals.at(-1);
+    setAddMealBlocker("");
     setPlan(next);
 
     if (addedMeal) {
@@ -886,6 +900,7 @@ function App() {
             );
             })}
           </div>
+          {addMealBlocker && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
           <button className="secondary-action" type="button" onClick={addEmptyMeal}>Add meal</button>
         </section>
       )}

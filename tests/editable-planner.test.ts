@@ -214,6 +214,21 @@ describe("editable planner workflows", () => {
     expect(added && "exchangeOptionId" in added ? added.exchangeOptionId : "").toBe("tofu-100g");
   });
 
+  it("adds a meal with a protein that respects active avoid rules", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const form = {
+      ...initialFormState,
+      preferredProteins: ["paneer-50g", "tofu-100g"],
+      avoidPaneer: true,
+    };
+    const withMeal = addMeal(plan, form);
+    const addedProtein = withMeal.meals.at(-1)?.items.find((item) => item.kind === "exchange" && item.exchangeGroupId === "protein-serving");
+
+    expect(withMeal.meals).toHaveLength(plan.meals.length + 1);
+    expect(addedProtein).toMatchObject({ kind: "exchange", exchangeGroupId: "protein-serving" });
+    expect(addedProtein && "exchangeOptionId" in addedProtein ? addedProtein.exchangeOptionId : "").toBe("tofu-100g");
+  });
+
   it("edits exchange items in grams", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
     const swapped = swapExchangeOption(plan, "lunch-carb", "raw-oats");

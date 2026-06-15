@@ -518,8 +518,13 @@ export function removePlanItem(plan: DailyPlan, itemId: string): DailyPlan {
   };
 }
 
-export function addMeal(plan: DailyPlan): DailyPlan {
+export function addMeal(plan: DailyPlan, form?: EditableFormState): DailyPlan {
   const next = plan.meals.length + 1;
+  const proteinOptionId = firstAllowedProteinOption(form);
+
+  if (!proteinOptionId) {
+    return plan;
+  }
 
   return {
     ...plan,
@@ -534,7 +539,7 @@ export function addMeal(plan: DailyPlan): DailyPlan {
             kind: "exchange",
             id: `meal-${next}-protein`,
             exchangeGroupId: "protein-serving",
-            exchangeOptionId: "paneer-50g",
+            exchangeOptionId: proteinOptionId,
             exchangeUnits: 1,
             roles: ["protein"],
           },
