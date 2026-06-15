@@ -180,7 +180,6 @@ function App() {
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
   const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
-  const activeCustomizationChips = useMemo(() => activeCustomizationLabels(form), [form]);
   const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
   const currentShareableState = useMemo<ShareablePlannerState>(() => ({
@@ -670,7 +669,7 @@ function App() {
           <details className="options-drawer" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)}>
             <summary>
               <span>Customize</span>
-              <span className="drawer-summary">{activeCustomizationChips.length > 0 ? `${activeCustomizationChips.length} active` : "Food + macros"}</span>
+              <span className="drawer-summary">{customizeDrawerSummary(form)}</span>
             </summary>
 
             <details className="nested-drawer">
@@ -709,12 +708,6 @@ function App() {
 
           </details>
 
-          {activeCustomizationChips.length > 0 && (
-            <div className="customization-chips" aria-label="Active customizations">
-              <span className="customization-label">Active settings</span>
-              {activeCustomizationChips.map((label) => <span className="customization-note" key={label}>{label}</span>)}
-            </div>
-          )}
           {generationBlockers.length > 0 && (
             <div className="generation-feedback" role="alert" aria-label="Generation blockers">
               <p><strong>Plan blocked.</strong> Adjust these before regenerating:</p>
@@ -967,25 +960,25 @@ function CheckChip({ label, checked, onChange }: { label: string; checked: boole
   );
 }
 
-function activeCustomizationLabels(form: EditableFormState) {
-  const avoids = avoidLabels(form);
-  const labels = [
-    foodPreferenceSummary(form),
-    avoids.length > 0 ? `Avoid ${avoids.length}` : undefined,
-    ...activeMacroLabels(form),
-  ];
-
-  return labels.filter((label): label is string => Boolean(label));
-}
-
 function macroLabel(label: string, field: MacroField) {
   const value = field.value.trim();
   return field.mode === "none" || value === "" ? undefined : `${label} ${field.mode} ${value}g`;
 }
 
+function customizeDrawerSummary(form: EditableFormState) {
+  const activeFoodLabels = activeFoodCustomizationLabels(form);
+  const activeMacros = activeMacroCount(form);
+  const labels = [
+    ...activeFoodLabels,
+    activeMacros > 0 ? `${activeMacros} macro${activeMacros === 1 ? "" : "s"}` : undefined,
+  ].filter((label): label is string => Boolean(label));
+
+  return labels.length > 0 ? labels.join(" · ") : "Food + macros";
+}
+
 function foodDrawerSummary(form: EditableFormState) {
-  const avoids = avoidLabels(form);
-  return `${foodPreferenceSummary(form)}${avoids.length > 0 ? ` · avoid ${avoids.length}` : ""}`;
+  const labels = activeFoodCustomizationLabels(form);
+  return labels.length > 0 ? labels.join(" · ") : "Automatic foods";
 }
 
 function macroDrawerSummary(form: EditableFormState) {
@@ -994,9 +987,37 @@ function macroDrawerSummary(form: EditableFormState) {
   return activeMacros > 0 ? `${activeMacros} rules` : "Optional limits";
 }
 
-function foodPreferenceSummary(form: EditableFormState) {
-  const proteinCount = visibleProteinPreferences(form.preferredProteins, form.dietaryLevel).length;
-  return `Grains ${form.preferredGrains.length || "auto"} · Protein ${proteinCount || "auto"}`;
+function activeFoodCustomizationLabels(form: EditableFormState) {
+  return [
+    narrowedGrainPreferenceLabel(form),
+    narrowedProteinPreferenceLabel(form),
+    ...avoidLabels(form).map((label) => `Avoid ${label}`),
+  ].filter((label): label is string => Boolean(label));
+}
+
+function narrowedGrainPreferenceLabel(form: EditableFormState) {
+  const allGrainIds = grainOptions.map((option) => option.id);
+  const selectedGrainIds = selectedOptionIds(form.preferredGrains, allGrainIds);
+
+  return isAutomaticOptionSet(selectedGrainIds, allGrainIds) ? undefined : `Grains ${selectedGrainIds.length} selected`;
+}
+
+function narrowedProteinPreferenceLabel(form: EditableFormState) {
+  const visibleProteinIds = proteinOptions
+    .filter((option) => isProteinVisible(option.id, form.dietaryLevel))
+    .map((option) => option.id);
+  const selectedProteinIds = selectedOptionIds(form.preferredProteins, visibleProteinIds);
+
+  return isAutomaticOptionSet(selectedProteinIds, visibleProteinIds) ? undefined : `Protein ${selectedProteinIds.length} selected`;
+}
+
+function selectedOptionIds(values: string[], allowedValues: string[]) {
+  const allowed = new Set(allowedValues);
+  return [...new Set(values.filter((value) => allowed.has(value)))];
+}
+
+function isAutomaticOptionSet(selectedValues: string[], allValues: string[]) {
+  return selectedValues.length === 0 || (selectedValues.length === allValues.length && allValues.every((value) => selectedValues.includes(value)));
 }
 
 function avoidLabels(form: EditableFormState) {
