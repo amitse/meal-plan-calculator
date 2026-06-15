@@ -299,6 +299,7 @@ function App() {
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
   const targetStatusItems = evaluation && hasOptionalMacroTarget(evaluation.targetBounds) ? evaluation.targetBounds : [];
   const proteinTarget = Number(form.protein || 0);
+  const activeMacroRuleCount = activeMacroCount(form);
   const likedProteinAvoidConflicts = useMemo(() => foodRuleConflictLabels(form), [form]);
   const lockedItemCount = lockedIds.size;
   const currentShareableState = useMemo<ShareablePlannerState>(() => ({
@@ -1114,9 +1115,26 @@ function App() {
             <SummaryMetric icon="calories" label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
             <SummaryMetric icon="protein" label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
           </div>
-          {proteinTarget > 0 && (
-            <p className="target-context">Protein target {Math.round(proteinTarget)}gm uses an about ±5gm pass band.</p>
-          )}
+          <dl className="target-context" aria-label="Active targets for this result">
+            <div>
+              <dt>Calorie target</dt>
+              <dd>{Math.round(Number(form.calories || 0))} kcal</dd>
+            </div>
+            <div>
+              <dt>Protein target</dt>
+              <dd>{Math.round(proteinTarget)} gm</dd>
+            </div>
+            <div>
+              <dt>Diet</dt>
+              <dd>{dietLabel(form.dietaryLevel)}</dd>
+            </div>
+            {activeMacroRuleCount > 0 && (
+              <div>
+                <dt>Macro rules</dt>
+                <dd>{activeMacroRuleCount} applied{targetStatusItems.length > 0 ? "; status below" : ""}</dd>
+              </div>
+            )}
+          </dl>
           {targetStatusItems.length > 0 && (
             <div className="target-status" aria-label="Daily target status">
               {targetStatusItems.map((item) => (
