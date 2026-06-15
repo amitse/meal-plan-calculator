@@ -167,6 +167,10 @@ function isValidCalorieTarget(value: string) {
   return value.trim() !== "" && Number.isFinite(calories) && calories >= calorieTargetMin && calories <= calorieTargetMax;
 }
 
+function hasActiveMealTarget(target: MealMacroTarget) {
+  return Number(target.calories || 0) > 0 || Number(target.protein || 0) > 0;
+}
+
 type IconName =
   | "add"
   | "alert"
@@ -385,6 +389,8 @@ function App() {
   const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
   const generationActionLabel = isGenerating ? "Generating..." : plan ? "Regenerate plan" : "Generate";
   const canUndoPlanRandomize = Boolean(randomizeUndo && !randomizeUndo.mealId);
+  const hasActiveMealTargets = useMemo(() => Object.values(mealTargets).some(hasActiveMealTarget), [mealTargets]);
+  const randomizePlanActionLabel = hasActiveMealTargets ? "Randomize plan" : "Randomize";
   const shareActionFeedback = shareState && (shareState.stale || shareState.shareKey || shareState.manualUrl) ? shareState : undefined;
   const topShareState = shareState && !shareActionFeedback ? shareState : undefined;
   const hasResultActionStatus = Boolean(activeView === "plan" && (planRandomizeFeedback || shareActionFeedback));
@@ -658,8 +664,12 @@ function App() {
     setPlanRandomizeFeedback({
       changed,
       message: changed
-        ? "Plan randomized."
-        : "No different plan found with the current locks and food rules. Unlock items or relax rules, then try again.",
+        ? hasActiveMealTargets
+          ? "Whole plan randomized. Use Randomize meal in Meal tools for meal targets."
+          : "Plan randomized."
+        : hasActiveMealTargets
+          ? "No different whole-plan randomization found. Use Randomize meal in Meal tools for meal targets."
+          : "No different plan found with the current locks and food rules. Unlock items or relax rules, then try again.",
     });
     setIsPlanStale(false);
   }
@@ -1757,7 +1767,7 @@ function App() {
               </div>
             )}
             <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
-            <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
+            <button className="plan-action-button with-icon" type="button" aria-label={hasActiveMealTargets ? "Randomize whole plan; meal targets use Randomize meal" : "Randomize plan"} onClick={randomizeVisiblePlan}><Icon name="randomize" />{randomizePlanActionLabel}</button>
             <button className="primary-action with-icon" type="button" onClick={openShareSheet} aria-haspopup="dialog" aria-expanded={exportSheetOpen}><Icon name="share" />Share</button>
           </nav>
           <dialog
