@@ -459,6 +459,18 @@ function App() {
     }
   }
 
+  function regenerateStalePlan() {
+    if (!isValidCalorieTarget(form.calories)) {
+      setCalorieInputError(calorieValidationMessage);
+      setActiveView("targets");
+      window.requestAnimationFrame(() => calorieInputRef.current?.focus());
+      return;
+    }
+
+    setCalorieInputError("");
+    void generateWithProgress();
+  }
+
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!isValidCalorieTarget(form.calories)) {
@@ -1145,7 +1157,15 @@ function App() {
               )}
             </div>
           )}
-          {isPlanStale && <p className="stale-plan-notice" role="status">Inputs changed - regenerate to apply these choices.</p>}
+          {isPlanStale && (
+            <div className="stale-plan-notice has-action" role="status">
+              <span>Inputs changed. Regenerate to apply.</span>
+              <button className="with-icon" type="button" onClick={regenerateStalePlan} disabled={isGenerating} aria-busy={isGenerating}>
+                <Icon name="plate" />
+                {isGenerating ? "Generating..." : "Regenerate now"}
+              </button>
+            </div>
+          )}
           <details className="export-drawer">
             <summary>
               <span className="summary-label"><Icon name="export" />Export</span>

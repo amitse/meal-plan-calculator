@@ -2129,6 +2129,10 @@ fieldset {
 }
 
 .stale-plan-notice {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
   margin: 0 0 var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border: 1px solid rgba(225, 189, 99, 0.48);
@@ -2139,8 +2143,37 @@ fieldset {
   line-height: 1.45;
 }
 
+.stale-plan-notice span {
+  min-width: 0;
+}
+
+.stale-plan-notice button {
+  min-height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(225, 189, 99, 0.58);
+  border-radius: 999px;
+  background: rgba(14, 14, 14, 0.62);
+  color: var(--ink);
+  padding: 0 11px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stale-plan-notice button:hover:not(:disabled) {
+  border-color: var(--warning);
+  background: rgba(225, 189, 99, 0.18);
+}
+
+.stale-plan-notice button:disabled,
+.stale-plan-notice button[aria-busy="true"] {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .bottom-action .stale-plan-notice {
   margin: 0 0 var(--space-xs);
+  display: block;
   text-align: center;
 }
 
