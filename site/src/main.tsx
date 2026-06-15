@@ -76,7 +76,7 @@ import {
   type MealMacroTarget,
   type ShareablePlannerState,
 } from "./editable-planner.js";
-import { planExportCsv, planExportExcelHtml, planShareText } from "./export-plan.js";
+import { planExportCsv, planExportExcelHtml, planShareText, type PlanExportOptions } from "./export-plan.js";
 import "./styles.css";
 
 type BoundField = "none" | "min" | "max" | "target";
@@ -945,20 +945,20 @@ function App() {
 
   function exportCsv() {
     if (!plan) return;
-    downloadTextFile(exportFilename("csv"), "text/csv;charset=utf-8", planExportCsv(plan));
+    downloadTextFile(exportFilename("csv"), "text/csv;charset=utf-8", planExportCsv(plan, exportOptions()));
     setShareState({ message: "CSV downloaded" });
   }
 
   function exportSpreadsheet() {
     if (!plan) return;
-    downloadTextFile(exportFilename("xls"), "application/vnd.ms-excel;charset=utf-8", planExportExcelHtml(plan));
+    downloadTextFile(exportFilename("xls"), "application/vnd.ms-excel;charset=utf-8", planExportExcelHtml(plan, exportOptions()));
     setManualShareText("");
     setShareState({ message: "Spreadsheet downloaded. Open it in Excel or import it into Google Sheets." });
   }
 
   async function sharePlanText() {
     if (!plan) return;
-    const text = planShareText(plan);
+    const text = planShareText(plan, exportOptions());
     setManualShareText("");
 
     try {
@@ -986,6 +986,22 @@ function App() {
 
     setManualShareText(text);
     setShareState(undefined);
+  }
+
+  function exportOptions(): PlanExportOptions {
+    if (!evaluation) {
+      return {};
+    }
+
+    return {
+      targetSummary: {
+        calories: Number(form.calories || 0),
+        protein: proteinTarget > 0 ? proteinTarget : undefined,
+        diet: dietLabel(form.dietaryLevel),
+        macroRules: activeMacroRuleLabels,
+        targetStatus: targetResultLabel(evaluation.status),
+      },
+    };
   }
 
   async function sharePlanImage() {
@@ -1286,7 +1302,7 @@ function App() {
           <div className="section-heading result-head">
             <div className="result-title-group">
               <h2 id="result-title">Daily plan</h2>
-              <span className={`result-status is-${evaluation.status}`}>{evaluation.status === "pass" ? "Within targets" : "Needs adjustment"}</span>
+              <span className={`result-status is-${evaluation.status}`}>{targetResultLabel(evaluation.status)}</span>
             </div>
           </div>
           {planRandomizeFeedback && (
@@ -1653,10 +1669,16 @@ function TranslationControl() {
   function changeLanguage(nextLanguage: string) {
     setLanguage(nextLanguage);
     writeGoogleTranslateCookie(nextLanguage);
-    if (status !== "unavailable") {
-      setStatus("loading");
-      syncGoogleTranslateLanguage(nextLanguage, 0, () => setStatus("ready"));
+    if (status === "unavailable") {
+      openGoogleTranslateFallback(nextLanguage);
+      return;
     }
+
+    setStatus("loading");
+    syncGoogleTranslateLanguage(nextLanguage, 0, () => setStatus("ready"), () => {
+      setStatus("unavailable");
+      openGoogleTranslateFallback(nextLanguage);
+    });
   }
 
   return (
@@ -1902,6 +1924,10 @@ function quickStartPresetPreview(form: EditableFormState) {
 
 function dietLabel(level: DietaryLevel) {
   return dietOptions.find((option) => option.level === level)?.label ?? level;
+}
+
+function targetResultLabel(status: "pass" | "fail") {
+  return status === "pass" ? "Within targets" : "Needs adjustment";
 }
 
 function quickStartFoodCue(form: EditableFormState) {
@@ -2271,29 +2297,35 @@ function readGoogleTranslateLanguage() {
 function writeGoogleTranslateCookie(language: string) {
   const value = language ? `/en/${language}` : "";
   const expires = language ? "max-age=31536000" : "expires=Thu, 01 Jan 1970 00:00:00 GMT";
-  const cookie = `${googleTranslateCookieName}=${encodeURIComponent(value)}; path=/; ${expires}; SameSite=Lax`;
-  document.cookie = cookie;
-
-  const hostnameParts = window.location.hostname.split(".");
-  if (hostnameParts.length > 1) {
-    document.cookie = `${cookie}; domain=.${hostnameParts.slice(-2).join(".")}`;
-  }
+  document.cookie = `${googleTranslateCookieName}=${value}; path=/; ${expires}; SameSite=Lax`;
 }
 
-function syncGoogleTranslateLanguage(language: string, attempt = 0, onReady?: () => void) {
+function syncGoogleTranslateLanguage(language: string, attempt = 0, onReady?: () => void, onUnavailable?: () => void) {
   const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
   if (combo) {
     if (combo.value !== language) {
       combo.value = language;
-      combo.dispatchEvent(new Event("change"));
+      combo.dispatchEvent(new Event("change", { bubbles: true }));
     }
     onReady?.();
     return;
   }
 
-  if (attempt < 20) {
-    window.setTimeout(() => syncGoogleTranslateLanguage(language, attempt + 1, onReady), 150);
+  if (attempt < 60) {
+    window.setTimeout(() => syncGoogleTranslateLanguage(language, attempt + 1, onReady, onUnavailable), 150);
+    return;
   }
+
+  onUnavailable?.();
+}
+
+function openGoogleTranslateFallback(language: string) {
+  if (!language || typeof window === "undefined") return;
+  const url = new URL("https://translate.google.com/translate");
+  url.searchParams.set("sl", "en");
+  url.searchParams.set("tl", language);
+  url.searchParams.set("u", window.location.href);
+  window.location.assign(url.toString());
 }
 
 function SummaryMetric({ icon, label, value, suffix }: { icon: IconName; label: string; value: number; suffix: string }) {

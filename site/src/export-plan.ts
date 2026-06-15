@@ -38,19 +38,32 @@ interface ExportRow {
   saturatedFat?: number | null;
 }
 
-export function planExportCsv(plan: DailyPlan) {
-  return tableRows(plan).map((row) => row.map(csvCell).join(",")).join("\r\n");
+export interface PlanExportTargetSummary {
+  calories: number | string;
+  protein?: number | string;
+  diet: string;
+  macroRules?: string[];
+  targetStatus: string;
 }
 
-export function planExportTsv(plan: DailyPlan) {
-  return tableRows(plan).map((row) => row.join("\t")).join("\n");
+export interface PlanExportOptions {
+  targetSummary?: PlanExportTargetSummary;
 }
 
-export function planShareText(plan: DailyPlan) {
+export function planExportCsv(plan: DailyPlan, options?: PlanExportOptions) {
+  return tableRows(plan, options).map((row) => row.map(csvCell).join(",")).join("\r\n");
+}
+
+export function planExportTsv(plan: DailyPlan, options?: PlanExportOptions) {
+  return tableRows(plan, options).map((row) => row.join("\t")).join("\n");
+}
+
+export function planShareText(plan: DailyPlan, options?: PlanExportOptions) {
   const totals = calculateDailyPlanTotals(plan).values;
   const lines = [
     plan.displayName,
     `Daily total: ${formatNumber(totals.calories)} kcal · ${formatNumber(totals.protein)}gm protein`,
+    ...targetSummaryTextLines(options?.targetSummary),
     "",
   ];
 
@@ -70,8 +83,8 @@ export function planShareText(plan: DailyPlan) {
   return lines.join("\n").trim();
 }
 
-export function planExportHtmlTable(plan: DailyPlan) {
-  const rows = tableRows(plan);
+export function planExportHtmlTable(plan: DailyPlan, options?: PlanExportOptions) {
+  const rows = tableRows(plan, options);
   const [header, ...body] = rows;
 
   return `<table><thead><tr>${header?.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("") ?? ""}</tr></thead><tbody>${body
@@ -79,7 +92,7 @@ export function planExportHtmlTable(plan: DailyPlan) {
     .join("")}</tbody></table>`;
 }
 
-export function planExportExcelHtml(plan: DailyPlan) {
+export function planExportExcelHtml(plan: DailyPlan, options?: PlanExportOptions) {
   return `<!doctype html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
 <head>
@@ -90,11 +103,11 @@ export function planExportExcelHtml(plan: DailyPlan) {
     th { background: #eee; font-weight: 700; }
   </style>
 </head>
-<body>${planExportHtmlTable(plan)}</body>
+<body>${planExportHtmlTable(plan, options)}</body>
 </html>`;
 }
 
-function tableRows(plan: DailyPlan) {
+function tableRows(plan: DailyPlan, options?: PlanExportOptions) {
   const rows: string[][] = [[...exportHeaders]];
 
   for (const meal of plan.meals) {
@@ -119,8 +132,39 @@ function tableRows(plan: DailyPlan) {
     item: plan.displayName,
     ...calculateDailyPlanTotals(plan).values,
   }));
+  rows.push(...targetSummaryRows(options?.targetSummary));
 
   return rows;
+}
+
+function targetSummaryRows(summary: PlanExportTargetSummary | undefined) {
+  if (!summary) {
+    return [];
+  }
+
+  return [
+    [],
+    ["Target summary", ""],
+    ["Target status", summary.targetStatus],
+    ["Calorie target", formatTargetValue(summary.calories, "kcal")],
+    ...(summary.protein !== undefined ? [["Protein target", formatTargetValue(summary.protein, "gm")]] : []),
+    ["Diet", summary.diet],
+    ["Macro rules", summary.macroRules && summary.macroRules.length > 0 ? summary.macroRules.join("; ") : "None"],
+  ];
+}
+
+function targetSummaryTextLines(summary: PlanExportTargetSummary | undefined) {
+  if (!summary) {
+    return [];
+  }
+
+  return [
+    `Target status: ${summary.targetStatus}`,
+    `Calorie target: ${formatTargetValue(summary.calories, "kcal")}`,
+    ...(summary.protein !== undefined ? [`Protein target: ${formatTargetValue(summary.protein, "gm")}`] : []),
+    `Diet: ${summary.diet}`,
+    `Macro rules: ${summary.macroRules && summary.macroRules.length > 0 ? summary.macroRules.join("; ") : "None"}`,
+  ];
 }
 
 function exportRowToCells(row: ExportRow) {
@@ -150,6 +194,11 @@ function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return "";
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatTargetValue(value: number | string, suffix: string) {
+  const formatted = typeof value === "number" ? formatNumber(value) : value.trim();
+  return formatted === "" ? "" : `${formatted} ${suffix}`;
 }
 
 function csvCell(value: string) {
