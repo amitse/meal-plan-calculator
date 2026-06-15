@@ -71,6 +71,11 @@ type DeletedItemUndo = {
   mealId: string;
   wasLocked: boolean;
 };
+type AddedMealFeedback = {
+  key: number;
+  mealId: string;
+  message: string;
+};
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -162,10 +167,15 @@ function App() {
   const [planRandomizeFeedback, setPlanRandomizeFeedback] = useState<RandomizeFeedback | undefined>();
   const [mealRandomizeFeedback, setMealRandomizeFeedback] = useState<Record<string, RandomizeFeedback>>({});
   const [deletedItemUndo, setDeletedItemUndo] = useState<DeletedItemUndo | undefined>();
+  const [addedMealFeedback, setAddedMealFeedback] = useState<AddedMealFeedback | undefined>();
+  const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set());
   const [installState, setInstallState] = useState("");
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | undefined>();
   const [isInstalledView, setIsInstalledView] = useState(false);
   const resultRef = useRef<HTMLElement>(null);
+  const mealCardRefs = useRef<Map<string, HTMLDetailsElement>>(new Map());
+  const addedMealFeedbackKey = useRef(0);
+  const revealedAddedMealKey = useRef<number | undefined>(undefined);
 
   const evaluation = plan ? planEvaluation(plan, form) : undefined;
   const recoveryMessages = evaluation?.status === "fail" ? failureRecoveryMessages(evaluation) : [];
@@ -186,6 +196,28 @@ function App() {
       resultRef.current?.focus();
     }
   }, [activeView, plan]);
+
+  useEffect(() => {
+    if (!addedMealFeedback || activeView !== "plan" || revealedAddedMealKey.current === addedMealFeedback.key) {
+      return;
+    }
+
+    const mealCard = mealCardRefs.current.get(addedMealFeedback.mealId);
+    if (!mealCard) {
+      return;
+    }
+
+    revealedAddedMealKey.current = addedMealFeedback.key;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    mealCard.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+    const summary = mealCard.querySelector("summary");
+
+    if (summary instanceof HTMLElement) {
+      summary.focus({ preventScroll: true });
+    } else {
+      mealCard.focus({ preventScroll: true });
+    }
+  }, [activeView, addedMealFeedback, plan]);
 
   useEffect(() => {
     if (!shareState?.shareKey || shareState.stale || shareState.shareKey === currentShareKey) {
@@ -243,6 +275,7 @@ function App() {
     const seed = options.seed ?? Date.now();
     const useExistingLocks = options.useExistingLocks ?? true;
     setDeletedItemUndo(undefined);
+    setAddedMealFeedback(undefined);
     setGenerationBlockers([]);
     setMealToolMessages({});
     clearRandomizeFeedback();
@@ -286,6 +319,7 @@ function App() {
   function randomizeVisiblePlan() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
+    setAddedMealFeedback(undefined);
     setMealRandomizeFeedback({});
     const next = randomizePlan(plan, form, lockedIds);
     const changed = JSON.stringify(next) !== JSON.stringify(plan);
@@ -412,7 +446,20 @@ function App() {
     if (!plan) return;
     setDeletedItemUndo(undefined);
     clearRandomizeFeedback();
-    setPlan(addMeal(plan));
+    const next = addMeal(plan);
+    const addedMeal = next.meals.at(-1);
+    setPlan(next);
+
+    if (addedMeal) {
+      const key = addedMealFeedbackKey.current + 1;
+      addedMealFeedbackKey.current = key;
+      setAddedMealFeedback({
+        key,
+        mealId: addedMeal.id,
+        message: `${addedMeal.displayName} added. Review its foods and tools below.`,
+      });
+      setExpandedMealIds((current) => new Set(current).add(addedMeal.id));
+    }
   }
 
   function updatePlanItemServing(itemId: string, amount: number) {
@@ -464,6 +511,24 @@ function App() {
   function clearRandomizeFeedback() {
     setPlanRandomizeFeedback(undefined);
     setMealRandomizeFeedback({});
+  }
+
+  function toggleMealExpanded(mealId: string, open: boolean) {
+    setExpandedMealIds((current) => {
+      if (current.has(mealId) === open) {
+        return current;
+      }
+
+      const next = new Set(current);
+
+      if (open) {
+        next.add(mealId);
+      } else {
+        next.delete(mealId);
+      }
+
+      return next;
+    });
   }
 
   function share() {
@@ -744,8 +809,21 @@ function App() {
               const status = mealTargetStatus(plan, meal.id, mealTargets[meal.id] ?? {});
               const roleTags = mealRoleTags(meal);
               const mealFeedback = mealRandomizeFeedback[meal.id];
+              const addedFeedback = addedMealFeedback?.mealId === meal.id ? addedMealFeedback : undefined;
               return (
-              <details className="meal-card" key={meal.id}>
+              <details
+                className={`meal-card${addedFeedback ? " is-newly-added" : ""}`}
+                key={meal.id}
+                open={expandedMealIds.has(meal.id)}
+                ref={(node) => {
+                  if (node) {
+                    mealCardRefs.current.set(meal.id, node);
+                  } else {
+                    mealCardRefs.current.delete(meal.id);
+                  }
+                }}
+                onToggle={(event) => toggleMealExpanded(meal.id, event.currentTarget.open)}
+              >
                 <summary>
                   <span className="meal-heading">
                     <span className="meal-title">{meal.displayName}</span>
@@ -769,6 +847,11 @@ function App() {
                     <span className="meal-affordance">Tap to edit</span>
                   </span>
                 </summary>
+                {addedFeedback && (
+                  <p className="meal-added-confirmation" role="status">
+                    {addedFeedback.message}
+                  </p>
+                )}
                 <div className="meal-items">
                   {meal.items.map((item, index) => (
                     <PlanItemRow
