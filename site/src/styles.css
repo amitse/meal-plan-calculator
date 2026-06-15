@@ -45,6 +45,7 @@ html {
 }
 
 body {
+  top: 0 !important;
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
@@ -186,6 +187,19 @@ summary:focus-visible {
   padding: 0 0 var(--space-xs);
 }
 
+.mobile-header h1 {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.header-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .mobile-header button {
   min-height: 34px;
   border: 1px solid var(--border);
@@ -200,6 +214,43 @@ summary:focus-visible {
 
 .mobile-header button:hover {
   border-color: var(--muted);
+}
+
+.translation-control {
+  position: relative;
+  flex: 0 1 116px;
+  min-width: 88px;
+}
+
+.translation-control select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  appearance: none;
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: 0 26px 0 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+#google_translate_element,
+.goog-te-banner-frame,
+.goog-te-gadget,
+.skiptranslate,
+.skiptranslate iframe {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.goog-te-combo {
+  color: var(--ink);
 }
 
 .install-state {

@@ -128,6 +128,22 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
+type GoogleTranslateElementConstructor = {
+  new (options: Record<string, unknown>, elementId: string): unknown;
+  InlineLayout?: { SIMPLE?: string };
+};
+
+declare global {
+  interface Window {
+    google?: {
+      translate?: {
+        TranslateElement?: GoogleTranslateElementConstructor;
+      };
+    };
+    googleTranslateElementInit?: () => void;
+  }
+}
+
 const calorieTargetMin = 800;
 const calorieTargetMax = 5000;
 const calorieValidationMessage = `Enter a calorie target from ${calorieTargetMin}-${calorieTargetMax} kcal.`;
@@ -244,6 +260,26 @@ const quickStartPresets: QuickStartPreset[] = [
 const staleShareMessage = "Plan changed - share again for an updated link.";
 const staleShareBlockedMessage = "Regenerate before sharing updated targets.";
 const generationProgressMessage = "Generating plan...";
+const googleTranslateElementId = "google_translate_element";
+const googleTranslateScriptId = "google-translate-script";
+const googleTranslateCookieName = "googtrans";
+const translationLanguages = [
+  { code: "", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "bn", label: "Bengali" },
+  { code: "gu", label: "Gujarati" },
+  { code: "kn", label: "Kannada" },
+  { code: "ml", label: "Malayalam" },
+  { code: "mr", label: "Marathi" },
+  { code: "pa", label: "Punjabi" },
+  { code: "ta", label: "Tamil" },
+  { code: "te", label: "Telugu" },
+  { code: "ur", label: "Urdu" },
+] as const;
+const googleTranslateLanguageCodes = translationLanguages
+  .map((language) => language.code)
+  .filter(Boolean)
+  .join(",");
 
 function waitForGenerationProgressFrame() {
   return new Promise<void>((resolve) => {
@@ -925,12 +961,15 @@ function App() {
     <main className="app-shell">
       <header className="mobile-header">
         <h1>Meal plan</h1>
-        {!isInstalledView && (
-          <button className="with-icon" type="button" onClick={() => void installApp()}>
-            <Icon name="install" />
-            {isIosBrowser() ? "Add app" : "Install"}
-          </button>
-        )}
+        <div className="header-actions">
+          <TranslationControl />
+          {!isInstalledView && (
+            <button className="with-icon" type="button" onClick={() => void installApp()}>
+              <Icon name="install" />
+              {isIosBrowser() ? "Add app" : "Install"}
+            </button>
+          )}
+        </div>
       </header>
       {!isInstalledView && installState && <p className="install-state" role="status">{installState}</p>}
       {shareLoadFailed && (
@@ -1209,11 +1248,11 @@ function App() {
           <dl className="target-context" aria-label="Active targets for this result">
             <div>
               <dt>Calorie target</dt>
-              <dd>{Math.round(Number(form.calories || 0))} kcal</dd>
+              <dd><span className="notranslate" translate="no">{Math.round(Number(form.calories || 0))} kcal</span></dd>
             </div>
             <div>
               <dt>Protein target</dt>
-              <dd>{Math.round(proteinTarget)} gm</dd>
+              <dd><span className="notranslate" translate="no">{Math.round(proteinTarget)} gm</span></dd>
             </div>
             <div>
               <dt>Diet</dt>
@@ -1222,7 +1261,7 @@ function App() {
             {activeMacroRuleCount > 0 && (
               <div>
                 <dt>Macro rules</dt>
-                <dd>{activeMacroRuleCount} applied{targetStatusItems.length > 0 ? "; status below" : ""}</dd>
+                <dd><span className="notranslate" translate="no">{activeMacroRuleCount}</span> applied{targetStatusItems.length > 0 ? "; status below" : ""}</dd>
               </div>
             )}
           </dl>
@@ -1285,11 +1324,11 @@ function App() {
                     )}
                   </span>
                   <span className="meal-summary">
-                    <strong>{Math.round(mealTotals.values.calories)} kcal</strong>
+                    <strong className="notranslate" translate="no">{Math.round(mealTotals.values.calories)} kcal</strong>
                     <small>
-                      {Math.round(mealTotals.values.protein)}gm protein · {meal.items.length} items
+                      <span className="notranslate" translate="no">{Math.round(mealTotals.values.protein)}gm</span> protein · <span className="notranslate" translate="no">{meal.items.length}</span> items
                       {lockedItemsInMeal > 0 && (
-                        <span className="meal-lock-count">{lockedItemsInMeal} locked</span>
+                        <span className="meal-lock-count"><span className="notranslate" translate="no">{lockedItemsInMeal}</span> locked</span>
                       )}
                     </small>
                     <span className="meal-affordance">Tap to edit</span>
@@ -1438,6 +1477,95 @@ function restoreDeletedItem(plan: DailyPlan, deletedItem: DeletedItemUndo): Dail
   };
 }
 
+function TranslationControl() {
+  const [language, setLanguage] = useState(readGoogleTranslateLanguage);
+  const [status, setStatus] = useState<"loading" | "ready" | "unavailable">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const init = () => {
+      const TranslateElement = window.google?.translate?.TranslateElement;
+      if (!TranslateElement) {
+        if (!cancelled) {
+          setStatus("unavailable");
+        }
+        return;
+      }
+
+      const widget = document.getElementById(googleTranslateElementId);
+      if (widget && widget.childElementCount === 0) {
+        new TranslateElement({
+          autoDisplay: false,
+          includedLanguages: googleTranslateLanguageCodes,
+          layout: TranslateElement.InlineLayout?.SIMPLE,
+          pageLanguage: "en",
+        }, googleTranslateElementId);
+      }
+
+      window.setTimeout(() => {
+        if (!cancelled) {
+          setStatus("ready");
+          syncGoogleTranslateLanguage(language);
+        }
+      }, 0);
+    };
+
+    window.googleTranslateElementInit = init;
+
+    if (window.google?.translate?.TranslateElement) {
+      init();
+    } else if (!document.getElementById(googleTranslateScriptId)) {
+      const script = document.createElement("script");
+      script.id = googleTranslateScriptId;
+      script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      script.onerror = () => {
+        if (!cancelled) {
+          setStatus("unavailable");
+        }
+      };
+      document.head.append(script);
+    }
+
+    return () => {
+      cancelled = true;
+      if (window.googleTranslateElementInit === init) {
+        delete window.googleTranslateElementInit;
+      }
+    };
+  }, [language]);
+
+  function changeLanguage(nextLanguage: string) {
+    setLanguage(nextLanguage);
+    writeGoogleTranslateCookie(nextLanguage);
+    if (status !== "unavailable") {
+      setStatus("loading");
+      syncGoogleTranslateLanguage(nextLanguage, 0, () => setStatus("ready"));
+    }
+  }
+
+  return (
+    <div className="translation-control notranslate" translate="no">
+      <label className="sr-only" htmlFor="language-select">Translate page</label>
+      <select
+        id="language-select"
+        aria-label="Translate page"
+        value={language}
+        onChange={(event) => changeLanguage(event.target.value)}
+      >
+        {translationLanguages.map((option) => (
+          <option key={option.code || "en"} value={option.code}>{option.label}</option>
+        ))}
+      </select>
+      <span className="sr-only" role="status">
+        {status === "ready" ? "Translation ready" : status === "loading" ? "Translation loading" : "Translation unavailable"}
+      </span>
+      <div id={googleTranslateElementId} aria-hidden="true" />
+    </div>
+  );
+}
+
 function NumberStepper({
   ariaDescribedBy,
   ariaErrorMessage,
@@ -1486,7 +1614,7 @@ function NumberStepper({
   }
 
   return (
-    <div className={`number-stepper${size === "compact" ? " is-compact" : ""}${className ? ` ${className}` : ""}`}>
+    <div className={`number-stepper notranslate${size === "compact" ? " is-compact" : ""}${className ? ` ${className}` : ""}`} translate="no">
       <button
         type="button"
         aria-label={decrementLabel ?? `Decrease ${ariaLabel} by ${step}`}
@@ -1874,11 +2002,49 @@ function decimalPlaces(value: number) {
   return text.split(".")[1]?.length ?? 0;
 }
 
+function readGoogleTranslateLanguage() {
+  if (typeof document === "undefined") return "";
+  const cookieValue = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith(`${googleTranslateCookieName}=`))
+    ?.split("=")[1];
+  const language = (cookieValue ?? "").replace(/%2F/gi, "/").split("/").filter(Boolean)[1] ?? "";
+  return translationLanguages.some((option) => option.code === language) ? language : "";
+}
+
+function writeGoogleTranslateCookie(language: string) {
+  const value = language ? `/en/${language}` : "";
+  const expires = language ? "max-age=31536000" : "expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  const cookie = `${googleTranslateCookieName}=${encodeURIComponent(value)}; path=/; ${expires}; SameSite=Lax`;
+  document.cookie = cookie;
+
+  const hostnameParts = window.location.hostname.split(".");
+  if (hostnameParts.length > 1) {
+    document.cookie = `${cookie}; domain=.${hostnameParts.slice(-2).join(".")}`;
+  }
+}
+
+function syncGoogleTranslateLanguage(language: string, attempt = 0, onReady?: () => void) {
+  const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+  if (combo) {
+    if (combo.value !== language) {
+      combo.value = language;
+      combo.dispatchEvent(new Event("change"));
+    }
+    onReady?.();
+    return;
+  }
+
+  if (attempt < 20) {
+    window.setTimeout(() => syncGoogleTranslateLanguage(language, attempt + 1, onReady), 150);
+  }
+}
+
 function SummaryMetric({ icon, label, value, suffix }: { icon: IconName; label: string; value: number; suffix: string }) {
   return (
     <div className="metric">
       <span><Icon name={icon} />{label}</span>
-      <strong>{value}<small>{suffix}</small></strong>
+      <strong className="notranslate" translate="no">{value}<small>{suffix}</small></strong>
     </div>
   );
 }
@@ -1890,10 +2056,10 @@ function TargetStatusItem({ item }: { item: BoundEvaluation }) {
     <div className={`target-status-item is-${status}`}>
       <div>
         <strong><Icon name={metricIcon(item.bound.metric)} />{metricDisplayNames[item.bound.metric]}</strong>
-        <span>{targetBoundLabel(item)}</span>
+        <span className="notranslate" translate="no">{targetBoundLabel(item)}</span>
       </div>
       <div>
-        <span>{formatMetricValue(item.value, item.bound.metric)}{item.unknown ? " + unknown" : ""}</span>
+        <span className="notranslate" translate="no">{formatMetricValue(item.value, item.bound.metric)}{item.unknown ? " + unknown" : ""}</span>
         <strong><Icon name={statusIcon(status)} />{statusDisplayNames[status]}</strong>
       </div>
     </div>
@@ -2088,8 +2254,8 @@ function PlanItemRow({
       <div className="item-summary">
         <strong>{label}</strong>
         <small className="item-metrics">
-          <span>{Math.round(nutrition.calories ?? 0)} kcal</span>
-          <span>{Math.round(nutrition.protein ?? 0)}gm protein</span>
+          <span><span className="notranslate" translate="no">{Math.round(nutrition.calories ?? 0)} kcal</span></span>
+          <span><span className="notranslate" translate="no">{Math.round(nutrition.protein ?? 0)}gm</span> protein</span>
         </small>
         {swapConfirmation && (
           <p className="item-swap-confirmation" role="status">
@@ -2111,7 +2277,7 @@ function PlanItemRow({
             step={servingStep}
             value={servingDraft}
           />
-          <span className="unit-label" title="grams">gm</span>
+          <span className="unit-label notranslate" translate="no" title="grams">gm</span>
         </div>
         <div className="item-button-row">
           <button className="lock-toggle icon-button" type="button" aria-label={`${locked ? "Unlock" : "Lock"} ${label}`} aria-pressed={locked} onClick={onLock}>
@@ -2186,9 +2352,9 @@ function PlanItemRow({
                       >
                         <span className="swap-option-name">{option.displayName}</span>
                         <small className="swap-option-meta">
-                          <span>{exchangeOptionGramAmount(item.exchangeGroupId, option.id)}gm exchange</span>
-                          <span>{Math.round(previewNutrition.calories ?? 0)} kcal</span>
-                          <span>{Math.round(previewNutrition.protein ?? 0)}gm protein</span>
+                          <span><span className="notranslate" translate="no">{exchangeOptionGramAmount(item.exchangeGroupId, option.id)}gm</span> exchange</span>
+                          <span className="notranslate" translate="no">{Math.round(previewNutrition.calories ?? 0)} kcal</span>
+                          <span><span className="notranslate" translate="no">{Math.round(previewNutrition.protein ?? 0)}gm</span> protein</span>
                           {isCurrentOption && <span className="swap-option-current">Current</span>}
                         </small>
                       </button>
