@@ -1,5 +1,38 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { Barbell } from "@phosphor-icons/react/Barbell";
+import { BowlSteam } from "@phosphor-icons/react/BowlSteam";
+import { Bread } from "@phosphor-icons/react/Bread";
+import { Carrot } from "@phosphor-icons/react/Carrot";
+import { ChartBar } from "@phosphor-icons/react/ChartBar";
+import { Check } from "@phosphor-icons/react/Check";
+import { Cheese } from "@phosphor-icons/react/Cheese";
+import { CookingPot } from "@phosphor-icons/react/CookingPot";
+import { Copy } from "@phosphor-icons/react/Copy";
+import { DeviceMobile } from "@phosphor-icons/react/DeviceMobile";
+import { DownloadSimple } from "@phosphor-icons/react/DownloadSimple";
+import { Drop } from "@phosphor-icons/react/Drop";
+import { Egg } from "@phosphor-icons/react/Egg";
+import { FileArrowDown } from "@phosphor-icons/react/FileArrowDown";
+import { Fire } from "@phosphor-icons/react/Fire";
+import { Fish } from "@phosphor-icons/react/Fish";
+import { ForkKnife } from "@phosphor-icons/react/ForkKnife";
+import { Grains } from "@phosphor-icons/react/Grains";
+import { Leaf } from "@phosphor-icons/react/Leaf";
+import { Lock } from "@phosphor-icons/react/Lock";
+import { LockOpen } from "@phosphor-icons/react/LockOpen";
+import { Orange } from "@phosphor-icons/react/Orange";
+import { Plant } from "@phosphor-icons/react/Plant";
+import { Plus } from "@phosphor-icons/react/Plus";
+import { ShareNetwork } from "@phosphor-icons/react/ShareNetwork";
+import { Shuffle } from "@phosphor-icons/react/Shuffle";
+import { SlidersHorizontal } from "@phosphor-icons/react/SlidersHorizontal";
+import { Swap } from "@phosphor-icons/react/Swap";
+import { Target } from "@phosphor-icons/react/Target";
+import { Trash } from "@phosphor-icons/react/Trash";
+import { Warning } from "@phosphor-icons/react/Warning";
+import { X } from "@phosphor-icons/react/X";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react/lib";
 import {
   calculateDailyPlanItemNutrition,
   calculateMealTotals,
@@ -102,10 +135,12 @@ function isValidCalorieTarget(value: string) {
 type IconName =
   | "add"
   | "alert"
+  | "bread"
   | "bowl"
   | "calories"
   | "carb"
   | "check"
+  | "cheese"
   | "close"
   | "copy"
   | "dairy"
@@ -123,13 +158,15 @@ type IconName =
   | "lock"
   | "macros"
   | "plate"
+  | "plantProtein"
   | "protein"
   | "randomize"
   | "share"
   | "swap"
   | "targets"
   | "tools"
-  | "unlock";
+  | "unlock"
+  | "vegetable";
 
 const dietOptions: { level: DietaryLevel; label: string }[] = [
   { level: "vegetarian", label: "Vegetarian" },
@@ -1300,251 +1337,49 @@ function CheckChip({ icon, label, checked, onChange }: { icon: IconName; label: 
 }
 
 function Icon({ name }: { name: IconName }) {
+  const PhosphorGlyph = iconMap[name];
+
   return (
-    <svg className="line-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
-      {iconShape(name)}
-    </svg>
+    <PhosphorGlyph className="line-icon" aria-hidden="true" focusable="false" weight="bold" />
   );
 }
 
-function iconShape(name: IconName) {
-  switch (name) {
-    case "add":
-      return <path d="M12 5v14M5 12h14" />;
-    case "alert":
-      return (
-        <>
-          <path d="M12 4 3.7 18.2h16.6L12 4Z" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </>
-      );
-    case "bowl":
-      return (
-        <>
-          <path d="M5 11h14c-.4 4.2-3 7-7 7s-6.6-2.8-7-7Z" />
-          <path d="M7 11c.9-2 2.6-3 5-3s4.1 1 5 3" />
-          <path d="M9 18h6" />
-        </>
-      );
-    case "calories":
-      return (
-        <>
-          <path d="M12 20c3 0 5-2 5-4.8 0-2.5-1.5-4.2-3.4-5.8-.9-.8-1.5-1.9-1.3-3.4-3 1.8-5.3 4.6-5.3 8.9C7 17.9 9 20 12 20Z" />
-          <path d="M12 17c1.2 0 2-.8 2-2 0-1-.6-1.8-1.5-2.5-.5.8-1.4 1.4-1.9 2.3-.6 1.2.1 2.2 1.4 2.2Z" />
-        </>
-      );
-    case "carb":
-      return (
-        <>
-          <circle cx="12" cy="12" r="6.2" />
-          <path d="M7.8 10.2c2.2-1.2 5.6-1.3 8.4 0" />
-          <path d="M8.1 14.2c2.5 1.1 5.3 1 7.8 0" />
-        </>
-      );
-    case "check":
-      return <path d="m5 12.5 4.2 4.2L19 7" />;
-    case "close":
-      return (
-        <>
-          <path d="M6 6l12 12" />
-          <path d="M18 6 6 18" />
-        </>
-      );
-    case "copy":
-      return (
-        <>
-          <rect x="8" y="8" width="10" height="11" rx="1.5" />
-          <path d="M6 15H5.5A1.5 1.5 0 0 1 4 13.5v-8A1.5 1.5 0 0 1 5.5 4h8A1.5 1.5 0 0 1 15 5.5V6" />
-        </>
-      );
-    case "dairy":
-      return (
-        <>
-          <path d="M8 8h8l-1 11H9L8 8Z" />
-          <path d="M9 8V5.5C9 4.7 9.7 4 10.5 4h3c.8 0 1.5.7 1.5 1.5V8" />
-          <path d="M9 12h6" />
-        </>
-      );
-    case "delete":
-      return (
-        <>
-          <path d="M5 7h14" />
-          <path d="M9 7V5h6v2" />
-          <path d="m8 10 .6 9h6.8l.6-9" />
-        </>
-      );
-    case "download":
-      return (
-        <>
-          <path d="M12 4v10" />
-          <path d="m8 10 4 4 4-4" />
-          <path d="M5 19h14" />
-        </>
-      );
-    case "egg":
-      return (
-        <>
-          <path d="M12 20c3.1 0 5-2.2 5-5.4C17 10.5 14.8 4 12 4s-5 6.5-5 10.6C7 17.8 8.9 20 12 20Z" />
-          <circle cx="12" cy="14.2" r="1.5" />
-        </>
-      );
-    case "export":
-      return (
-        <>
-          <path d="M6 4h8l4 4v12H6V4Z" />
-          <path d="M14 4v5h5" />
-          <path d="M9 14h6" />
-          <path d="M9 17h4" />
-        </>
-      );
-    case "fat":
-      return <path d="M12 20c2.8 0 5-2 5-4.8 0-3.8-5-10.2-5-10.2S7 11.4 7 15.2C7 18 9.2 20 12 20Z" />;
-    case "fiber":
-      return (
-        <>
-          <path d="M5 19c7-1.2 11-5.2 14-14" />
-          <path d="M8 16c-1.4-3-.8-5.3 1.8-7" />
-          <path d="M11 13c-1.5-2.8-.9-5 1.8-6.8" />
-          <path d="M14 10c.8 2.4 2.2 3.8 4.2 4.2" />
-        </>
-      );
-    case "fish":
-      return (
-        <>
-          <path d="M4 12s3-4 8-4 8 4 8 4-3 4-8 4-8-4-8-4Z" />
-          <path d="m20 12-3-3v6l3-3Z" />
-          <circle cx="9" cy="12" r=".7" />
-          <path d="M13 9.2c-.8 1.8-.8 3.8 0 5.6" />
-        </>
-      );
-    case "food":
-      return (
-        <>
-          <circle cx="12" cy="12" r="7" />
-          <circle cx="12" cy="12" r="3.5" />
-          <path d="M4 20h16" />
-        </>
-      );
-    case "fruit":
-      return (
-        <>
-          <path d="M12 8c3.2 0 5 2.2 5 5.2C17 17 14.8 20 12 20s-5-3-5-6.8C7 10.2 8.8 8 12 8Z" />
-          <path d="M12 8c.2-2.2 1.3-3.5 3.5-4" />
-          <path d="M12.4 7.5C10.2 6.8 8.8 5.8 8 4" />
-        </>
-      );
-    case "install":
-      return (
-        <>
-          <path d="M7 20h10" />
-          <path d="M8 4h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
-          <path d="M12 7v6" />
-          <path d="m9.5 10.5 2.5 2.5 2.5-2.5" />
-        </>
-      );
-    case "leaf":
-      return (
-        <>
-          <path d="M5 13c5-7 10-7 14-7 0 5-3 11-9 11-2.3 0-4-1.4-5-4Z" />
-          <path d="M5 18c3-4.5 6.5-7 11-9" />
-        </>
-      );
-    case "lock":
-      return (
-        <>
-          <rect x="6" y="10" width="12" height="9" rx="1.5" />
-          <path d="M9 10V7a3 3 0 0 1 6 0v3" />
-        </>
-      );
-    case "macros":
-      return (
-        <>
-          <path d="M5 18V9" />
-          <path d="M12 18V5" />
-          <path d="M19 18v-6" />
-          <path d="M4 19h16" />
-        </>
-      );
-    case "plate":
-      return (
-        <>
-          <circle cx="12" cy="12" r="7.2" />
-          <path d="M7.8 12.2h8.4" />
-          <path d="M10 8.4h4" />
-          <path d="M9.2 15.2c1.8.7 3.8.7 5.6 0" />
-        </>
-      );
-    case "protein":
-      return (
-        <>
-          <path d="M6.5 11h11c-.4 4-2.4 6.5-5.5 6.5S6.9 15 6.5 11Z" />
-          <path d="M8 11c.7-1.7 2-2.6 4-2.6s3.3.9 4 2.6" />
-          <circle cx="10" cy="13.2" r=".6" />
-          <circle cx="12" cy="14.5" r=".6" />
-          <circle cx="14" cy="13.2" r=".6" />
-        </>
-      );
-    case "randomize":
-      return (
-        <>
-          <path d="M4 7h3c3.5 0 4.5 10 8 10h5" />
-          <path d="M17 14l3 3-3 3" />
-          <path d="M4 17h3c1.2 0 2.1-1.1 3-2.6" />
-          <path d="M14 7h6" />
-          <path d="M17 4l3 3-3 3" />
-        </>
-      );
-    case "share":
-      return (
-        <>
-          <circle cx="6" cy="12" r="2" />
-          <circle cx="17" cy="6" r="2" />
-          <circle cx="17" cy="18" r="2" />
-          <path d="m8 11 7-4" />
-          <path d="m8 13 7 4" />
-        </>
-      );
-    case "swap":
-      return (
-        <>
-          <path d="M7 7h10" />
-          <path d="m14 4 3 3-3 3" />
-          <path d="M17 17H7" />
-          <path d="m10 14-3 3 3 3" />
-        </>
-      );
-    case "targets":
-      return (
-        <>
-          <circle cx="12" cy="12" r="7" />
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 5v3" />
-          <path d="M12 16v3" />
-          <path d="M5 12h3" />
-          <path d="M16 12h3" />
-        </>
-      );
-    case "tools":
-      return (
-        <>
-          <path d="M7 5v14" />
-          <path d="M17 5v14" />
-          <path d="M4 9h6" />
-          <path d="M14 15h6" />
-          <circle cx="7" cy="9" r="2" />
-          <circle cx="17" cy="15" r="2" />
-        </>
-      );
-    case "unlock":
-      return (
-        <>
-          <rect x="6" y="10" width="12" height="9" rx="1.5" />
-          <path d="M9 10V7a3 3 0 0 1 5.6-1.5" />
-        </>
-      );
-  }
-}
+const iconMap = {
+  add: Plus,
+  alert: Warning,
+  bread: Bread,
+  bowl: BowlSteam,
+  calories: Fire,
+  carb: Grains,
+  check: Check,
+  cheese: Cheese,
+  close: X,
+  copy: Copy,
+  dairy: Cheese,
+  delete: Trash,
+  download: DownloadSimple,
+  egg: Egg,
+  export: FileArrowDown,
+  fat: Drop,
+  fiber: Leaf,
+  fish: Fish,
+  food: ForkKnife,
+  fruit: Orange,
+  install: DeviceMobile,
+  leaf: Leaf,
+  lock: Lock,
+  macros: ChartBar,
+  plate: CookingPot,
+  plantProtein: Plant,
+  protein: Barbell,
+  randomize: Shuffle,
+  share: ShareNetwork,
+  swap: Swap,
+  targets: Target,
+  tools: SlidersHorizontal,
+  unlock: LockOpen,
+  vegetable: Carrot,
+} satisfies Record<IconName, PhosphorIcon>;
 
 function macroLabel(label: string, field: MacroField) {
   const value = field.value.trim();
@@ -1714,13 +1549,15 @@ function dietIcon(level: DietaryLevel): IconName {
 
 function grainOptionIcon(optionId: string): IconName {
   if (optionId.includes("rice") || optionId.includes("poha") || optionId.includes("oats")) return "bowl";
+  if (optionId.includes("bread") || optionId.includes("roti") || optionId.includes("dosa")) return "bread";
   return "carb";
 }
 
 function proteinOptionIcon(optionId: string): IconName {
   if (optionId.includes("egg")) return "egg";
   if (optionId.includes("chicken") || optionId.includes("fish")) return "fish";
-  if (optionId.includes("paneer")) return "dairy";
+  if (optionId.includes("paneer")) return "cheese";
+  if (optionId.includes("tofu") || optionId.includes("soy") || optionId.includes("dal")) return "plantProtein";
   return "protein";
 }
 
@@ -1729,7 +1566,7 @@ function mealRoleIcon(role: MealRole): IconName {
     cookingFat: "fat",
     carb: "carb",
     protein: "protein",
-    vegetables: "leaf",
+    vegetables: "vegetable",
     fruit: "fruit",
     dairy: "dairy",
     snack: "bowl",
@@ -2129,7 +1966,7 @@ function isIosBrowser() {
 function installFallbackMessage() {
   return isIosBrowser()
     ? "On iPhone or iPad: tap Share, then Add to Home Screen."
-    : "Use the browser menu to install this app.";
+    : "Open the browser menu, then choose Install app or Add to Home Screen.";
 }
 
 type MealPlanWindow = Window & { mealPlanRoot?: Root };

@@ -107,12 +107,7 @@ label {
   height: 1.12em;
   flex: 0 0 auto;
   color: currentColor;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.9;
-  vector-effect: non-scaling-stroke;
+  fill: currentColor;
 }
 
 .with-icon,
@@ -159,9 +154,8 @@ label {
 }
 
 .role-tag .line-icon {
-  width: 0.82rem;
-  height: 0.82rem;
-  stroke-width: 2;
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 button:focus-visible,
@@ -979,7 +973,6 @@ fieldset {
 .diet-segments .line-icon {
   width: 1.18rem;
   height: 1.18rem;
-  stroke-width: 2.45;
 }
 
 .diet-helper {
