@@ -1568,6 +1568,24 @@ fieldset {
   gap: var(--space-xs);
 }
 
+.result-action-bar.is-stale {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr);
+}
+
+.stale-result-action-copy {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--size-8) var(--size-10);
+  border: var(--size-px) solid var(--alpha-warning-42);
+  border-radius: var(--control-radius);
+  background: var(--alpha-warning-10);
+  color: var(--warning);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .share-action-status {
   grid-column: 1 / -1;
   display: grid;

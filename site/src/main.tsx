@@ -418,6 +418,7 @@ function App() {
   const exportSheetTitleId = useId();
   const exportSheetDescriptionId = useId();
   const exportStaleNoticeId = useId();
+  const resultStaleNoticeId = useId();
   const urlState = loadedUrlState.state;
   const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
   const [plan, setPlan] = useState<DailyPlan | undefined>(urlState?.plan);
@@ -505,7 +506,7 @@ function App() {
   const randomizePlanActionLabel = hasActiveMealTargets ? "Randomize plan" : "Randomize";
   const shareActionFeedback = shareState && (shareState.stale || shareState.shareKey || shareState.manualUrl) ? shareState : undefined;
   const topShareState = shareState && !shareActionFeedback ? shareState : undefined;
-  const hasResultActionStatus = Boolean(activeView === "plan" && (planRandomizeFeedback || shareActionFeedback));
+  const hasResultActionStatus = Boolean(activeView === "plan" && (isPlanStale || planRandomizeFeedback || shareActionFeedback));
   const exportActionDescriptionId = isPlanStale ? exportStaleNoticeId : undefined;
   const resolvedTheme = resolveTheme(themePreference, systemTheme);
 
@@ -1751,7 +1752,7 @@ function App() {
           )}
           {isPlanStale && (
             <div className="stale-plan-notice has-action" role="status">
-              <span>Inputs changed. Regenerate to apply.</span>
+              <span>The visible meals and totals still use previous inputs. Regenerate to apply your latest choices.</span>
               <button className="with-icon" type="button" onClick={regenerateStalePlan} disabled={isGenerating} aria-busy={isGenerating}>
                 <Icon name="plate" />
                 {isGenerating ? "Generating..." : "Regenerate now"}
@@ -2018,38 +2019,60 @@ function App() {
               <button type="button" onClick={undoDeletedItem}>Undo</button>
             </div>
           )}
-          <nav className="bottom-action result-action-bar" aria-label="Plan actions">
-            {shareActionFeedback && (
-              <div
-                className={`share-action-status${shareActionFeedback.manualUrl ? " manual-share" : ""}${shareActionFeedback.stale ? " is-stale" : ""}`}
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                <p>{shareActionFeedback.message}</p>
-                {shareActionFeedback.manualUrl && (
-                  <label className="manual-share-link">
-                    <span>Share link</span>
-                    <input readOnly value={shareActionFeedback.manualUrl} onFocus={(event) => event.currentTarget.select()} />
-                  </label>
+          <nav className={`bottom-action result-action-bar${isPlanStale ? " is-stale" : ""}`} aria-label="Plan actions">
+            {isPlanStale ? (
+              <>
+                <p id={resultStaleNoticeId} className="stale-result-action-copy" role="status" aria-live="polite">
+                  Current meals and totals are from your previous inputs until regeneration succeeds.
+                </p>
+                <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
+                <button
+                  className="primary-action stale-result-primary with-icon"
+                  type="button"
+                  onClick={regenerateStalePlan}
+                  disabled={isGenerating}
+                  aria-busy={isGenerating}
+                  aria-describedby={resultStaleNoticeId}
+                >
+                  <Icon name="plate" />
+                  {isGenerating ? "Generating..." : "Regenerate now"}
+                </button>
+              </>
+            ) : (
+              <>
+                {shareActionFeedback && (
+                  <div
+                    className={`share-action-status${shareActionFeedback.manualUrl ? " manual-share" : ""}${shareActionFeedback.stale ? " is-stale" : ""}`}
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    <p>{shareActionFeedback.message}</p>
+                    {shareActionFeedback.manualUrl && (
+                      <label className="manual-share-link">
+                        <span>Share link</span>
+                        <input readOnly value={shareActionFeedback.manualUrl} onFocus={(event) => event.currentTarget.select()} />
+                      </label>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-            {planRandomizeFeedback && (
-              <div
-                className={`randomize-action-status ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}${canUndoPlanRandomize ? " has-action" : ""}`}
-                role="status"
-                aria-atomic="true"
-              >
-                <span>{planRandomizeFeedback.message}</span>
-                {canUndoPlanRandomize && (
-                  <button type="button" onClick={undoRandomize}>Undo</button>
+                {planRandomizeFeedback && (
+                  <div
+                    className={`randomize-action-status ${planRandomizeFeedback.changed ? "is-success" : "is-notice"}${canUndoPlanRandomize ? " has-action" : ""}`}
+                    role="status"
+                    aria-atomic="true"
+                  >
+                    <span>{planRandomizeFeedback.message}</span>
+                    {canUndoPlanRandomize && (
+                      <button type="button" onClick={undoRandomize}>Undo</button>
+                    )}
+                  </div>
                 )}
-              </div>
+                <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
+                <button className="plan-action-button with-icon" type="button" aria-label={hasActiveMealTargets ? "Randomize whole plan; meal targets use Randomize meal" : "Randomize plan"} onClick={randomizeVisiblePlan}><Icon name="randomize" />{randomizePlanActionLabel}</button>
+                <button className="primary-action with-icon" type="button" onClick={openShareSheet} aria-haspopup="dialog" aria-expanded={exportSheetOpen}><Icon name="share" />Share</button>
+              </>
             )}
-            <button className="plan-action-button with-icon" type="button" onClick={openTargetsView}><Icon name="targets" />Targets</button>
-            <button className="plan-action-button with-icon" type="button" aria-label={hasActiveMealTargets ? "Randomize whole plan; meal targets use Randomize meal" : "Randomize plan"} onClick={randomizeVisiblePlan}><Icon name="randomize" />{randomizePlanActionLabel}</button>
-            <button className="primary-action with-icon" type="button" onClick={openShareSheet} aria-haspopup="dialog" aria-expanded={exportSheetOpen}><Icon name="share" />Share</button>
           </nav>
           <dialog
             className="swap-sheet export-sheet"
