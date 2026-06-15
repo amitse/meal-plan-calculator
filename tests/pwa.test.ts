@@ -19,7 +19,8 @@ describe("PWA shell", () => {
     expect(manifest.icons?.some((icon) => icon.sizes === "192x192")).toBe(true);
     expect(manifest.icons?.some((icon) => icon.sizes === "512x512")).toBe(true);
     expect(manifest.icons?.some((icon) => icon.purpose === "maskable")).toBe(true);
-    expect(html).toContain('rel="manifest" href="/meal-plan-calculator/manifest.webmanifest"');
+    expect(html).toContain('rel="manifest" href="manifest.webmanifest"');
+    expect(html).toContain('rel="icon" href="icons/icon-192.png"');
     expect(html).toContain("apple-mobile-web-app-capable");
   });
 
