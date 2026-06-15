@@ -58,6 +58,63 @@ const dietDescriptions: Record<DietaryLevel, string> = {
   nonVegetarian: "Allows vegetarian proteins, eggs, chicken, and fish.",
 };
 
+type QuickStartPreset = {
+  label: string;
+  form: EditableFormState;
+};
+
+const quickStartPresets: QuickStartPreset[] = [
+  {
+    label: "Light veg",
+    form: {
+      ...initialFormState,
+      calories: "1600",
+      protein: "60",
+      dietaryLevel: "vegetarian",
+      preferredProteins: ["paneer-50g", "tofu-100g", "whey-30g"],
+      avoidEggs: true,
+      avoidChickenFish: true,
+    },
+  },
+  {
+    label: "Eggs",
+    form: {
+      ...initialFormState,
+      calories: "1800",
+      protein: "80",
+      dietaryLevel: "eggetarian",
+      preferredProteins: ["two-whole-eggs"],
+      avoidEggs: false,
+      avoidChickenFish: true,
+    },
+  },
+  {
+    label: "Chicken",
+    form: {
+      ...initialFormState,
+      calories: "2200",
+      protein: "100",
+      dietaryLevel: "nonVegetarian",
+      preferredProteins: ["chicken-fish-100g"],
+      avoidEggs: false,
+      avoidChickenFish: false,
+    },
+  },
+  {
+    label: "Rice + whey",
+    form: {
+      ...initialFormState,
+      calories: "1900",
+      protein: "80",
+      dietaryLevel: "vegetarian",
+      preferredGrains: ["cooked-rice"],
+      preferredProteins: ["whey-30g"],
+      avoidEggs: true,
+      avoidChickenFish: true,
+    },
+  },
+];
+
 function App() {
   const urlState = useMemo(loadStateFromUrl, []);
   const [form, setForm] = useState<EditableFormState>(normalizeEditableFormState(urlState?.form));
@@ -121,8 +178,8 @@ function App() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function generate(seed = Date.now()) {
-    const next = generateEditablePlan(form, plan, lockedIds, seed);
+  function generate(sourceForm = form, seed = Date.now()) {
+    const next = generateEditablePlan(sourceForm, plan, lockedIds, seed);
 
     if (next) {
       setGenerationError("");
@@ -136,6 +193,11 @@ function App() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     generate();
+  }
+
+  function applyQuickStartPreset(preset: QuickStartPreset) {
+    setForm(preset.form);
+    generate(preset.form);
   }
 
   function updateDietaryLevel(level: DietaryLevel) {
@@ -275,6 +337,19 @@ function App() {
               <input inputMode="numeric" value={form.protein} onChange={(event) => update("protein", event.target.value)} min="0" step="5" type="number" />
             </label>
           </div>
+
+          {!plan && (
+            <fieldset className="quick-start-presets">
+              <legend>Try an example</legend>
+              <div className="quick-start-row">
+                {quickStartPresets.map((preset) => (
+                  <button key={preset.label} type="button" onClick={() => applyQuickStartPreset(preset)}>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
           <fieldset className="segmented diet-segments" aria-describedby="diet-helper">
             <legend>Diet</legend>
