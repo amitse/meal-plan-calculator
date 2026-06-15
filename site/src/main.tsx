@@ -197,6 +197,7 @@ function App() {
   const [mealTargets, setMealTargets] = useState<Record<string, MealMacroTarget>>(urlState?.mealTargets ?? {});
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [shareState, setShareState] = useState<ShareState | undefined>();
+  const [showGoogleDocsManualCopy, setShowGoogleDocsManualCopy] = useState(false);
   const [shareLoadFailed, setShareLoadFailed] = useState(loadedUrlState.shareLoadFailed);
   const [generationBlockers, setGenerationBlockers] = useState<string[]>([]);
   const [isPlanStale, setIsPlanStale] = useState(false);
@@ -229,6 +230,7 @@ function App() {
     mealTargets,
   }), [form, plan, lockedIds, mealTargets]);
   const currentShareKey = useMemo(() => encodeShareState(currentShareableState), [currentShareableState]);
+  const googleDocsManualCopyText = showGoogleDocsManualCopy && plan ? planExportTsv(plan) : "";
 
   useEffect(() => {
     if (plan && activeView === "plan") {
@@ -667,6 +669,7 @@ function App() {
     setMealTargets({});
     setOptionsOpen(false);
     setShareState(undefined);
+    setShowGoogleDocsManualCopy(false);
     setGenerationBlockers([]);
     setIsPlanStale(false);
     setMealToolMessages({});
@@ -694,6 +697,10 @@ function App() {
     if (!plan) return;
     const plainText = planExportTsv(plan);
     const html = planExportHtmlTable(plan);
+    const showManualGoogleDocsCopy = () => {
+      setShowGoogleDocsManualCopy(true);
+      setShareState(undefined);
+    };
 
     try {
       if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
@@ -706,13 +713,14 @@ function App() {
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(plainText);
       } else {
-        setShareState({ message: "Copy blocked; use CSV or Excel" });
+        showManualGoogleDocsCopy();
         return;
       }
 
+      setShowGoogleDocsManualCopy(false);
       setShareState({ message: "Copied for Google Docs" });
     } catch {
-      setShareState({ message: "Copy blocked; use CSV or Excel" });
+      showManualGoogleDocsCopy();
     }
   }
 
@@ -922,6 +930,22 @@ function App() {
               <button className="with-icon" type="button" onClick={exportExcel}><Icon name="export" />Excel</button>
               <button className="with-icon" type="button" onClick={() => void copyForGoogleDocs()}><Icon name="copy" />Google Docs</button>
             </div>
+            {googleDocsManualCopyText && (
+              <div className="google-docs-recovery">
+                <p role="status">
+                  <strong>Copy blocked.</strong> Select this table text, copy it, then paste it into Google Docs.
+                </p>
+                <label className="google-docs-copy-field">
+                  <span>Google Docs table text</span>
+                  <textarea
+                    readOnly
+                    rows={8}
+                    value={googleDocsManualCopyText}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </label>
+              </div>
+            )}
           </details>
           {lockedItemCount > 0 && (
             <div className="locked-notice" role="status">

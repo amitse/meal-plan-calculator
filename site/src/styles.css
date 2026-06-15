@@ -67,6 +67,7 @@ body {
 
 button,
 input,
+textarea,
 select {
   font: inherit;
   font-size: max(1rem, 16px);
@@ -165,6 +166,7 @@ label {
 
 button:focus-visible,
 input:focus-visible,
+textarea:focus-visible,
 select:focus-visible,
 summary:focus-visible {
   outline: 3px solid var(--focus);
@@ -1069,6 +1071,51 @@ fieldset {
   width: 100%;
 }
 
+.google-docs-recovery {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(210, 160, 87, 0.42);
+  border-radius: 12px;
+  background: rgba(210, 160, 87, 0.1);
+  color: var(--body);
+  line-height: 1.45;
+}
+
+.google-docs-recovery p {
+  margin: 0;
+}
+
+.google-docs-recovery strong {
+  color: var(--ink);
+}
+
+.google-docs-copy-field {
+  display: grid;
+  gap: 6px;
+}
+
+.google-docs-copy-field span {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.google-docs-copy-field textarea {
+  width: 100%;
+  min-height: 176px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: var(--space-sm);
+  line-height: 1.45;
+}
+
 .metric {
   padding: var(--space-lg) 0;
 }
@@ -1898,6 +1945,7 @@ fieldset {
 
   button,
   input,
+  textarea,
   select,
   summary {
     transition: none;
