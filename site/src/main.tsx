@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   calculateDailyPlanItemNutrition,
@@ -891,6 +891,27 @@ function PlanItemRow({
   const quantity = planItemDisplayQuantity(item);
   const nutrition = calculateDailyPlanItemNutrition(item);
   const exchangeOptions = exchangeOptionsForItem(item, form, mealId);
+  const [swapSheetOpen, setSwapSheetOpen] = useState(false);
+  const swapDialogRef = useRef<HTMLDialogElement>(null);
+  const swapTitleId = useId();
+  const swapDescriptionId = useId();
+  const isExchangeItem = item.kind === "exchange";
+
+  useEffect(() => {
+    const dialog = swapDialogRef.current;
+    if (!dialog || !isExchangeItem) return;
+
+    if (swapSheetOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!swapSheetOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [isExchangeItem, swapSheetOpen]);
+
+  function chooseSwapOption(optionId: string) {
+    onSwap(optionId);
+    setSwapSheetOpen(false);
+  }
 
   return (
     <div className="plan-row">
@@ -909,22 +930,65 @@ function PlanItemRow({
         <span className="unit-label" title="grams">gm</span>
         <button className="lock-toggle" type="button" aria-pressed={locked} onClick={onLock}>{locked ? "Unlock" : "Lock"}</button>
         <button className="delete-toggle" type="button" aria-label={`Delete ${label}`} onClick={onDelete}>Del</button>
-        {item.kind === "exchange" && (
-          <label className="swap-control">
-            <span>Swap</span>
-            <select className="swap-select" aria-label={`Swap ${label}`} value={item.exchangeOptionId} onChange={(event) => onSwap(event.target.value)}>
-              {exchangeOptions.map((option) => <option key={option.id} value={option.id}>{swapOptionLabel(item.exchangeGroupId, option.id, option.displayName)}</option>)}
-            </select>
-          </label>
+        {isExchangeItem && (
+          <>
+            <button
+              className="swap-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={swapSheetOpen}
+              onClick={() => setSwapSheetOpen(true)}
+            >
+              Swap
+            </button>
+            <dialog
+              className="swap-sheet"
+              ref={swapDialogRef}
+              aria-labelledby={swapTitleId}
+              aria-describedby={swapDescriptionId}
+              onCancel={() => setSwapSheetOpen(false)}
+              onClose={() => setSwapSheetOpen(false)}
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  setSwapSheetOpen(false);
+                }
+              }}
+            >
+              <div className="swap-sheet-panel">
+                <header className="swap-sheet-header">
+                  <div>
+                    <p>Swap item</p>
+                    <h3 id={swapTitleId}>{label}</h3>
+                  </div>
+                  <button type="button" aria-label={`Close swap options for ${label}`} onClick={() => setSwapSheetOpen(false)}>Close</button>
+                </header>
+                <p id={swapDescriptionId} className="swap-sheet-description">
+                  Choose an exchange-equivalent option. Your serving amount, locks, and the rest of the meal stay unchanged.
+                </p>
+                <div className="swap-options" aria-label={`Allowed swaps for ${label}`}>
+                  {exchangeOptions.map((option) => (
+                    <button
+                      className="swap-option"
+                      type="button"
+                      key={option.id}
+                      aria-pressed={option.id === item.exchangeOptionId}
+                      onClick={() => chooseSwapOption(option.id)}
+                    >
+                      <span>{option.displayName}</span>
+                      <small>
+                        {exchangeOptionGramAmount(item.exchangeGroupId, option.id)}gm exchange
+                        {option.id === item.exchangeOptionId ? " · Current" : ""}
+                      </small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </dialog>
+          </>
         )}
       </div>
     </div>
   );
-}
-
-function swapOptionLabel(groupId: string, optionId: string, label: string) {
-  const grams = exchangeOptionGramAmount(groupId, optionId);
-  return /\d+\s*g(?:m)?\b/i.test(label) ? label.replace(/\bg\b/i, "gm") : `${label} (${grams}gm)`;
 }
 
 function loadStateFromUrl(): LoadedUrlState {
