@@ -460,6 +460,7 @@ function App() {
               </ul>
             </div>
           )}
+          <p className="meal-list-helper">Tap any meal to view foods, edit servings, swap options, or lock items.</p>
           <div className="meal-list">
             {plan.meals.map((meal) => {
               const mealTotals = calculateMealTotals(meal);
@@ -471,6 +472,7 @@ function App() {
                   <span className="meal-summary">
                     <strong>{Math.round(mealTotals.values.calories)} kcal</strong>
                     <small>{Math.round(mealTotals.values.protein)}gm protein · {meal.items.length} items</small>
+                    <span className="meal-affordance">Tap to edit</span>
                   </span>
                 </summary>
                 <div className="meal-items">

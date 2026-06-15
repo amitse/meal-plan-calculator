@@ -781,7 +781,17 @@ fieldset {
 .meal-list {
   display: grid;
   gap: 0;
-  margin-top: var(--space-xl);
+  margin-top: var(--space-sm);
+}
+
+.meal-list-helper {
+  margin: var(--space-lg) 0 0;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-strong);
+  color: var(--body);
+  font-size: 0.88rem;
+  line-height: 1.4;
 }
 
 .meal-card {
@@ -839,8 +849,20 @@ fieldset {
   font-weight: 500;
 }
 
+.meal-affordance {
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .meal-card[open] > summary {
   border-bottom: 1px solid var(--border-soft);
+}
+
+.meal-card[open] .meal-affordance {
+  display: none;
 }
 
 .meal-items {
