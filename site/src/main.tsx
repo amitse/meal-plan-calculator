@@ -1452,10 +1452,10 @@ function App() {
                         value={mealTargets[meal.id]?.protein ?? ""}
                       />
                     </label>
-                    <button className="with-icon" type="button" onClick={() => randomizeSingleMeal(meal.id)}><Icon name="randomize" />Randomize meal</button>
-                    <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "protein-serving")}><Icon name="protein" />Add protein</button>
-                    <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "grain")}><Icon name="carb" />Add grain</button>
-                    <button className="with-icon" type="button" onClick={() => addMealItem(meal.id, "fruit")}><Icon name="fruit" />Add fruit</button>
+                    <button className="with-icon" type="button" aria-label={`Randomize ${meal.displayName}`} onClick={() => randomizeSingleMeal(meal.id)}><Icon name="randomize" />Randomize meal</button>
+                    <button className="with-icon" type="button" aria-label={`Add protein to ${meal.displayName}`} onClick={() => addMealItem(meal.id, "protein-serving")}><Icon name="protein" />Add protein</button>
+                    <button className="with-icon" type="button" aria-label={`Add grain to ${meal.displayName}`} onClick={() => addMealItem(meal.id, "grain")}><Icon name="carb" />Add grain</button>
+                    <button className="with-icon" type="button" aria-label={`Add fruit to ${meal.displayName}`} onClick={() => addMealItem(meal.id, "fruit")}><Icon name="fruit" />Add fruit</button>
                   </div>
                   <div className="meal-status" role="status">
                     {mealFeedback && (
@@ -2482,6 +2482,21 @@ function PlanItemRow({
             <Icon name="delete" />
             <span className="control-label">Delete</span>
           </button>
+          {isExchangeItem && (
+            <button
+              className="swap-button with-icon"
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={swapSheetOpen}
+              onClick={() => {
+                onSwapOpen();
+                setSwapSheetOpen(true);
+              }}
+            >
+              <Icon name="swap" />
+              <span>Swap</span>
+            </button>
+          )}
         </div>
         {servingValidationMessage && (
           <span
@@ -2494,19 +2509,6 @@ function PlanItemRow({
         )}
         {isExchangeItem && (
           <>
-            <button
-              className="swap-button with-icon"
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={swapSheetOpen}
-              onClick={() => {
-                onSwapOpen();
-                setSwapSheetOpen(true);
-              }}
-            >
-              <Icon name="swap" />
-              Swap
-            </button>
             <dialog
               className="swap-sheet"
               ref={swapDialogRef}
