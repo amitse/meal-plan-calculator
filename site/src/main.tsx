@@ -415,7 +415,7 @@ function themePreferenceLabel(preference: ThemePreference | ResolvedTheme) {
   return preference === "light" ? "Light" : "Dark";
 }
 
-function App() {
+export function App() {
   const loadedUrlState = useMemo(loadStateFromUrl, []);
   const generationProgressId = useId();
   const quickStartConfirmTitleId = useId();
@@ -3761,16 +3761,14 @@ type MealPlanWindow = Window & { mealPlanRoot?: Root };
 
 const rootElement = document.getElementById("root");
 
-if (!rootElement) {
-  throw new Error("Root element #root was not found.");
+if (rootElement) {
+  const mealPlanWindow = window as MealPlanWindow;
+  const root = mealPlanWindow.mealPlanRoot ?? createRoot(rootElement);
+  mealPlanWindow.mealPlanRoot = root;
+
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
 }
-
-const mealPlanWindow = window as MealPlanWindow;
-const root = mealPlanWindow.mealPlanRoot ?? createRoot(rootElement);
-mealPlanWindow.mealPlanRoot = root;
-
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);

@@ -2651,6 +2651,11 @@ fieldset {
   padding: 0 var(--space-md) var(--space-sm);
 }
 
+.adjust-options > *,
+.swap-options > * {
+  min-width: 0;
+}
+
 .adjust-options .quick-fields,
 .adjust-options .segmented,
 .adjust-options .quick-start-presets,
@@ -2658,6 +2663,32 @@ fieldset {
 .adjust-options .active-macro-rules,
 .adjust-options .generation-feedback {
   margin: 0;
+}
+
+.adjust-options .quick-fields,
+.adjust-options .diet-segments {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.adjust-options .diet-segments label {
+  width: auto;
+}
+
+.adjust-options .quick-fields .number-stepper input {
+  font-size: 1.5rem;
+}
+
+.adjust-sheet .quick-fields {
+  gap: var(--space-sm);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.adjust-sheet .diet-segments {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.adjust-sheet .diet-segments span {
+  justify-content: flex-start;
 }
 
 .adjust-sheet-actions {
@@ -2760,6 +2791,17 @@ fieldset {
   grid-template-columns: minmax(var(--size-82), max-content) minmax(var(--size-116), 1fr);
   gap: var(--size-4) var(--size-8);
   align-items: center;
+}
+
+.swap-sheet .swap-option-main,
+.swap-sheet .swap-option-meta {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.swap-sheet .swap-option-exchange {
+  justify-self: start;
+  text-align: left;
+  white-space: normal;
 }
 
 .swap-option-meta,

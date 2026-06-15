@@ -18,9 +18,13 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:storybook": "storybook build -o storybook-static",
     "build:www": "vite build --config site/vite.config.ts",
     "dev:www": "vite --config site/vite.config.ts",
     "preview:www": "vite preview --config site/vite.config.ts",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
     "ux:issue:generate-loop": "node scripts/copilot-issue-loop.mjs generate-loop",
     "ux:issue:fix-loop": "node scripts/copilot-issue-loop.mjs fix-loop",
     "ux:issue:fix-next": "node scripts/copilot-issue-loop.mjs fix-next",
@@ -38,11 +42,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@storybook/react-vite": "^10.4.5",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "ajv": "^8.20.0",
+    "storybook": "^10.4.5",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8"
