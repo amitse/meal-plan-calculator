@@ -1867,6 +1867,55 @@ fieldset {
   color: var(--muted);
 }
 
+.meal-live-total {
+  display: grid;
+  gap: 7px;
+  margin: 0 var(--space-sm) var(--space-xs);
+  padding: 10px 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.meal-live-total > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.meal-live-total dt,
+.meal-live-total dd {
+  margin: 0;
+}
+
+.meal-live-total dt {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.meal-live-total dd {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.meal-live-status dd {
+  color: var(--warning);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.meal-live-status.is-muted dd {
+  color: var(--faint);
+}
+
 .meal-tools {
   margin: 0 var(--space-sm) var(--space-md);
   border-top: 1px solid var(--border-soft);

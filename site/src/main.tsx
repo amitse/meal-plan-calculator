@@ -1625,6 +1625,20 @@ function App() {
                     </div>
                   )}
                 </div>
+                <dl className="meal-live-total" aria-label={`${meal.displayName} meal total`}>
+                  <div>
+                    <dt>Meal total</dt>
+                    <dd>
+                      <span className="notranslate" translate="no">{Math.round(mealTotals.values.calories)} kcal</span>
+                      {" · "}
+                      <span className="notranslate" translate="no">{Math.round(mealTotals.values.protein)}gm protein</span>
+                    </dd>
+                  </div>
+                  <div className={`meal-live-status${status.length > 0 ? "" : " is-muted"}`}>
+                    <dt>Target status</dt>
+                    <dd>{status.length > 0 ? status.join(" · ") : "No meal target set"}</dd>
+                  </div>
+                </dl>
                 <details className="meal-tools">
                   <summary>
                     <span className="summary-label"><Icon name="tools" />Meal tools</span>
