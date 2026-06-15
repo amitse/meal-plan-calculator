@@ -1797,6 +1797,22 @@ fieldset {
   font-size: 0.8rem;
 }
 
+.metric-delta {
+  margin: var(--space-2xs) 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.metric-delta.is-pass {
+  color: var(--success);
+}
+
+.metric-delta.is-fail {
+  color: var(--danger);
+}
+
 .target-context {
   display: flex;
   flex-wrap: wrap;

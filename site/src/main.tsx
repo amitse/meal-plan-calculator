@@ -49,6 +49,7 @@ import {
   type DietaryLevel,
   type MealRole,
   type NutritionMetric,
+  type PlanEvaluation,
 } from "../../src/index.js";
 import {
   addItemToMeal,
@@ -1603,8 +1604,20 @@ function App() {
             </div>
           )}
           <div className="summary-grid">
-            <SummaryMetric icon="calories" label="Calories" value={Math.round(evaluation.totals.values.calories)} suffix="kcal" />
-            <SummaryMetric icon="protein" label="Protein" value={Math.round(evaluation.totals.values.protein)} suffix="gm" />
+            <SummaryMetric
+              icon="calories"
+              label="Calories"
+              value={Math.round(evaluation.totals.values.calories)}
+              suffix="kcal"
+              targetDelta={dailyTargetDelta(evaluation, "calories")}
+            />
+            <SummaryMetric
+              icon="protein"
+              label="Protein"
+              value={Math.round(evaluation.totals.values.protein)}
+              suffix="gm"
+              targetDelta={dailyTargetDelta(evaluation, "protein")}
+            />
             <SummaryMetric icon="carb" label="Carbs" value={Math.round(evaluation.totals.values.carbs)} suffix="gm" />
             <SummaryMetric icon="fat" label="Fat" value={Math.round(evaluation.totals.values.fat)} suffix="gm" />
           </div>
@@ -2800,13 +2813,62 @@ function openGoogleTranslateFallback(language: string) {
   window.location.assign(url.toString());
 }
 
-function SummaryMetric({ icon, label, value, suffix }: { icon: IconName; label: string; value: number; suffix: string }) {
+type TargetDeltaTone = BoundEvaluation["status"] | "neutral";
+
+type TargetDelta = {
+  text: string;
+  tone: TargetDeltaTone;
+};
+
+function SummaryMetric({
+  icon,
+  label,
+  value,
+  suffix,
+  targetDelta,
+}: {
+  icon: IconName;
+  label: string;
+  value: number;
+  suffix: string;
+  targetDelta?: TargetDelta;
+}) {
   return (
     <div className="metric">
       <span><Icon name={icon} />{label}</span>
       <strong className="notranslate" translate="no">{value}<small>{suffix}</small></strong>
+      {targetDelta && <p className={`metric-delta is-${targetDelta.tone}`}>{targetDelta.text}</p>}
     </div>
   );
+}
+
+function dailyTargetDelta(evaluation: PlanEvaluation, metric: "calories" | "protein"): TargetDelta {
+  const item = evaluation.targetBounds.find((candidate) => candidate.bound.metric === metric);
+
+  if (!item || item.bound.target === undefined) {
+    return {
+      text: metric === "protein" ? "No protein target set" : "No target set",
+      tone: "neutral",
+    };
+  }
+
+  const delta = Math.round(item.value - item.bound.target);
+
+  if (item.status === "pass" && delta === 0) {
+    return { text: "within target band", tone: "pass" };
+  }
+
+  if (delta === 0) {
+    return { text: "at target", tone: item.status };
+  }
+
+  const direction = delta < 0 ? "under" : "over";
+  const bandSuffix = item.status === "pass" ? " · within band" : "";
+
+  return {
+    text: `${formatCompactMetricValue(Math.abs(delta), metric)} ${direction} target${bandSuffix}`,
+    tone: item.status,
+  };
 }
 
 function TargetStatusItem({ item }: { item: BoundEvaluation }) {
@@ -2855,6 +2917,10 @@ function targetBoundLabel(item: BoundEvaluation) {
 
 function formatMetricValue(value: number, metric: NutritionMetric) {
   return `${Math.round(value)} ${metric === "calories" ? "kcal" : "gm"}`;
+}
+
+function formatCompactMetricValue(value: number, metric: "calories" | "protein") {
+  return metric === "calories" ? `${Math.round(value)} kcal` : `${Math.round(value)}gm`;
 }
 
 function formatKnownNutritionValue(value: number | null | undefined, metric: "calories" | "protein") {
