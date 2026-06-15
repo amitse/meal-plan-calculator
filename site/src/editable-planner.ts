@@ -1069,18 +1069,34 @@ export function exchangeOptionsForItem(item: DailyPlanItem, form: EditableFormSt
 
   if (item.exchangeGroupId === "protein-serving") {
     const allowed = new Set(proteinOptionsForFoodRules(form));
-    return options.filter((option) => allowed.has(option.id));
+    const filtered = options.filter((option) => allowed.has(option.id));
+    return prioritizeLikedSwapOptions(filtered, form.preferredProteins, visibleProteinOptionIds(form.dietaryLevel));
   }
 
   if (item.exchangeGroupId === "grain") {
     const allowed = mealId ? new Set(grainOptionsForMeal(mealId)) : undefined;
-    return options.filter((option) => {
+    const filtered = options.filter((option) => {
       if (allowed && !allowed.has(option.id)) return false;
       return option.id !== "raw-oats" || item.roles?.includes("carb");
     });
+    return prioritizeLikedSwapOptions(filtered, form.preferredGrains, grainOptions.map((option) => option.id));
   }
 
   return options;
+}
+
+function prioritizeLikedSwapOptions<T extends { id: string }>(options: T[], values: string[], automaticOptionIds: string[]) {
+  const selectedIds = selectedOptionIds(values, automaticOptionIds);
+
+  if (isAutomaticOptionSet(selectedIds, automaticOptionIds)) {
+    return options;
+  }
+
+  const selected = new Set(selectedIds);
+  return [
+    ...options.filter((option) => selected.has(option.id)),
+    ...options.filter((option) => !selected.has(option.id)),
+  ];
 }
 
 function isProteinOptionAllowedByFoodRules(optionId: string, form: EditableFormState) {

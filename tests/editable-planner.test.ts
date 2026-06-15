@@ -198,6 +198,45 @@ describe("editable planner workflows", () => {
     expect(optionIds).toEqual(expect.arrayContaining(["tofu-100g", "soy-chunks-dal-40g"]));
   });
 
+  it("prioritizes narrowed liked grain and protein swaps", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const grainItem = plan.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb");
+    const proteinItem = plan.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-protein");
+    const form = {
+      ...initialFormState,
+      preferredGrains: ["cooked-rice", "raw-rice"],
+      preferredProteins: ["tofu-100g"],
+    };
+    const grainOptionIds = grainItem ? exchangeOptionsForItem(grainItem, form, "lunch").map((option) => option.id) : [];
+    const proteinOptionIds = proteinItem ? exchangeOptionsForItem(proteinItem, form, "lunch").map((option) => option.id) : [];
+    const defaultGrainOrder = grainItem ? exchangeOptionsForItem(grainItem, initialFormState, "lunch").map((option) => option.id) : [];
+    const defaultProteinOrder = proteinItem ? exchangeOptionsForItem(proteinItem, initialFormState, "lunch").map((option) => option.id) : [];
+    const expectedGrainOrder = [
+      ...defaultGrainOrder.filter((optionId) => form.preferredGrains.includes(optionId)),
+      ...defaultGrainOrder.filter((optionId) => !form.preferredGrains.includes(optionId)),
+    ];
+    const expectedProteinOrder = [
+      ...defaultProteinOrder.filter((optionId) => form.preferredProteins.includes(optionId)),
+      ...defaultProteinOrder.filter((optionId) => !form.preferredProteins.includes(optionId)),
+    ];
+
+    expect(grainOptionIds).toEqual(expectedGrainOrder);
+    expect(proteinOptionIds).toEqual(expectedProteinOrder);
+  });
+
+  it("keeps automatic and fully selected swap order unchanged", () => {
+    const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
+    const grainItem = plan.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-carb");
+    const proteinItem = plan.meals.find((meal) => meal.id === "lunch")?.items.find((item) => item.id === "lunch-protein");
+    const defaultGrainOrder = grainItem ? exchangeOptionsForItem(grainItem, initialFormState, "lunch").map((option) => option.id) : [];
+    const defaultProteinOrder = proteinItem ? exchangeOptionsForItem(proteinItem, initialFormState, "lunch").map((option) => option.id) : [];
+
+    expect(grainItem ? exchangeOptionsForItem(grainItem, { ...initialFormState, preferredGrains: [] }, "lunch").map((option) => option.id) : []).toEqual(defaultGrainOrder);
+    expect(proteinItem ? exchangeOptionsForItem(proteinItem, { ...initialFormState, preferredProteins: [] }, "lunch").map((option) => option.id) : []).toEqual(defaultProteinOrder);
+    expect(grainItem ? exchangeOptionsForItem(grainItem, { ...initialFormState, preferredGrains: grainOptions.map((option) => option.id) }, "lunch").map((option) => option.id) : []).toEqual(defaultGrainOrder);
+    expect(proteinItem ? exchangeOptionsForItem(proteinItem, { ...initialFormState, preferredProteins: proteinOptions.map((option) => option.id) }, "lunch").map((option) => option.id) : []).toEqual(defaultProteinOrder);
+  });
+
   it("adds a protein item that respects active avoid rules", () => {
     const plan = generateEditablePlan(initialFormState, undefined, new Set(), 4)!;
     const form = {
