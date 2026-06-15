@@ -508,6 +508,27 @@ export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number
   });
 }
 
+export type ServingAmountInputResult =
+  | { status: "valid"; amount: number }
+  | { status: "empty" }
+  | { status: "invalid" };
+
+export function parseServingAmountInput(value: string): ServingAmountInputResult {
+  const trimmed = value.trim();
+
+  if (trimmed === "") {
+    return { status: "empty" };
+  }
+
+  const amount = Number(trimmed);
+
+  if (!Number.isFinite(amount) || amount < 0) {
+    return { status: "invalid" };
+  }
+
+  return { status: "valid", amount };
+}
+
 export function removePlanItem(plan: DailyPlan, itemId: string): DailyPlan {
   return {
     ...plan,

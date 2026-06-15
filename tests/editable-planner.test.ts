@@ -14,6 +14,7 @@ import {
   grainOptions,
   initialFormState,
   mealTargetStatus,
+  parseServingAmountInput,
   planItemDisplayQuantity,
   planEvaluation,
   proteinOptions,
@@ -240,6 +241,15 @@ describe("editable planner workflows", () => {
       exchangeUnits: 2.5,
     });
     expect(lunchCarb ? planItemDisplayQuantity(lunchCarb).amount : 0).toBe(125);
+  });
+
+  it("treats empty or invalid serving drafts as uncommitted edits", () => {
+    expect(parseServingAmountInput("")).toEqual({ status: "empty" });
+    expect(parseServingAmountInput("   ")).toEqual({ status: "empty" });
+    expect(parseServingAmountInput("not a number")).toEqual({ status: "invalid" });
+    expect(parseServingAmountInput("-5")).toEqual({ status: "invalid" });
+    expect(parseServingAmountInput("0")).toEqual({ status: "valid", amount: 0 });
+    expect(parseServingAmountInput("150")).toEqual({ status: "valid", amount: 150 });
   });
 
   it("generates exchange quantities as whole grams", () => {
