@@ -652,9 +652,10 @@ function App() {
               <span>Calories (kcal)</span>
               <div className="target-stepper">
                 <button type="button" aria-label="Decrease calories by 50" onClick={() => stepTarget("calories", -50, 800, 5000)}>−</button>
-                <input inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="50" type="number" />
+                <input aria-describedby="calories-helper" inputMode="numeric" value={form.calories} onChange={(event) => update("calories", event.target.value)} required min="800" max="5000" step="50" type="number" />
                 <button type="button" aria-label="Increase calories by 50" onClick={() => stepTarget("calories", 50, 800, 5000)}>+</button>
               </div>
+              <small id="calories-helper" className="field-hint">Target band: plans can pass within about 50 kcal.</small>
             </label>
             <label className="field">
               <span>Protein (gm)</span>
