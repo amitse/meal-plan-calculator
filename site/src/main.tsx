@@ -897,12 +897,6 @@ function App() {
               </ul>
             </div>
           )}
-          {deletedItemUndo && (
-            <div className="undo-delete-state" role="status">
-              <p><strong>{deletedItemUndo.label}</strong> removed</p>
-              <button type="button" onClick={undoDeletedItem}>Undo</button>
-            </div>
-          )}
           <p className="meal-list-helper">Tap any meal to view foods, edit servings, swap options, or lock items.</p>
           <div className="meal-list">
             {plan.meals.map((meal) => {
@@ -1005,6 +999,12 @@ function App() {
           </div>
           {addMealBlocker && <p className="randomize-feedback is-notice" role="alert">{addMealBlocker}</p>}
           <button className="secondary-action with-icon" type="button" onClick={addEmptyMeal}><Icon name="add" />Add meal</button>
+          {deletedItemUndo && (
+            <div className="undo-delete-state" role="status">
+              <p><strong>{deletedItemUndo.label}</strong> removed</p>
+              <button type="button" onClick={undoDeletedItem}>Undo</button>
+            </div>
+          )}
           <nav className="bottom-action result-action-bar" aria-label="Plan actions">
             <button className="plan-action-button with-icon" type="button" onClick={() => setActiveView("targets")}><Icon name="targets" />Targets</button>
             <button className="plan-action-button with-icon" type="button" onClick={randomizeVisiblePlan}><Icon name="randomize" />Randomize</button>
