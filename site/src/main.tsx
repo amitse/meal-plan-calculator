@@ -658,11 +658,10 @@ function CheckChip({ label, checked, onChange }: { label: string; checked: boole
 
 function activeCustomizationLabels(form: EditableFormState) {
   const avoids = avoidLabels(form);
-  const macroCount = activeMacroCount(form);
   const labels = [
     foodPreferenceSummary(form),
     avoids.length > 0 ? `Avoid ${avoids.length}` : undefined,
-    macroCount > 0 ? `Macros ${macroCount}` : undefined,
+    ...activeMacroLabels(form),
   ];
 
   return labels.filter((label): label is string => Boolean(label));
@@ -699,12 +698,16 @@ function avoidLabels(form: EditableFormState) {
 }
 
 function activeMacroCount(form: EditableFormState) {
+  return activeMacroLabels(form).length;
+}
+
+function activeMacroLabels(form: EditableFormState) {
   return [
     macroLabel("Carbs", form.carbs),
     macroLabel("Fat", form.fat),
     macroLabel("Fiber", form.fiber),
     macroLabel("Saturated fat", form.saturatedFat),
-  ].filter(Boolean).length;
+  ].filter((label): label is string => Boolean(label));
 }
 
 function visibleProteinPreferences(preferredProteins: string[], dietaryLevel: DietaryLevel) {
