@@ -2,6 +2,7 @@ import {
   calculateDailyPlanItemNutrition,
   calculateMealTotals,
   createNutritionTarget,
+  defaultMealPatterns,
   evaluateDailyPlan,
   evaluateMealPattern,
   generateDailyPlans,
@@ -71,6 +72,7 @@ export interface ShareablePlannerState {
 }
 
 export interface EditablePlanGenerationResult {
+  hasPlan: boolean;
   plan?: DailyPlan;
   blockers: string[];
 }
@@ -215,7 +217,7 @@ export function generateEditablePlan(
 ): DailyPlan | undefined {
   const generation = runEditablePlanGeneration(form, lockedPlan, lockedItemIds, seed);
 
-  return pickPassingPlan(generation.result.candidates, seed) ?? generation.result.candidates[0]?.plan;
+  return pickPassingPlan(generation.result.candidates, form, seed) ?? generation.result.candidates[0]?.plan;
 }
 
 export function generateEditablePlanResult(
@@ -225,10 +227,10 @@ export function generateEditablePlanResult(
   seed = Date.now(),
 ): EditablePlanGenerationResult {
   const generation = runEditablePlanGeneration(form, lockedPlan, lockedItemIds, seed);
-  const plan = pickPassingPlan(generation.result.candidates, seed);
+  const plan = pickPassingPlan(generation.result.candidates, form, seed);
 
   if (plan) {
-    return { plan, blockers: [] };
+    return { hasPlan: true, plan, blockers: [] };
   }
 
   const bestEvaluation = generation.result.candidates
@@ -237,6 +239,7 @@ export function generateEditablePlanResult(
     .sort((left, right) => scorePlanEvaluation(left) - scorePlanEvaluation(right))[0];
 
   return {
+    hasPlan: false,
     blockers: bestEvaluation
       ? failureRecoveryMessages(bestEvaluation).slice(0, 2)
       : generationRejectionMessages(generation.result.rejected, form, lockedPlan, lockedItemIds).slice(0, 2),
@@ -261,10 +264,54 @@ function runEditablePlanGeneration(
   return { result };
 }
 
-function pickPassingPlan(candidates: ReturnType<typeof generateDailyPlans>["candidates"], seed: number) {
-  const passingCandidates = candidates.filter((candidate) => candidate.evaluation?.status === "pass");
+function pickPassingPlan(candidates: ReturnType<typeof generateDailyPlans>["candidates"], form: EditableFormState, seed: number) {
+  const passingCandidates = candidates
+    .filter((candidate) => candidate.evaluation?.status === "pass");
+  const practicalProteinCandidates = passingCandidates
+    .map((candidate) => ({ ...candidate, plan: reduceRepeatedWhey(candidate.plan, form) }))
+    .filter((candidate) => planEvaluation(candidate.plan, form).status === "pass" && countExchangeOption(candidate.plan, "whey-30g") <= 1);
+  const lowSupplementCandidates = passingCandidates.filter((candidate) => countExchangeOption(candidate.plan, "whey-30g") <= 1);
+  const candidatePool = practicalProteinCandidates.length > 0
+    ? practicalProteinCandidates
+    : lowSupplementCandidates.length > 0
+      ? lowSupplementCandidates
+      : passingCandidates;
 
-  return passingCandidates[pickIndex(passingCandidates.length, seed)]?.plan;
+  return candidatePool[pickIndex(candidatePool.length, seed)]?.plan;
+}
+
+function countExchangeOption(plan: DailyPlan, optionId: string) {
+  return plan.meals
+    .flatMap((meal) => meal.items)
+    .filter((item) => item.kind === "exchange" && item.exchangeOptionId === optionId)
+    .length;
+}
+
+function reduceRepeatedWhey(plan: DailyPlan, form: EditableFormState): DailyPlan {
+  if (countExchangeOption(plan, "whey-30g") <= 1) {
+    return plan;
+  }
+
+  let nextPlan = plan;
+  const replacementOptions = proteinChoicePool(form).filter((optionId) => optionId !== "whey-30g");
+  const extraWheyItems = plan.meals
+    .flatMap((meal) => meal.items)
+    .filter((item) => item.kind === "exchange" && item.exchangeOptionId === "whey-30g")
+    .slice(1);
+
+  for (const item of extraWheyItems) {
+    if (!item.id) continue;
+
+    for (const optionId of replacementOptions) {
+      const candidate = swapExchangeOption(nextPlan, item.id, optionId);
+      if (planEvaluation(candidate, form).status === "pass") {
+        nextPlan = candidate;
+        break;
+      }
+    }
+  }
+
+  return nextPlan;
 }
 
 export function buildDynamicTemplate(
@@ -273,6 +320,68 @@ export function buildDynamicTemplate(
   lockedItemIds: ReadonlySet<string>,
   seed = Date.now(),
 ): DailyPlanTemplate {
+  const usedGeneratedProteins = new Set<string>();
+  if (lockedPlan?.id === "manual-daily-plan") {
+    const mealCalorieTarget = manualMealCalorieTarget(form, lockedPlan.meals.length);
+
+    return {
+      id: "editable-daily-plan",
+      displayName: "Editable daily plan",
+      meals: lockedPlan.meals.map((meal, mealIndex) => {
+        const items: DailyPlanTemplateItem[] = meal.items.map(toTemplateItem);
+        const presentRoles = new Set(items.flatMap((item) => item.roles ?? []));
+        const fixedMealCalories = calculateMealTotals(meal).values.calories;
+
+        if (!presentRoles.has("carb")) {
+          items.push({
+            kind: "exchange",
+            id: `${meal.id}-carb`,
+            exchangeGroupId: "grain",
+            defaultOptionId: pickAllowedGrain(meal.id, form, seed + mealIndex),
+            allowedOptionIds: grainOptionsForMeal(meal.id),
+            exchangeUnits: 1,
+            roles: ["carb"],
+          });
+        }
+
+        if (!presentRoles.has("protein")) {
+          const protein = pickAllowedProtein(form, seed + mealIndex * 11, usedGeneratedProteins);
+          usedGeneratedProteins.add(protein);
+          items.push({
+            kind: "exchange",
+            id: `${meal.id}-protein`,
+            exchangeGroupId: "protein-serving",
+            defaultOptionId: protein,
+            allowedOptionIds: proteinOptionsForDiet(form.dietaryLevel),
+            exchangeUnits: 1,
+            roles: ["protein"],
+          });
+        }
+
+        if (
+          mealCalorieTarget !== undefined &&
+          !hasAdjustableTemplateItem(items) &&
+          fixedMealCalories < mealCalorieTarget - 50
+        ) {
+          items.push(createManualResidualCalorieItem(
+            meal.id,
+            form,
+            seed + mealIndex * 17,
+            mealCalorieTarget - fixedMealCalories,
+          ));
+        }
+
+        return {
+          id: meal.id,
+          displayName: meal.displayName,
+          patternId: meal.patternId ?? "cooked-plate",
+          constraints: meal.constraints,
+          items,
+        };
+      }),
+    };
+  }
+
   return {
     id: "editable-daily-plan",
     displayName: "Editable daily plan",
@@ -339,7 +448,8 @@ export function buildDynamicTemplate(
       }
 
       if (!lockedRoles.has("protein")) {
-        const protein = pickAllowedProtein(form, seed + mealIndex * 11);
+        const protein = pickAllowedProtein(form, seed + mealIndex * 11, usedGeneratedProteins);
+        usedGeneratedProteins.add(protein);
         items.push({
           kind: "exchange",
           id: `${mealId}-protein`,
@@ -353,6 +463,43 @@ export function buildDynamicTemplate(
 
       return { id: mealId, displayName: mealDisplayName(mealId), patternId: "cooked-plate", items };
     }),
+  };
+}
+
+function manualMealCalorieTarget(form: EditableFormState, mealCount: number) {
+  const dailyCalories = Number(form.calories || 0);
+
+  return Number.isFinite(dailyCalories) && dailyCalories > 0 && mealCount > 0
+    ? dailyCalories / mealCount
+    : undefined;
+}
+
+function hasAdjustableTemplateItem(items: readonly DailyPlanTemplateItem[]) {
+  return items.some((item) => item.adjustable !== false);
+}
+
+function createManualResidualCalorieItem(
+  mealId: string,
+  form: EditableFormState,
+  seed: number,
+  residualCalories: number,
+): DailyPlanTemplateItem {
+  const optionId = pickAllowedGrain(mealId, form, seed);
+  const caloriesPerUnit = calculateDailyPlanItemNutrition({
+    kind: "exchange",
+    exchangeGroupId: "grain",
+    exchangeOptionId: optionId,
+    exchangeUnits: 1,
+  }).calories ?? 0;
+
+  return {
+    kind: "exchange",
+    id: `${mealId}-residual-calories`,
+    exchangeGroupId: "grain",
+    defaultOptionId: optionId,
+    allowedOptionIds: grainOptionsForMeal(mealId),
+    exchangeUnits: caloriesPerUnit > 0 ? residualCalories / caloriesPerUnit : 1,
+    roles: ["carb"],
   };
 }
 
@@ -546,6 +693,10 @@ export function swapExchangeOption(plan: DailyPlan, itemId: string, optionId: st
 
 export function updateItemAmount(plan: DailyPlan, itemId: string, amount: number): DailyPlan {
   return updatePlanItem(plan, itemId, (item) => {
+    if (planItemDisplayQuantity(item).amount === amount) {
+      return item;
+    }
+
     if (item.kind === "food") {
       return { ...item, quantity: { ...item.quantity, amount: roundFoodAmount(item, amount) } };
     }
@@ -656,7 +807,8 @@ export function addItemToMeal(
   groupId: "grain" | "protein-serving" | "fruit",
   form?: EditableFormState,
 ): DailyPlan {
-  const id = `${mealId}-${groupId}-${Date.now().toString(36)}`;
+  const suffix = Date.now().toString(36);
+  const targetMealIds = new Set([mealId]);
 
   if (groupId === "protein-serving") {
     const proteinOptionId = firstAllowedProteinOption(form);
@@ -664,37 +816,208 @@ export function addItemToMeal(
       return plan;
     }
 
-    return {
+    const nextPlan = {
       ...plan,
       meals: plan.meals.map((meal) => (
-        meal.id === mealId
+        targetMealIds.has(meal.id)
           ? {
               ...meal,
-              items: [
+              items: completeManualCookedMealSupplements(plan, meal, [
                 ...meal.items,
                 {
                   kind: "exchange",
-                  id,
+                  id: `${meal.id}-${groupId}-${suffix}`,
                   exchangeGroupId: "protein-serving",
                   exchangeOptionId: proteinOptionId,
                   exchangeUnits: 1,
                   roles: ["protein"],
                 },
-              ],
+              ]),
             }
           : meal
       )),
     };
+    return rebalanceManualPlanCalories(nextPlan, form, Number.parseInt(suffix, 36));
   }
 
-  const item: DailyPlanItem =
-    groupId === "fruit"
-      ? { kind: "exchange", id, exchangeGroupId: "fruit", exchangeOptionId: "banana", exchangeUnits: 1, roles: ["fruit"] }
-      : { kind: "exchange", id, exchangeGroupId: "grain", exchangeOptionId: firstAllowedGrainOption(mealId, form), exchangeUnits: 1, roles: ["carb"] };
+  const nextPlan = {
+    ...plan,
+    meals: plan.meals.map((meal) => (
+      targetMealIds.has(meal.id)
+           ? {
+               ...meal,
+               items: groupId === "grain"
+                 ? completeManualCookedMealSupplements(plan, meal, [
+                     ...meal.items,
+                     createAddedExchangeItem(meal.id, groupId, suffix, form),
+                   ])
+                 : [...meal.items, createAddedExchangeItem(meal.id, groupId, suffix, form)],
+             }
+         : meal
+    )),
+  };
+  return rebalanceManualPlanCalories(nextPlan, form, Number.parseInt(suffix, 36));
+}
+
+function createAddedExchangeItem(
+  mealId: string,
+  groupId: "grain" | "fruit",
+  suffix: string,
+  form: EditableFormState | undefined,
+): DailyPlanItem {
+  const id = `${mealId}-${groupId}-${suffix}`;
+
+  return groupId === "fruit"
+    ? { kind: "exchange", id, exchangeGroupId: "fruit", exchangeOptionId: "banana", exchangeUnits: 1, roles: ["fruit"] }
+    : { kind: "exchange", id, exchangeGroupId: "grain", exchangeOptionId: firstAllowedGrainOption(mealId, form), exchangeUnits: 1, roles: ["carb"] };
+}
+
+function rebalanceManualPlanCalories(plan: DailyPlan, form: EditableFormState | undefined, seed: number): DailyPlan {
+  if (!isManualDailyPlan(plan) || !form) {
+    return plan;
+  }
+
+  const dailyCalories = Number(form.calories || 0);
+  if (!Number.isFinite(dailyCalories) || dailyCalories <= 0 || plan.meals.length === 0) {
+    return plan;
+  }
+
+  const withoutResidualCalories = {
+    ...plan,
+    meals: plan.meals.map((meal) => ({
+      ...meal,
+      items: meal.items.filter((item) => !isManualResidualCalorieItem(item)),
+    })),
+  };
+  const fixedCalories = withoutResidualCalories.meals.reduce(
+    (sum, meal) => sum + calculateMealTotals(meal).values.calories,
+    0,
+  );
+  let remainingCalories = dailyCalories - fixedCalories;
+
+  if (remainingCalories <= 50) {
+    return withoutResidualCalories;
+  }
+
+  const mealCalorieTarget = dailyCalories / withoutResidualCalories.meals.length;
+  return {
+    ...withoutResidualCalories,
+    meals: withoutResidualCalories.meals.map((meal, mealIndex) => {
+      if (remainingCalories <= 50 || !canReceiveManualResidualCalories(meal)) {
+        return meal;
+      }
+
+      const mealCalories = calculateMealTotals(meal).values.calories;
+      const residualCalories = Math.min(remainingCalories, Math.max(0, mealCalorieTarget - mealCalories));
+      if (residualCalories <= 50) {
+        return meal;
+      }
+
+      remainingCalories -= residualCalories;
+      return {
+        ...meal,
+        items: [
+          ...meal.items,
+          createManualResidualCaloriePlanItem(meal.id, form, seed + mealIndex * 17, residualCalories),
+        ],
+      };
+    }),
+  };
+}
+
+function createManualResidualCaloriePlanItem(
+  mealId: string,
+  form: EditableFormState,
+  seed: number,
+  residualCalories: number,
+): DailyPlanItem {
+  const item = createManualResidualCalorieItem(mealId, form, seed, residualCalories);
+
+  if (item.kind !== "exchange" || !item.defaultOptionId) {
+    throw new Error(`Manual residual calorie item could not resolve an exchange option for ${mealId}`);
+  }
 
   return {
-    ...plan,
-    meals: plan.meals.map((meal) => (meal.id === mealId ? { ...meal, items: [...meal.items, item] } : meal)),
+    kind: "exchange",
+    id: item.id,
+    exchangeGroupId: item.exchangeGroupId,
+    exchangeOptionId: item.defaultOptionId,
+    exchangeUnits: item.exchangeUnits,
+    roles: item.roles,
+    adjustable: item.adjustable,
+    note: item.note,
+  };
+}
+
+function isManualResidualCalorieItem(item: DailyPlanItem) {
+  return item.id?.endsWith("-residual-calories") ?? false;
+}
+
+function canReceiveManualResidualCalories(meal: DailyPlan["meals"][number]) {
+  if (meal.patternId !== "cooked-plate") {
+    return false;
+  }
+
+  const presentRoles = new Set(meal.items.flatMap((item) => item.roles ?? []));
+  return manualCookedMealCoreRoles.every((role) => presentRoles.has(role));
+}
+
+const manualCookedMealCoreRoles: readonly MealRole[] = ["carb", "protein"];
+const manualCookedMealSupplementRoles: readonly MealRole[] = ["cookingFat", "vegetables"];
+
+function completeManualCookedMealSupplements(
+  plan: DailyPlan,
+  meal: DailyPlan["meals"][number],
+  items: DailyPlanItem[],
+): DailyPlanItem[] {
+  if (!isManualDailyPlan(plan) || meal.patternId !== "cooked-plate") {
+    return items;
+  }
+
+  const presentRoles = new Set(items.flatMap((item) => item.roles ?? []));
+  if (!manualCookedMealCoreRoles.every((role) => presentRoles.has(role))) {
+    return items;
+  }
+
+  const cookedPlate = defaultMealPatterns.find((pattern) => pattern.id === "cooked-plate");
+  const supplements = cookedPlate?.defaultItems
+    ?.filter((defaultItem) =>
+      defaultItem.roles.some((role) => manualCookedMealSupplementRoles.includes(role) && !presentRoles.has(role)),
+    )
+    .map((defaultItem) => manualDefaultItemToPlanItem(meal.id, defaultItem.item)) ?? [];
+
+  return supplements.length > 0 ? [...items, ...supplements] : items;
+}
+
+function manualDefaultItemToPlanItem(mealId: string, item: DailyPlanTemplateItem): DailyPlanItem {
+  const id = `${mealId}-${item.id}`;
+
+  if (item.kind === "food") {
+    return {
+      kind: "food",
+      id,
+      foodItemId: item.foodItemId,
+      quantity: item.quantity,
+      roles: item.roles,
+      adjustable: item.adjustable,
+      note: item.note,
+    };
+  }
+
+  const optionId = item.defaultOptionId ?? item.allowedOptionIds?.[0] ?? getExchangeGroup(item.exchangeGroupId).options[0]?.id;
+  if (!optionId) {
+    throw new Error(`ExchangeGroup has no options: ${item.exchangeGroupId}`);
+  }
+
+  return {
+    kind: "exchange",
+    id,
+    exchangeGroupId: item.exchangeGroupId,
+    exchangeOptionId: optionId,
+    exchangeUnits: item.exchangeUnits ?? 1,
+    roles: item.roles,
+    adjustable: item.adjustable,
+    note: item.note,
   };
 }
 
@@ -1209,10 +1532,12 @@ function grainOptionsForMeal(mealId: string) {
   return ["roti", "bread", "cooked-rice", "dosa", "raw-rice"];
 }
 
-function pickAllowedProtein(form: EditableFormState, seed: number) {
+function pickAllowedProtein(form: EditableFormState, seed: number, usedProteinIds = new Set<string>()) {
   const pool = proteinChoicePool(form);
+  const unusedPool = pool.filter((option) => !usedProteinIds.has(option));
+  const choices = unusedPool.length > 0 ? unusedPool : pool;
 
-  return pool[pickIndex(pool.length, seed)] ?? "paneer-50g";
+  return choices[pickIndex(choices.length, seed)] ?? "paneer-50g";
 }
 
 function firstAllowedProteinOption(form: EditableFormState | undefined) {
@@ -1244,7 +1569,12 @@ function grainPreferences(form: EditableFormState) {
 }
 
 function proteinPreferencesForDiet(form: EditableFormState) {
-  const allowed = new Set(proteinOptionsForDiet(form.dietaryLevel));
+  const dietOptions = proteinOptionsForDiet(form.dietaryLevel);
+  const allowed = new Set(dietOptions);
+  if (isAutomaticOptionSet(form.preferredProteins, visibleProteinOptionIds(form.dietaryLevel))) {
+    return dietOptions;
+  }
+
   const selected = form.preferredProteins.filter((option) => allowed.has(option));
   return selected.length > 0 ? selected : defaultProteinsForDiet(form.dietaryLevel);
 }

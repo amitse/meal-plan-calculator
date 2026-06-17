@@ -183,6 +183,7 @@ export function generateMealPlan(
 
   return {
     ...result,
+    hasPlan: selected !== undefined,
     rejected:
       result.candidates.length > 0 && !selected
         ? [...result.rejected, "No generated meal plan satisfies target bounds"]
@@ -1103,7 +1104,7 @@ function adjustDailyPlanItem(item: DailyPlanItem, factor: number, data: MasterDa
   if (item.kind === "exchange") {
     const option = getExchangeOption(item.exchangeGroupId, item.exchangeOptionId, data);
     const currentExchangeUnits = item.exchangeUnits ?? option.exchangeUnits ?? 1;
-    const adjustedExchangeUnits = normalizeExchangeUnits(currentExchangeUnits, factor);
+    const adjustedExchangeUnits = normalizeExchangeUnits(currentExchangeUnits, factor, option);
 
     return {
       ...item,
@@ -1124,7 +1125,7 @@ function normalizeFoodAmount(item: FoodPortion, factor: number): number {
   const scaled = item.quantity.amount * factor;
 
   if (item.foodItemId === "veggies-excl-potato" && item.quantity.unit === "g") {
-    return Math.max(0, Math.round(scaled / 50) * 50);
+    return snapToIncrement(scaled, 50);
   }
 
   return normalizeAmountByUnit(item.quantity.amount, item.quantity.unit, factor);
@@ -1139,13 +1140,46 @@ function normalizeAmountByUnit(amount: number, unit: Quantity["unit"], factor: n
     case "scoop":
       return Math.max(0, Math.round(scaled));
     case "serving":
-      return Math.round(scaled * 2) / 2;
+      return snapToIncrement(scaled, 0.5);
     case "g":
     case "ml":
-      return Math.round(scaled);
+      return snapToIncrement(scaled, 5);
   }
 }
 
-function normalizeExchangeUnits(exchangeUnits: number, factor: number): number {
-  return Math.max(0, Math.round(exchangeUnits * factor * 2) / 2);
+function normalizeExchangeUnits(exchangeUnits: number, factor: number, option: ExchangeOption): number {
+  const optionUnits = option.exchangeUnits ?? 1;
+  const displayIncrement = practicalQuantityIncrement(option);
+  const exchangeUnitIncrement = option.quantity.amount > 0
+    ? (displayIncrement * optionUnits) / option.quantity.amount
+    : 0.5;
+
+  return snapToIncrement(exchangeUnits * factor, exchangeUnitIncrement);
+}
+
+function practicalQuantityIncrement(option: ExchangeOption): number {
+  if (option.foodItemId === "egg-whole" && option.quantity.unit === "count") {
+    return 1;
+  }
+
+  switch (option.quantity.unit) {
+    case "count":
+    case "slice":
+      return 1;
+    case "scoop":
+    case "serving":
+      return 0.5;
+    case "ml":
+      return 25;
+    case "g":
+      return 5;
+  }
+}
+
+function snapToIncrement(amount: number, increment: number): number {
+  if (amount <= 0) {
+    return 0;
+  }
+
+  return Math.max(increment, Math.round(amount / increment) * increment);
 }

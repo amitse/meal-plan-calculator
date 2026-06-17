@@ -203,6 +203,7 @@ export interface GenerateMealPlanInput extends NutritionTargetInput {
 }
 
 export interface GenerateMealPlanResult extends PlanGenerationResult {
+  hasPlan: boolean;
   target: NutritionTarget;
   template: DailyPlanTemplate;
   selected?: GeneratedPlanCandidate;

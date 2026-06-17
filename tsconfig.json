@@ -17,6 +17,7 @@
     "src/**/*.ts",
     "data/**/*.json",
     "schemas/**/*.json",
+    "evals/**/*.ts",
     "site/**/*.ts",
     "site/**/*.tsx",
     "tests/**/*.ts"
